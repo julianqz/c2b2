@@ -13,10 +13,10 @@
 # Print usage
 usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
-    echo -e "  -J  Project ID."                        #*
-    echo -e "  -T  Path to the top-level working dir." #*
-    echo -e "  -Y  Number of cores for cellranger."    #*
-    echo -e "  -Z  Amount of memory for cellranger."   #*
+    echo -e "  -J  Project ID."                        
+    echo -e "  -T  Path to the top-level working dir." 
+    echo -e "  -Y  Number of cores for cellranger."    
+    echo -e "  -Z  Amount of memory for cellranger."   
     echo -e "  -h  This message."
 }
 
@@ -60,7 +60,7 @@ fi
 
 # paths
 
-PATH_PROJ="${PATH_ROOT}${PROJ_ID}/"
+PATH_PROJ="${PATH_ROOT}/${PROJ_ID}"
 # no error if existing
 mkdir -p "${PATH_PROJ}"
 
