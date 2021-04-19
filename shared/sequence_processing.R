@@ -41,12 +41,6 @@ read_multiline_fasta = function(filename) {
         fasta[i] = paste0(rawLines[idxFirst:idxLast], collapse="")
     }
     
-    # sanity check
-    # length should match that in header
-    headerLensUnparsed = sapply(rawLines[headerIdx], function(i){ unlist(strsplit(i, "\\|"))[13] })
-    headerLensParsed = as.integer(sapply(headerLensUnparsed, function(i){ unlist(strsplit(i, "="))[2] }))
-    stopifnot( all.equal(headerLensParsed, nchar(fasta)) )
-    
     names(fasta) = rawLines[headerIdx]
     return(fasta)
 }
