@@ -153,7 +153,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         "${PATH_SCRIPT_PR}" \
             -s "${RAW_1}" \
             -r "${PATH_REF_PHIX}" \
-            -n "${CUR_ID}" \
+            -n "${CUR_ID}_R1" \
             -o "${PATH_OUTPUT_PR}" \
             -p "${NPROC}" \
             -t "${PATH_SCRIPT_Q2A}" \
@@ -165,7 +165,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         "${PATH_SCRIPT_PR}" \
             -s "${RAW_2}" \
             -r "${PATH_REF_PHIX}" \
-            -n "${CUR_ID}" \
+            -n "${CUR_ID}_R2" \
             -o "${PATH_OUTPUT_PR}" \
             -p "${NPROC}" \
             -t "${PATH_SCRIPT_Q2A}" \
@@ -173,8 +173,8 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
         # input files to presto-abseq pipeline are now output files from phix removal
         # phix removal adds "_R2_nophix_selected.fastq" to ${CUR_ID}
-        INPUT_ABSEQ_1="${PATH_RAW}/${CUR_ID}_R1_nophix_selected.fastq"
-        INPUT_ABSEQ_2="${PATH_RAW}/${CUR_ID}_R2_nophix_selected.fastq"
+        INPUT_ABSEQ_1="${PATH_OUTPUT_PR}/${CUR_ID}_R1_nophix_selected.fastq"
+        INPUT_ABSEQ_2="${PATH_OUTPUT_PR}/${CUR_ID}_R2_nophix_selected.fastq"
 
     else
         # input files to presto-abseq pipeline are original files
@@ -196,11 +196,11 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
         # if existing, remove first
         if [ -d "${PATH_OUTPUT_PA_ID}" ]; then
-            echo "Removed pre-exisitng folder for ${CUR_ID}" &>> "${PATH_LOG}"
+            echo "    Removed pre-exisitng folder for ${CUR_ID}" &>> "${PATH_LOG}"
             rm -r "${PATH_OUTPUT_PA_ID}"
         fi
 
-        echo "Created new presto-abseq folder for ${CUR_ID}" &>> "${PATH_LOG}"
+        echo "    Created new presto-abseq folder for ${CUR_ID}" &>> "${PATH_LOG}"
         mkdir "${PATH_OUTPUT_PA_ID}"
 
         "${PATH_SCRIPT_PA}" \
@@ -223,7 +223,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         # creates ${CUR_ID}-final_collapse-unique_atleast-2.fasta
         cd "${PATH_OUTPUT_PA_ID}"
 
-        echo "Converting output fastq to fasta" &>> "${PATH_LOG}"
+        echo "    Converting output fastq to fasta" &>> "${PATH_LOG}"
 
         "${PATH_SCRIPT_Q2A}" \
             "${PATH_OUTPUT_PA_ID}${CUR_ID}-final_collapse-unique_atleast-2.fastq" \
