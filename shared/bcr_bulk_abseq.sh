@@ -115,6 +115,12 @@ PATH_YAML="${PATH_AUX}${NAME_YAML}"
 MaskPrimers.py --version &> "${PATH_LOG}"
 echo "NPROC=${NPROC}" &>> "${PATH_LOG}"
 echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
+echo "Project yaml: ${NAME_YAML}" &>> "${PATH_LOG}"
+echo "Primers to Read 1: ${PATH_PRIMER_R1}" &>> "${PATH_LOG}"
+echo "Primers to Read 2: ${PATH_PRIMER_R2}" &>> "${PATH_LOG}"
+echo "Internal-C fasta: ${PATH_IC}" &>> "${PATH_LOG}"
+echo "V segment reference: ${PATH_REF_V}" &>> "${PATH_LOG}"
+echo "CS_KEEP: ${BOOL_CS_KEEP}" &>> "${PATH_LOG}"
 
 N_LINES=$(wc -l < "${PATH_LIST}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
@@ -217,6 +223,8 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         # creates ${CUR_ID}-final_collapse-unique_atleast-2.fasta
         cd "${PATH_OUTPUT_PA_ID}"
 
+        echo "Converting output fastq to fasta" &>> "${PATH_LOG}"
+
         "${PATH_SCRIPT_Q2A}" \
             "${PATH_OUTPUT_PA_ID}${CUR_ID}-final_collapse-unique_atleast-2.fastq" \
             &>> "${PATH_LOG_PA_ID}"
@@ -225,4 +233,4 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
 done
 
-echo "ALL DONE" &>> "${PATH_LOG}"
+echo "Finished" &>> "${PATH_LOG}"
