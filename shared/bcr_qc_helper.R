@@ -156,8 +156,8 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         stopifnot( length(col_perc_N) == length(last_pos_N) )
     }
     
-    
     nseqs = nrow(db)
+    cat("\nPerforming sequence-level QC on", nseqs, "sequences\n")
     
     if (check_valid_vj) {
         # IG[HKL][VDJ]... or TR[ABDG][VDJ]...
@@ -177,7 +177,10 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         bool_valid_vj = bool_valid_v & bool_valid_j
         
         # count
-        table(bool_valid_vj, useNA="ifany")
+        cat("\ncheck_valid_vj:\n")
+        cat("cols:", col_v_call, col_j_call, "\n")
+        print(table(bool_valid_vj, useNA="ifany"))
+        cat("\n")
         
     } else {
         bool_valid_vj = rep(T, nseqs)
@@ -206,11 +209,15 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         })
         
         # count
-        table(bool_chain, useNA="ifany") 
+        cat("\ncheck_chain_consistency:\n")
+        cat("cols:", col_v_call, col_d_call, col_j_call, col_c_call, "\n")
+        print(table(bool_chain, useNA="ifany"))
+        cat("\n")
         
     } else {
         bool_chain = rep(T, nseqs)
     }
+    
     
     if (check_perc_N) {
         
@@ -246,7 +253,10 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         bool_perc_N = rowSums(mtx_perc_N, na.rm=T) == ncol(mtx_perc_N)
         
         # count
-        table(bool_perc_N, useNA="ifany")
+        cat("\ncheck_perc_N ( max_perc_N=", max_perc_N, "; strict <):\n")
+        cat("cols:", col_perc_N, "\n")
+        print(table(bool_perc_N, useNA="ifany"))
+        cat("\n")
         
     } else {
         bool_perc_N = rep(T, nseqs)
@@ -295,13 +305,15 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         bool_num_nonATGCN = (obsv_count < max_num_nonATGCN) | bool_skip
           
         # count
-        table(bool_num_nonATGCN, useNA="ifany")
+        cat("\ncheck_num_nonATGCN ( max_num_nonATGCN=", max_num_nonATGCN, "; strict <):\n")
+        cat("observed col:", col_obsv, "; germline col:", col_germ, "\n")
+        print(table(bool_num_nonATGCN, useNA="ifany"))
+        cat("\n")
          
         
     } else {
         bool_num_nonATGCN = rep(T, nseqs)
     }
-    
     
     
     if (check_none_empty) {
@@ -324,11 +336,16 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         bool_none_empty = rowSums(mtx_none_empty, na.rm=T) == ncol(mtx_none_empty)
         
         # count
-        table(bool_none_empty, useNA="ifany")
+        cat("\ncheck_none_empty:\n")
+        cat("cols:", col_none_empty, "\n")
+        print(table(bool_none_empty, useNA="ifany"))
+        cat("\n")
+        
         
     } else {
         bool_none_empty = rep(T, nseqs)
     }
+    
     
     if (check_NA) {
         
@@ -345,12 +362,14 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         bool_NA = rowSums(mtx_NA, na.rm=T) == ncol(mtx_NA)
         
         # count
-        table(bool_NA, useNA="ifany")
+        cat("\ncheck_NA:\n")
+        cat("cols:", col_NA, "\n")
+        print(table(bool_NA, useNA="ifany"))
+        cat("\n")
         
     } else {
         bool_NA = rep(T, nseqs)
     }
-    
     
     
     if (check_len_mod3) {
@@ -373,11 +392,15 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         bool_len_mod3 = rowSums(mtx_len_mod3, na.rm=T) == ncol(mtx_len_mod3)
         
         # count
-        table(bool_len_mod3, useNA="ifany")
+        cat("\ncheck_len_mod3:\n")
+        cat("cols:", col_len_mod3, "\n")
+        print(table(bool_len_mod3, useNA="ifany"))
+        cat("\n")
         
     } else {
         bool_len_mod3 = rep(T, nseqs)
     }
+    
     
     # combine
     stopifnot(!any(is.na(bool_valid_vj)))
@@ -391,7 +414,9 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     bool = bool_valid_vj & bool_chain & bool_perc_N & bool_num_nonATGCN & bool_none_empty & bool_NA & bool_len_mod3
     
     # count
-    table(bool, useNA="ifany")
+    cat("\nCombined:\n")
+    print(table(bool, useNA="ifany"))
+    cat("\n")
     
     # subset
     return(db[bool, ])
