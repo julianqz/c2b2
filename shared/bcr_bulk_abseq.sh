@@ -219,6 +219,10 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             -s "${BOOL_CS_KEEP}" \
             &> "${PATH_LOG_PA_ID}"
 
+        # rename prestor report
+        # name generated from yaml is the same for all samples b/c one yaml file used for entire project
+        mv "${PATH_OUTPUT_PA_ID}report/"*.html "${PATH_OUTPUT_PA_ID}report/${CUR_ID}_prestor.html"
+
         # convert fastq to fasta
         # creates ${CUR_ID}-final_collapse-unique_atleast-2.fasta
         cd "${PATH_OUTPUT_PA_ID}"
