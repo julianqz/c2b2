@@ -2,11 +2,13 @@
 
 #' Check chain consistency of V, D, J, C gene annotations of a sequence
 #' 
-#' @param    vg          V gene annotation of a sequence. 
-#' @param    dg          D gene annotation of a sequence
-#' @param    jg          J gene annotation of a sequence
-#' @param    cg          C gene annotation of a sequence. 
+#' @param    vg          V gene annotation(s) of a sequence. 
+#' @param    dg          D gene annotation(s) of a sequence
+#' @param    jg          J gene annotation(s) of a sequence
+#' @param    cg          C gene annotation(s) of a sequence. 
 #' @param    loci        One of "IG" or "TR".
+#' @param    separator   Character that separates multiple annotations. 
+#'                       Default to `,` (comma).
 #' @param    verbose     Boolean. If TRUE, prints the inconsistency when check 
 #'                       is failed.
 #' 
@@ -17,6 +19,7 @@
 
 inspect_chain_consistency = function(vg, dg, jg, cg, 
                                      loci=c("IG", "TR"), 
+                                     separator=",",
                                      verbose=F){
     # check value for `loci` is valid 
     stopifnot(loci %in% c("IG", "TR"))
@@ -32,10 +35,17 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
     stopifnot( sum(bool_ok)>= 1 )
     
     # NA and empty annotations ignored
-    chains = substr(chains, 1, 3)[bool_ok]
+    chains = chains[bool_ok]
+    
+    # unpack multiple annotations (if any)
+    # first split by ","
+    # then extract first 3 chars
+    chains_unpacked = sapply(chains, function(s){
+        return( substr( strsplit(s, split=separator)[[1]], 1, 3) )
+    }, simplify=F)
     
     # unique chain types present
-    uniq_chain = unique(chains)
+    uniq_chain = unique(unlist(chains_unpacked))
     
     # sanity check
     # at least 1
@@ -91,39 +101,53 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
 #' @param   check_len_mod3              Boolean. Whether to check that lengths
 #'                                      are a multiple of 3.
 #' @param   col_len_mod3                Column name(s) in which to perform 
-#'                                      `check_len_mod3`.
+#'                                      `check_len_mod3`. Note that column(s) containing
+#'                                      strings is/are expected. Lengths will be calculated
+#'                                      on the fly.
 #' 
 #' @returns A new `db` subset to rows passing all checks of choice.
 #'
 #' @details - `check_valid_vj`: both V and J start with "IG" or "TR"
+#'
 #'          - `check_chain_consistency`: all of V, D, J, and C calls, 
 #'            where supplied, are "IGH", "IGK", "IGL", or "TRA", etc.
 #'            Ok to one or more, but not all, of `col_[vdjc]_call` as `NA`.
 #'            Also see `inspect_chain_consistency`.
+#'
 #'          - `check_perc_N` checks if the % of positions that are N in 
 #'            `col_perc_N` from position 1 thru `last_pos_N` is `<` (strictly)
-#'            `max_perc_N`,
+#'            `max_perc_N`. This check is skipped for a row which has
+#'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
+#'
 #'          - `check_num_nonATGCN` checks if the number of positions that are
 #'            non-ATGCN in `col_obsv`, between position 1 thru `last_pos_nonATGCN`,
 #'            at positions that are ATGCN in `col_germ`, is `<` (strictly)
-#'            `max_num_nonATGCN`.
+#'            `max_num_nonATGCN`. This check is skipped for a row which has
+#'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
+#'
 #'          - `check_none_empty` checks if `col_none_empty` is `[Nn]one` or `""`.
+#'            This check is skipped for a row which has `NA`.
+#'
 #'          - `check_NA` checks if `col_NA` is `NA`.
+#'
 #'          - `check_len_mod3` check if `nchar(col_len_mod3) %% 3 == 0`.
+#'            This check is skipped for a row which has
+#'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
+#'
 #'            
 #'          After all checks of choice are performed, an `AND` operation is 
 #'          performed across the check results for each row.
                                                                                                                                                                                                                                                                                                                                                   
 perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                           col_v_call, col_d_call, col_j_call, col_c_call,
-                          check_valid_vj, 
-                          check_chain_consistency, 
-                          check_perc_N, max_perc_N, col_perc_N, last_pos_N,
-                          check_num_nonATGCN, col_obsv, col_germ,
+                          check_valid_vj=F, 
+                          check_chain_consistency=F, 
+                          check_perc_N=F, max_perc_N, col_perc_N, last_pos_N,
+                          check_num_nonATGCN=F, col_obsv, col_germ,
                           max_num_nonATGCN, last_pos_nonATGCN,
-                          check_none_empty, col_none_empty,
-                          check_NA, col_NA,
-                          check_len_mod3, col_len_mod3) {
+                          check_none_empty=F, col_none_empty,
+                          check_NA=F, col_NA,
+                          check_len_mod3=F, col_len_mod3) {
     
     require(stringi)
     require(seqinr)
@@ -202,6 +226,10 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                              sapply(1:length(col_perc_N), function(i){
                                  s = col_perc_N[i]
                                  p = last_pos_N[i]
+                                 
+                                 # skip if NA, "", "[Nn]one"
+                                 bool_skip = is.na(db[[s]]) | db[[s]]=="" | tolower(db[[s]])=="none"
+                                 
                                  # convert to uppercase so no need to deal with cases
                                  # truncate to pos 1 to last_pos_N
                                  cur_s = toupper(substr(db[[s]], 1, p))
@@ -211,11 +239,11 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                                  # calc %
                                  cur_s_perc = cur_s_count / p * 100
                                  
-                                 return( cur_s_perc < max_perc_N )
+                                 return( (cur_s_perc < max_perc_N) | bool_skip )
                              }, simplify=F))
         # sum across columns
         # if all TRUE, rowSums should be the same as number of cols
-        bool_perc_N = rowSums(mtx_perc_N) == ncol(mtx_perc_N)
+        bool_perc_N = rowSums(mtx_perc_N, na.rm=T) == ncol(mtx_perc_N)
         
         # count
         table(bool_perc_N, useNA="ifany")
@@ -227,7 +255,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     if (check_num_nonATGCN) {
         
-        
+        bool_skip = is.na(db[[col_germ]]) | db[[col_germ]]=="" | tolower(db[[col_germ]])=="none"
         
         # convert to uppercase so no need to deal with cases
         # truncate to pos 1 to last_pos_nonATGCN
@@ -263,7 +291,8 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         })
         
         # TRUE means # of non-ATGCs in pos 1 thru last_pos_nonATGCN < max_num_nonATGCN
-        bool_num_nonATGCN = obsv_count < max_num_nonATGCN     
+        # skip check if germline missing (and set to TRUE for that row)
+        bool_num_nonATGCN = (obsv_count < max_num_nonATGCN) | bool_skip
           
         # count
         table(bool_num_nonATGCN, useNA="ifany")
@@ -276,6 +305,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     
     if (check_none_empty) {
+
         # check that all columns to be checked are characters
         stopifnot(all( sapply(col_none_empty, 
                               function(s){ class(db[[s]]) }) == "character" ))
@@ -283,21 +313,21 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         # matrix, even when col_none_empty is of length 1
         # each col is a col in col_none_empty
         # each row is a seq in db
-        # TRUE means not none AND not empty 
+        # TRUE means not none AND not empty (row with NA skipped)
         mtx_none_empty = do.call(cbind, 
                                  sapply(col_none_empty, function(s){
                                      # convert to lowercase so no need to deal with cases
-                                     return( tolower(db[[s]]) != "none" & db[[s]] != "" )
+                                     return( (tolower(db[[s]]) != "none" & db[[s]] != "") | is.na(db[[s]]) )
                                  }, simplify=F))
         # sum across columns
         # if all TRUE, rowSums should be the same as number of cols
-        bool_none_empty = rowSums(mtx_none_empty) == ncol(mtx_none_empty)
+        bool_none_empty = rowSums(mtx_none_empty, na.rm=T) == ncol(mtx_none_empty)
         
         # count
         table(bool_none_empty, useNA="ifany")
         
     } else {
-        bool_none = rep(T, nseqs)
+        bool_none_empty = rep(T, nseqs)
     }
     
     if (check_NA) {
@@ -312,13 +342,13 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                          }, simplify=F))
         # sum across columns
         # if all TRUE, rowSums should be the same as number of cols
-        bool_NA = rowSums(mtx_NA) == ncol(mtx_NA)
+        bool_NA = rowSums(mtx_NA, na.rm=T) == ncol(mtx_NA)
         
         # count
         table(bool_NA, useNA="ifany")
         
     } else {
-        bool_none = rep(T, nseqs)
+        bool_NA = rep(T, nseqs)
     }
     
     
@@ -332,14 +362,15 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         # matrix, even when col_len_mod3 is of length 1
         # each col is a col in col_len_mod3
         # each row is a seq in db
-        # TRUE means length is a multipel of 3
+        # TRUE means length is a multipel of 3 (row with NA/empty/[Nn]one skipped)
         mtx_len_mod3 = do.call(cbind, 
                                sapply(col_len_mod3, function(s){
-                                   return( nchar(db[[s]]) %% 3 == 0 )
+                                   bool_skip = is.na(db[[s]]) | db[[s]]=="" | tolower(db[[s]])=="none"
+                                   return( (nchar(db[[s]]) %% 3 == 0) | bool_skip )
                                }, simplify=F))
         # sum across columns
         # if all TRUE, rowSums should be the same as number of cols
-        bool_len_mod3 = rowSums(mtx_len_mod3) == ncol(mtx_len_mod3)
+        bool_len_mod3 = rowSums(mtx_len_mod3, na.rm=T) == ncol(mtx_len_mod3)
         
         # count
         table(bool_len_mod3, useNA="ifany")
@@ -349,6 +380,14 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     }
     
     # combine
+    stopifnot(!any(is.na(bool_valid_vj)))
+    stopifnot(!any(is.na(bool_chain)))
+    stopifnot(!any(is.na(bool_perc_N)))
+    stopifnot(!any(is.na(bool_num_nonATGCN)))
+    stopifnot(!any(is.na(bool_none_empty)))
+    stopifnot(!any(is.na(bool_NA)))
+    stopifnot(!any(is.na(bool_len_mod3)))
+
     bool = bool_valid_vj & bool_chain & bool_perc_N & bool_num_nonATGCN & bool_none_empty & bool_NA & bool_len_mod3
     
     # count
