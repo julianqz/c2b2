@@ -425,3 +425,100 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 
 # TODO
 # perform_qc_cell = function() { }
+
+
+#' BCR QC & post-QC split
+#' 
+#' @param   db          data.frame
+#' @param   seq_level   Boolean. Whether to perform sequence-level QC.
+#' @param   cell_level  Boolean. Whether to perform cell-level QC.
+#' @param   split       Boolean. Whether to split by heavy/light and by 
+#'                      productive/non-productive.
+#' @param   col_prod    Column name for productive/non-productive.
+#' @param   val_prod    Value in `col_prod` indicating productive.
+#' @param   outname     Stem of output filename. Prefix to 
+#'                      `_qc_[heavy|light]_[pr|npr].tsv`.
+#' @param   outdir      Path to output directory.
+#' @param   ...         All other parameters are passed to helper functions.        
+
+perform_qc = function(db, seq_level=T, cell_level=F, 
+                      split=T, col_prod, val_prod, outname, outdir,
+                      col_v_call, col_d_call, col_j_call, col_c_call,
+                      check_valid_vj=F, 
+                      check_chain_consistency=F, 
+                      check_perc_N=F, max_perc_N, col_perc_N, last_pos_N,
+                      check_num_nonATGCN=F, col_obsv, col_germ,
+                      max_num_nonATGCN, last_pos_nonATGCN,
+                      check_none_empty=F, col_none_empty,
+                      check_NA=F, col_NA,
+                      check_len_mod3=F, col_len_mod3) {
+    
+    # currently only supporing IG, not TR
+    chain_type = "IG"
+    
+    if (seq_level) {
+        db = perform_qc_seq(db, 
+                            chain_type=chain_type,
+                            col_v_call, col_d_call, col_j_call, col_c_call,
+                            check_valid_vj, 
+                            check_chain_consistency, 
+                            check_perc_N, max_perc_N, col_perc_N, last_pos_N,
+                            check_num_nonATGCN, col_obsv, col_germ,
+                            max_num_nonATGCN, last_pos_nonATGCN,
+                            check_none_empty, col_none_empty,
+                            check_NA, col_NA,
+                            check_len_mod3, col_len_mod3)
+    }
+    
+    if (cell_level) {
+        # TODO
+        # db = perform_qc_cell(db)
+    }
+    
+    
+    setwd(outdir)
+    
+    if (split) {
+        bool_heavy = tolower(substr(db[[col_v_call]], 1, 3))=="igh"
+        bool_pr = db[[col_prod]]==val_prod
+        
+        db_heavy_pr = db[bool_heavy & bool_pr, ]
+        db_heavy_npr = db[bool_heavy & !bool_pr, ]
+        db_light_pr = db[!bool_heavy & bool_pr, ]
+        db_light_npr = db[!bool_heavy & !bool_pr, ]
+        
+        if (nrow(db_heavy_pr)>0) {
+            f = paste0(outname, "_qc_heavy_pr.tsv")
+            write.table(db_heavy_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        } else {
+            cat("\nNo data left for heavy & productive.\n")
+        }
+        
+        if (nrow(db_heavy_npr)>0) {
+            f = paste0(outname, "_qc_heavy_npr.tsv")
+            write.table(db_heavy_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        } else {
+            cat("\nNo data left for heavy & non-productive.\n")
+        }
+        
+        if (nrow(db_light_pr)>0) {
+            f = paste0(outname, "_qc_light_pr.tsv")
+            write.table(db_light_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        } else {
+            cat("\nNo data left for light & productive.\n")
+        }
+        
+        if (nrow(db_light_npr)>0) {
+            f = paste0(outname, "_qc_light_npr.tsv")
+            write.table(db_light_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        } else {
+            cat("\nNo data left for light & non-productive.\n")
+        }
+        
+    } else {
+        f = paste0(outname, "_qc.tsv")
+        write.table(db, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+    }
+    
+}
+
