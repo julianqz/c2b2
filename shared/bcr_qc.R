@@ -427,22 +427,21 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 # perform_qc_cell = function() { }
 
 
-#' BCR QC & post-QC split
+#' BCR sequence-level and/or cell-level QC
 #' 
-#' @param   db          data.frame
+#' @param   db_name     Name of tab-separated file with headers that contains
+#'                      input data
 #' @param   seq_level   Boolean. Whether to perform sequence-level QC.
 #' @param   cell_level  Boolean. Whether to perform cell-level QC.
-#' @param   split       Boolean. Whether to split by heavy/light and by 
-#'                      productive/non-productive.
-#' @param   col_prod    Column name for productive/non-productive.
-#' @param   val_prod    Value in `col_prod` indicating productive.
 #' @param   outname     Stem of output filename. Prefix to 
-#'                      `_qc_[heavy|light]_[pr|npr].tsv`.
+#'                      `_qc.tsv`.
 #' @param   outdir      Path to output directory.
 #' @param   ...         All other parameters are passed to helper functions.        
+#' 
+#' @returns Writes a `[outname]_qc.tsv` to `outdir`.
 
-perform_qc = function(db, seq_level=T, cell_level=F, 
-                      split=T, col_prod, val_prod, outname, outdir,
+perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
+                      chain_type,
                       col_v_call, col_d_call, col_j_call, col_c_call,
                       check_valid_vj=F, 
                       check_chain_consistency=F, 
@@ -453,12 +452,10 @@ perform_qc = function(db, seq_level=T, cell_level=F,
                       check_NA=F, col_NA,
                       check_len_mod3=F, col_len_mod3) {
     
-    # currently only supporing IG, not TR
-    chain_type = "IG"
+    db = read.table(db_name, header=T, sep="\t", stringsAsFactors=F)
     
     if (seq_level) {
-        db = perform_qc_seq(db, 
-                            chain_type=chain_type,
+        db = perform_qc_seq(db, chain_type,
                             col_v_call, col_d_call, col_j_call, col_c_call,
                             check_valid_vj, 
                             check_chain_consistency, 
@@ -477,48 +474,69 @@ perform_qc = function(db, seq_level=T, cell_level=F,
     
     
     setwd(outdir)
+    f = paste0(outname, "_qc.tsv")
+    write.table(db, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+}
+
+
+#' Post-QC split
+#' 
+#' Split by heavy/light and by productive/non-productive
+#' 
+#' @param   db_name     Name of tab-separated file with headers that contains
+#'                      input data
+#' @param   seq_level   Boolean. Whether to perform sequence-level QC.
+#' @param   cell_level  Boolean. Whether to perform cell-level QC.
+#' @param   col_v_call  Column name for V gene annotation. 
+#' @param   col_prod    Column name for productive/non-productive.
+#' @param   val_prod    Value in `col_prod` indicating productive.
+#' @param   outname     Stem of output filename. Prefix to 
+#'                      `_[heavy|light]_[pr|npr].tsv`.
+#' @param   outdir      Path to output directory.
+#' 
+#' @returns Writes `[outname]_[heavy|light]_[pr|npr].tsv` to `outdir`.
+#' 
+#' @details Currently only supports chain_type="IG" ("TR" not yet supported).
+#'          Relies on "IG[HKL]" in V gene annotation to identify the locus.
+
+split_db = function(db_name, col_v_call, col_prod, val_prod, outname, outdir) {
     
-    if (split) {
-        bool_heavy = tolower(substr(db[[col_v_call]], 1, 3))=="igh"
-        bool_pr = db[[col_prod]]==val_prod
-        
-        db_heavy_pr = db[bool_heavy & bool_pr, ]
-        db_heavy_npr = db[bool_heavy & !bool_pr, ]
-        db_light_pr = db[!bool_heavy & bool_pr, ]
-        db_light_npr = db[!bool_heavy & !bool_pr, ]
-        
-        if (nrow(db_heavy_pr)>0) {
-            f = paste0(outname, "_qc_heavy_pr.tsv")
-            write.table(db_heavy_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        } else {
-            cat("\nNo data left for heavy & productive.\n")
-        }
-        
-        if (nrow(db_heavy_npr)>0) {
-            f = paste0(outname, "_qc_heavy_npr.tsv")
-            write.table(db_heavy_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        } else {
-            cat("\nNo data left for heavy & non-productive.\n")
-        }
-        
-        if (nrow(db_light_pr)>0) {
-            f = paste0(outname, "_qc_light_pr.tsv")
-            write.table(db_light_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        } else {
-            cat("\nNo data left for light & productive.\n")
-        }
-        
-        if (nrow(db_light_npr)>0) {
-            f = paste0(outname, "_qc_light_npr.tsv")
-            write.table(db_light_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        } else {
-            cat("\nNo data left for light & non-productive.\n")
-        }
-        
+    db = read.table(db_name, header=T, sep="\t", stringsAsFactors=F)
+    
+    bool_heavy = tolower(substr(db[[col_v_call]], 1, 3))=="igh"
+    bool_pr = db[[col_prod]]==val_prod
+    
+    db_heavy_pr = db[bool_heavy & bool_pr, ]
+    db_heavy_npr = db[bool_heavy & !bool_pr, ]
+    db_light_pr = db[!bool_heavy & bool_pr, ]
+    db_light_npr = db[!bool_heavy & !bool_pr, ]
+    
+    if (nrow(db_heavy_pr)>0) {
+        f = paste0(outname, "_heavy_pr.tsv")
+        write.table(db_heavy_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
     } else {
-        f = paste0(outname, "_qc.tsv")
-        write.table(db, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\nNo data for heavy & productive.\n")
+    }
+    
+    if (nrow(db_heavy_npr)>0) {
+        f = paste0(outname, "_heavy_npr.tsv")
+        write.table(db_heavy_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+    } else {
+        cat("\nNo data for heavy & non-productive.\n")
+    }
+    
+    if (nrow(db_light_pr)>0) {
+        f = paste0(outname, "_light_pr.tsv")
+        write.table(db_light_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+    } else {
+        cat("\nNo data for light & productive.\n")
+    }
+    
+    if (nrow(db_light_npr)>0) {
+        f = paste0(outname, "_light_npr.tsv")
+        write.table(db_light_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+    } else {
+        cat("\nNo data for light & non-productive.\n")
     }
     
 }
-
