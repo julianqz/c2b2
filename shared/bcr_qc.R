@@ -202,10 +202,11 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         
         # TRUE means consistent
         bool_chain = sapply(1:nrow(db), function(i){
-            inspect_chain_consistency(vg=ifelse(bool_v, db[[col_v_call]][i], NULL),
-                                      dg=ifelse(bool_d, db[[col_d_call]][i], NULL),
-                                      jg=ifelse(bool_j, db[[col_j_call]][i], NULL),
-                                      cg=ifelse(bool_c, db[[col_c_call]][i], NULL),
+            # DO NOT use `NULL` inside ifelse; will cause error; use `NA` instead
+            inspect_chain_consistency(vg=ifelse(bool_v, db[[col_v_call]][i], NA),
+                                      dg=ifelse(bool_d, db[[col_d_call]][i], NA),
+                                      jg=ifelse(bool_j, db[[col_j_call]][i], NA),
+                                      cg=ifelse(bool_c, db[[col_c_call]][i], NA),
                                       loci=chain_type,
                                       verbose=F)
         })

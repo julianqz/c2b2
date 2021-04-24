@@ -75,13 +75,8 @@ source(opt$helper)
 
 # parse 
 
-cat("opt$qcColC is.na:", is.na(opt$qcColC), "\n")
-cat("opt$qcColC str:", str(opt$qcColC), "\n")
-cat("opt$qcColC class:", class(opt$qcColC), "\n")
-
-if (opt$qcColC=="NA") {
-    col_c_call=NA
-}
+# if --qcColC is set via `-D` in command line as `"NA"`
+# is.na(opt$qcColC) will be TRUE
 
 # \s is space
 # ? means preceding item is optional and will be matched at most once
