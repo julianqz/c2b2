@@ -44,7 +44,7 @@ usage () {
     echo -e "  -J  [IG] Path to IGDATA."
     echo -e "  -K  [IG] Path to igblastn."
     echo -e "  -L  [IG] Path to IMGT germline reference fastas."
-    echo -e "  -M  [IG] Organism."
+    echo -e "  -M  [IG] Organism. {human, mouse, etc.}"
     echo -e "  -N  [IG] Loci. One of {ig, tr}."
     echo -e "  -O  [IG] --vdb. Name of custom V reference in IgBLAST database/."
     echo -e "  -P  [IG] --ddb. Name of custom D reference in IgBLAST database/."
