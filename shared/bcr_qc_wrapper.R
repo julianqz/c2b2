@@ -22,6 +22,18 @@ option_list = list(
                 help="[outname]_qc.tsv."),
     make_option("--qcOutdir", action="store", default=NA, type="character", 
                 help="Path to write [outname]_qc.tsv."),
+    make_option("--qcColV", action="store", default=NA, type="character", 
+                help="col_v_call"),
+    make_option("--qcColD", action="store", default=NA, type="character", 
+                help="col_d_call."),
+    make_option("--qcColJ", action="store", default=NA, type="character", 
+                help="col_j_call."),
+    make_option("--qcColC", action="store", default=NA, type="character", 
+                help="col_c_call."),
+    make_option("--qcColObsv", action="store", default=NA, type="character", 
+                help="col_obsv."),
+    make_option("--qcColGerm", action="store", default=NA, type="character", 
+                help="col_germ."),
     make_option("--qcMaxPercN", action="store", default=10, type="numeric", 
                 help="max_perc_N."),
     make_option("--qcColPercN", action="store", default="sequence_alignment", type="character", 
@@ -34,6 +46,10 @@ option_list = list(
                 default="PRCONS, CREGION, germline_alignment, junction, productive", 
                 type="character", 
                 help="col_NA."),
+    make_option("--qcColLenMod3", action="store", 
+                default="junction", 
+                type="character", 
+                help="col_len_mod3."),
     make_option("--sp", action="store", default=FALSE, type="logical", 
                 help="Boolean. Whether to split db."),
     make_option("--spDb", action="store", default=NA, type="character", 
@@ -42,6 +58,12 @@ option_list = list(
                 help="[outname]_[heavy|light]_[pr|npr].tsv."),
     make_option("--spOutdir", action="store", default=NA, type="character", 
                 help="Path to write [outname]_[heavy|light]_[pr|npr].tsv.")
+    make_option("--spColV", action="store", default=NA, type="character", 
+                help="col_v_call."),
+    make_option("--spColProd", action="store", default=NA, type="character", 
+                help="col_prod."),
+    make_option("--spValProd", action="store", default=TRUE, type="logical", 
+                help="val_prod.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -68,20 +90,20 @@ if (opt$qc) {
     perform_qc(db_name=opt$qcDb, seq_level=opt$qcSeq, cell_level=opt$qcCell, 
                outname=opt$qcOutname, outdir=opt$qcOutdir,
                chain_type="IG",
-               col_v_call="v_call", col_d_call="d_call", 
-               col_j_call="j_call", col_c_call="c_gene",
+               col_v_call=opt$qcColV, col_d_call=opt$qcColD, 
+               col_j_call=opt$qcColJ, col_c_call=opt$qcColC,
                check_valid_vj=T, 
                check_chain_consistency=T, 
                check_perc_N=T, max_perc_N=opt$qcMaxPercN, 
                col_perc_N=col_perc_N, last_pos_N=312,
-               check_num_nonATGCN=T, col_obsv="sequence_alignment", 
-               col_germ="germline_alignment",
+               check_num_nonATGCN=T, col_obsv=opt$qcColObsv, 
+               col_germ=opt$qcColGerm,
                max_num_nonATGCN=opt$qcMaxNumNonATGCN, last_pos_nonATGCN=312,
                check_none_empty=T, 
                col_none_empty=col_none_empty,
                check_NA=T, 
                col_NA=col_NA,
-               check_len_mod3=T, col_len_mod3="junction")
+               check_len_mod3=T, col_len_mod3=opt$qcColLenMod3)
     
 }
 
@@ -89,8 +111,8 @@ if (opt$qc) {
 
 if (opt$sp) {
     
-    split_db(db_name=opt$spDb, col_v_call="v_call", 
-             col_prod="productive", val_prod=TRUE, 
+    split_db(db_name=opt$spDb, col_v_call=opt$spColV, 
+             col_prod=opt$spColProd, val_prod=opt$spValProd, 
              outname=opt$spOutname, outdir=opt$spOutdir)
     
 }
