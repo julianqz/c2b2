@@ -95,7 +95,7 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:h" OP
         ;;
     K)  PATH_IGBLASTN=$(realpath "${OPTARG}")
         ;;
-    L)  PATH_REFS=$(realpath "${OPTARG}")
+    L)  PATH_REFS="${OPTARG}"
         ;;
     M)  IG_ORGANISM="${OPTARG}"
 		;;
