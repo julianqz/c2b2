@@ -116,13 +116,13 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
 #'            Also see `inspect_chain_consistency`.
 #'
 #'          - `check_perc_N` checks if the % of positions that are N in 
-#'            `col_perc_N` from position 1 thru `last_pos_N` is `<` (strictly)
+#'            `col_perc_N` from position 1 thru `last_pos_N` is `<=` (at most)
 #'            `max_perc_N`. This check is skipped for a row which has
 #'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
 #'
 #'          - `check_num_nonATGCN` checks if the number of positions that are
 #'            non-ATGCN in `col_obsv`, between position 1 thru `last_pos_nonATGCN`,
-#'            at positions that are ATGCN in `col_germ`, is `<` (strictly)
+#'            at positions that are ATGCN in `col_germ`, is `<=` (at most)
 #'            `max_num_nonATGCN`. This check is skipped for a row which has
 #'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
 #'
@@ -230,7 +230,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         # matrix, even when col_perc_N is of length 1
         # each col is a col in col_perc_N
         # each row is a seq in db
-        # TRUE means % of N's in pos 1 thru last_pos_N < max_perc_N
+        # TRUE means % of N's in pos 1 thru last_pos_N <= max_perc_N
         mtx_perc_N = do.call(cbind, 
                              sapply(1:length(col_perc_N), function(i){
                                  s = col_perc_N[i]
@@ -248,14 +248,14 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                                  # calc %
                                  cur_s_perc = cur_s_count / p * 100
                                  
-                                 return( (cur_s_perc < max_perc_N) | bool_skip )
+                                 return( (cur_s_perc <= max_perc_N) | bool_skip )
                              }, simplify=F))
         # sum across columns
         # if all TRUE, rowSums should be the same as number of cols
         bool_perc_N = rowSums(mtx_perc_N, na.rm=T) == ncol(mtx_perc_N)
         
         # count
-        cat("\ncheck_perc_N ( max_perc_N=", max_perc_N, "; strict <):\n")
+        cat("\ncheck_perc_N ( max_perc_N=", max_perc_N, "; <=):\n")
         cat("cols:", col_perc_N, "\n")
         print(table(bool_perc_N, useNA="ifany"))
         cat("\n")
@@ -302,12 +302,12 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
             return(cur_obsv_count)
         })
         
-        # TRUE means # of non-ATGCs in pos 1 thru last_pos_nonATGCN < max_num_nonATGCN
+        # TRUE means # of non-ATGCs in pos 1 thru last_pos_nonATGCN <= max_num_nonATGCN
         # skip check if germline missing (and set to TRUE for that row)
-        bool_num_nonATGCN = (obsv_count < max_num_nonATGCN) | bool_skip
+        bool_num_nonATGCN = (obsv_count <= max_num_nonATGCN) | bool_skip
           
         # count
-        cat("\ncheck_num_nonATGCN ( max_num_nonATGCN=", max_num_nonATGCN, "; strict <):\n")
+        cat("\ncheck_num_nonATGCN ( max_num_nonATGCN=", max_num_nonATGCN, "; <=):\n")
         cat("observed col:", col_obsv, "; germline col:", col_germ, "\n")
         print(table(bool_num_nonATGCN, useNA="ifany"))
         cat("\n")
