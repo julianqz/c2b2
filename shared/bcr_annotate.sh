@@ -378,7 +378,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		&>> "${PATH_LOG_ID}"
 
     	# set input name for split db
-    	PATH_INPUT_SP="${PATH_OUTPUT_ID}${CUR_ID}_qc.tsv"
+    	PATH_INPUT_SP="${PATH_OUTPUT_ID}${CUR_ID}_qc-pass.tsv"
 
     else
     	# set input name for split db
@@ -398,7 +398,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		--qc "FALSE" \
     		--sp "TRUE" \
     		--spDb "${PATH_INPUT_SP}" \
-    		--spOutname "${CUR_ID} " \
+    		--spOutname "${CUR_ID}_qc-pass" \
     		--spOutdir "${PATH_OUTPUT_ID}" \
     		--spColV "${SP_COL_V}" \
     		--spColProd "${SP_COL_PROD}" \
