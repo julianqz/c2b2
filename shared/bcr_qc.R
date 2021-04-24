@@ -329,14 +329,9 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     if (check_none_empty) {
         
-        cat("before:", col_none_empty, "\n")
-        
         # the next stopifnot will fail if column does not exist in db
         # remove such cols first
         col_none_empty = col_none_empty[col_none_empty %in% colnames(db)]
-        
-        cat("after:", col_none_empty, "\n")
-        
         stopifnot(length(col_none_empty)>=1)
         
         # check that all columns to be checked are characters
