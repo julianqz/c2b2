@@ -106,7 +106,8 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
 #'                                      strings is/are expected. Lengths will be calculated
 #'                                      on the fly.
 #' 
-#' @returns A new `db` subset to rows passing all checks of choice.
+#' @returns A bool vector of length `nrow(db)` indicating whether each row
+#'          passed all checks of choice.
 #'
 #' @details - `check_valid_vj`: both V and J start with "IG" or "TR"
 #'
@@ -443,8 +444,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     print(table(bool, useNA="ifany"))
     cat("\n")
     
-    # subset
-    return(db[bool, ])
+    return(bool)
 }
 
 
@@ -463,7 +463,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 #' @param   outdir      Path to output directory.
 #' @param   ...         All other parameters are passed to helper functions.        
 #' 
-#' @returns Writes a `[outname]_qc.tsv` to `outdir`.
+#' @returns Writes a `[outname]_qc-pass/fail.tsv` to `outdir`.
 
 perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
                       chain_type,
@@ -480,27 +480,43 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
     db = read.table(db_name, header=T, sep="\t", stringsAsFactors=F)
     
     if (seq_level) {
-        db = perform_qc_seq(db, chain_type,
-                            col_v_call, col_d_call, col_j_call, col_c_call,
-                            check_valid_vj, 
-                            check_chain_consistency, 
-                            check_perc_N, max_perc_N, col_perc_N, last_pos_N,
-                            check_num_nonATGCN, col_obsv, col_germ,
-                            max_num_nonATGCN, last_pos_nonATGCN,
-                            check_none_empty, col_none_empty,
-                            check_NA, col_NA,
-                            check_len_mod3, col_len_mod3)
+        bool_seq = perform_qc_seq(db, chain_type,
+                                  col_v_call, col_d_call, col_j_call, col_c_call,
+                                  check_valid_vj, 
+                                  check_chain_consistency, 
+                                  check_perc_N, max_perc_N, col_perc_N, last_pos_N,
+                                  check_num_nonATGCN, col_obsv, col_germ,
+                                  max_num_nonATGCN, last_pos_nonATGCN,
+                                  check_none_empty, col_none_empty,
+                                  check_NA, col_NA,
+                                  check_len_mod3, col_len_mod3)
+    } else {
+        bool_seq = rep(T, nrow(db))
     }
     
-    if (cell_level) {
-        # TODO
-        # db = perform_qc_cell(db)
-    }
+    # if (cell_level) {
+    #     # TODO
+    #     # bool_cell = perform_qc_cell(db)
+    # } else {
+         bool_cell = rep(T, nrow(db))
+    # }
     
-    
+    bool_final = bool_seq & bool_cell
+         
     setwd(outdir)
-    f = paste0(outname, "_qc.tsv")
-    write.table(db, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+    
+    if (any(bool_final)) {
+        f = paste0(outname, "_qc-pass.tsv")
+        write.table(db[bool_final, ], file=f, quote=F, sep="\t", 
+                    row.names=F, col.names=T)
+    }
+    
+    if (any(!bool_final)) {
+        f = paste0(outname, "_qc-fail.tsv")
+        write.table(db[!bool_final, ], file=f, quote=F, sep="\t", 
+                    row.names=F, col.names=T)
+    }
+    
 }
 
 
