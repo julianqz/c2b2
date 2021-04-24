@@ -296,12 +296,10 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         		--log "${PATH_OUTPUT_ID}log_makedb_${ANNOTATOR}_${CUR_ID}.log" \
         		--failed \
         		--extended \
-        		"${PARTIAL}" \
         		--format "${MK_FORMAT}" \
         		-i "${PATH_ALIGN}" \
         		-r "${PATH_REFS}concat_no_dup_"*.fasta \
         		-s "${PATH_INPUT_IG}" \
-        		"${CSV_10X}" \
         		&>> "${PATH_LOG_ID}"
 
         else
