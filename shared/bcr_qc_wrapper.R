@@ -75,6 +75,10 @@ source(opt$helper)
 
 # parse 
 
+if (opt$qcColC=="NA") {
+    col_c_call=NA
+}
+
 # \s is space
 # ? means preceding item is optional and will be matched at most once
 col_perc_N = strsplit(opt$qcColPercN, "\\s?,\\s?")[[1]]
