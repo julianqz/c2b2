@@ -184,6 +184,7 @@ echo "BOOL_MK: ${BOOL_MK}" &>> "${PATH_LOG}"
 echo "BOOL_QC: ${BOOL_QC}" &>> "${PATH_LOG}"
 echo "BOOL_SP: ${BOOL_SP}" &>> "${PATH_LOG}"
 
+echo "${IG_ORGANISM}" &>> "${PATH_LOG}"
 
 N_LINES=$(wc -l < "${PATH_CSV}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
