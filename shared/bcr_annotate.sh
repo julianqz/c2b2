@@ -229,7 +229,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
 
     # sample-specific log
-    PATH_LOG_ID="${PATH_AUX}log_annotation_${RUN_TYPE}_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
+    PATH_LOG_ID="${PATH_AUX}log_bcr_annotate_${RUN_TYPE}_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
     
     # initiate log outside any if/else so that anything from inside if/else can use &>>
     echo "${PROJ_ID}_${RUN_TYPE}_${CUR_ID}" &> "${PATH_LOG_ID}"
@@ -284,7 +284,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
     		echo "- running MakeDb.py; annotator is ${ANNOTATOR}" &>> "${PATH_LOG}"
 
-    		# do not put "" around ${PATH_REFS} (otherwise * will be interpreted as is)
+    		# do not put "" around [VDJ] (otherwise regex will be interpreted as is)
 			# output: [outname]_db-pass.tab
 
 			# if `false` passed to `MK_PARTIAL`, `PARTIAL` is set to empty
@@ -299,7 +299,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         		"${PARTIAL}" \
         		--format "${MK_FORMAT}" \
         		-i "${PATH_ALIGN}" \
-        		-r ${PATH_REFS} \
+        		-r "${PATH_REFS}concat_no_dup_"[VDJ].fasta \
         		-s "${PATH_INPUT_IG}" \
         		"${CSV_10X}" \
         		&>> "${PATH_LOG_ID}"
