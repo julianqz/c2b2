@@ -378,7 +378,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		&>> "${PATH_LOG_ID}"
 
     	# set input name for split db
-    	PATH_INPUT_SP="${CUR_ID}_qc.tsv"
+    	PATH_INPUT_SP="${PATH_OUTPUT_ID}${CUR_ID}_qc.tsv"
 
     else
     	# set input name for split db
