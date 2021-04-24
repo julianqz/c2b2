@@ -59,19 +59,21 @@ usage () {
     echo -e "  -W  [MK] --format. One of {airr, changeo}."
 	echo -e "  -X  [QCSP] Path to wrapper script to perform QC & split."
     echo -e "  -Y  [QCSP] Path to helper script to perform QC & split."
-    echo -e "  -Z  [QCSP] --qcMaxPercN."
-    echo -e "  -1  [QCSP] --qcColPercN. If multuple values, separate by comma.\n" \
+    echo -e "  -Z  [QCSP] --qcSeq. Boolean."
+    echo -e "  -1  [QCSP] --qcCell. Boolean."
+    echo -e "  -2  [QCSP] --qcMaxPercN."
+    echo -e "  -3  [QCSP] --qcColPercN. If multuple values, separate by comma.\n" \
             "             E.g. 'sequence_alignment, junction' "
-    echo -e "  -2  [QCSP] --qcMaxNumNonATGCN."
-    echo -e "  -3  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
+    echo -e "  -4  [QCSP] --qcMaxNumNonATGCN."
+    echo -e "  -5  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, junction' "
-    echo -e "  -4  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
+    echo -e "  -6  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, junction, PRCONS' "
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:h" OPT; do
     case "$OPT" in
     A)  PROJ_ID="${OPTARG}"
         ;;
@@ -123,15 +125,19 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:h" OP
 		;;
 	Y)  PATH_SCRIPT_QCSP_MAIN=$(realpath "${OPTARG}")
 		;;
-	Z)  QC_MAX_PERC_N="${OPTARG}"
+	Z)  BOOL_QC_SEQ="${OPTARG}"
 		;;
-	1)  QC_COL_PERC_N="${OPTARG}"
+	1)  BOOL_QC_CELL="${OPTARG}"
 		;;
-	2)  QC_MAX_NUM_NONATGCN="${OPTARG}"
+	2)  QC_MAX_PERC_N="${OPTARG}"
 		;;
-	3)  QC_COL_NONE_EMPTY="${OPTARG}"
+	3)  QC_COL_PERC_N="${OPTARG}"
 		;;
-	4)  QC_COL_NA="${OPTARG}"
+	4)  QC_MAX_NUM_NONATGCN="${OPTARG}"
+		;;
+	5)  QC_COL_NONE_EMPTY="${OPTARG}"
+		;;
+	6)  QC_COL_NA="${OPTARG}"
 		;;
     h)  usage
         exit
