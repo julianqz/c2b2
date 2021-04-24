@@ -285,7 +285,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		echo "- running MakeDb.py; annotator is ${ANNOTATOR}" &>> "${PATH_LOG}"
 
     		# do not put "" around [VDJ] (otherwise regex will be interpreted as is)
-			# output: [outname]_db-pass.tab
+			# output: [outname]_db-pass.tsv
 
 			# if `false` passed to `MK_PARTIAL`, `PARTIAL` is set to empty
 			# if `MK_10X` is set, `CSV_10X` is set to `--10x ${?}`; otherwise, empty
@@ -308,7 +308,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
     fi
 
-    PATH_MK="${PATH_OUTPUT_ID}${CUR_ID}_db-pass.tab"
+    PATH_MK="${PATH_OUTPUT_ID}${CUR_ID}_db-pass.tsv"
 
 
     # QC
