@@ -245,7 +245,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
     	# output: [outname]_igblast.fmt7
 
-    	AssignGenes.py \
+    	AssignGenes.py igblast \
     		--outdir "${PATH_OUTPUT_ID}" \
     		--outname "${CUR_ID}" \
     		--nproc "${NPROC}" \
