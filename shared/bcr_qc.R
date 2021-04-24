@@ -95,7 +95,8 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
 #' @param   check_none_empty            Boolean. Whether to check for `[Nn]one`
 #'                                      and empty (`""`) values.
 #' @param   col_none_empty              Column name(s) in which to perform 
-#'                                      `check_none_empty`.                                      
+#'                                      `check_none_empty`. Note that such column(s)
+#'                                      should be of class `character`.                                      
 #' @param   check_NA                    Boolean. Whether to check for `NA`.
 #' @param   col_NA                      Column name(s) in which to perform `check_NA`.
 #' @param   check_len_mod3              Boolean. Whether to check that lengths
@@ -126,7 +127,8 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
 #'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
 #'
 #'          - `check_none_empty` checks if `col_none_empty` is `[Nn]one` or `""`.
-#'            This check is skipped for a row which has `NA`.
+#'            This check is for column(s) of class `character`.
+#'            This check is skipped for a row which has `NA`. 
 #'
 #'          - `check_NA` checks if `col_NA` is `NA`.
 #'
@@ -511,9 +513,12 @@ split_db = function(db_name, col_v_call, col_prod, val_prod, outname, outdir) {
     db_light_pr = db[!bool_heavy & bool_pr, ]
     db_light_npr = db[!bool_heavy & !bool_pr, ]
     
+    setwd(outdir)
+    
     if (nrow(db_heavy_pr)>0) {
         f = paste0(outname, "_heavy_pr.tsv")
         write.table(db_heavy_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for heavy & productive:", nrow(db_heavy_pr), "\n")
     } else {
         cat("\nNo data for heavy & productive.\n")
     }
@@ -521,6 +526,7 @@ split_db = function(db_name, col_v_call, col_prod, val_prod, outname, outdir) {
     if (nrow(db_heavy_npr)>0) {
         f = paste0(outname, "_heavy_npr.tsv")
         write.table(db_heavy_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for heavy & non-productive:", nrow(db_heavy_npr), "\n")
     } else {
         cat("\nNo data for heavy & non-productive.\n")
     }
@@ -528,6 +534,7 @@ split_db = function(db_name, col_v_call, col_prod, val_prod, outname, outdir) {
     if (nrow(db_light_pr)>0) {
         f = paste0(outname, "_light_pr.tsv")
         write.table(db_light_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for light & productive:", nrow(db_light_pr), "\n")
     } else {
         cat("\nNo data for light & productive.\n")
     }
@@ -535,6 +542,7 @@ split_db = function(db_name, col_v_call, col_prod, val_prod, outname, outdir) {
     if (nrow(db_light_npr)>0) {
         f = paste0(outname, "_light_npr.tsv")
         write.table(db_light_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for light & non-productive:", nrow(db_light_npr), "\n")
     } else {
         cat("\nNo data for light & non-productive.\n")
     }
