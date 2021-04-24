@@ -224,6 +224,11 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     if (check_perc_N) {
         
+        # the next stopifnot will fail if column does not exist in db
+        # remove such cols first
+        col_perc_N = col_perc_N[col_perc_N %in% colnames(db)]
+        stopifnot(length(col_perc_N)>=1)
+        
         # check that all columns to be checked are characters
         stopifnot(all( sapply(col_perc_N, 
                               function(s){ class(db[[s]]) }) == "character" ))
@@ -267,6 +272,9 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     
     if (check_num_nonATGCN) {
+        
+        # check that col_obsv and col_germ exist
+        stopifnot(all(c(col_obsv, col_germ) %in% colnames(db)))
         
         bool_skip = is.na(db[[col_germ]]) | db[[col_germ]]=="" | tolower(db[[col_germ]])=="none"
         
@@ -320,7 +328,12 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     
     if (check_none_empty) {
-
+        
+        # the next stopifnot will fail if column does not exist in db
+        # remove such cols first
+        col_none_empty = col_none_empty[col_none_empty %in% colnames(db)]
+        stopifnot(length(col_none_empty)>=1)
+        
         # check that all columns to be checked are characters
         stopifnot(all( sapply(col_none_empty, 
                               function(s){ class(db[[s]]) }) == "character" ))
@@ -352,6 +365,10 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     if (check_NA) {
         
+        # remove non-existing columns
+        col_NA = col_NA[col_NA %in% colnames(db)]
+        stopifnot(length(col_NA)>=1)
+        
         # matrix, even when col_NA is of length 1
         # each col is a col in col_NA
         # each row is a seq in db
@@ -376,6 +393,11 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     
     
     if (check_len_mod3) {
+        
+        # the next stopifnot will fail if column does not exist in db
+        # remove such cols first
+        col_len_mod3 = col_len_mod3[col_len_mod3 %in% colnames(db)]
+        stopifnot(length(col_len_mod3)>=1)
         
         # check that all columns to be checked are characters
         stopifnot(all( sapply(col_len_mod3, 
