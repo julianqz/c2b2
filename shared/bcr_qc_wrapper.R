@@ -75,6 +75,10 @@ source(opt$helper)
 
 # parse 
 
+cat("opt$qcColC is.na:", is.na(opt$qcColC), "\n")
+cat("opt$qcColC str:", str(opt$qcColC), "\n")
+cat("opt$qcColC class:", class(opt$qcColC), "\n")
+
 if (opt$qcColC=="NA") {
     col_c_call=NA
 }
