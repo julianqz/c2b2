@@ -3,10 +3,7 @@
 # helpful: http://www.cureffi.org/2014/01/15/running-r-batch-mode-linux/
 
 # wrapper to call perform_qc and split_db from command line via Rscript
-# some parameters for the functions are hard-coded
-# only works with AIRR-C column names
-
-# TODO: how to pass vectors to `col_NA` and `col_none_empty`?
+# some parameters for the functions are hard-coded as AIRR-C column names
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -27,8 +24,16 @@ option_list = list(
                 help="Path to write [outname]_qc.tsv."),
     make_option("--qcMaxPercN", action="store", default=10, type="numeric", 
                 help="max_perc_N."),
+    make_option("--qcColPercN", action="store", default="sequence_alignment", type="character", 
+                help="col_perc_N."),
     make_option("--qcMaxNumNonATGCN", action="store", default=4, type="numeric", 
                 help="max_num_nonATGCN."),
+    make_option("--qcColNoneEmpty", action="store", default="germline_alignment", type="character", 
+                help="col_none_empty."),
+    make_option("--qcColNA", action="store", 
+                default="PRCONS, CREGION, germline_alignment, junction, productive", 
+                type="character", 
+                help="col_NA."),
     make_option("--sp", action="store", default=FALSE, type="logical", 
                 help="Boolean. Whether to split db."),
     make_option("--spDb", action="store", default=NA, type="character", 
@@ -43,6 +48,19 @@ opt = parse_args(OptionParser(option_list=option_list))
 # source helper functions
 source(opt$helper)
 
+# parse 
+
+# \s is space
+# ? means preceding item is optional and will be matched at most once
+col_perc_N = strsplit(opt$qcColPercN, "\\s?,\\s?")[[1]]
+col_none_empty = strsplit(opt$qcColNoneEmpty, "\\s?,\\s?")[[1]]
+col_NA = strsplit(opt$qcColNA, "\\s?,\\s?")[[1]]
+
+# for debugging
+#cat("col_perc_N:", col_perc_N, "; len:", length(col_perc_N), "\n")
+#cat("col_none_empty:", col_none_empty, "; len:", length(col_none_empty), "\n")
+#cat("col_NA:", col_NA, "; len:", length(col_NA), "\n")
+
 # perform QC
 
 if (opt$qc) {
@@ -55,14 +73,14 @@ if (opt$qc) {
                check_valid_vj=T, 
                check_chain_consistency=T, 
                check_perc_N=T, max_perc_N=opt$qcMaxPercN, 
-               col_perc_N="sequence_alignment", last_pos_N=312,
+               col_perc_N=col_perc_N, last_pos_N=312,
                check_num_nonATGCN=T, col_obsv="sequence_alignment", 
                col_germ="germline_alignment",
                max_num_nonATGCN=opt$qcMaxNumNonATGCN, last_pos_nonATGCN=312,
                check_none_empty=T, 
-               col_none_empty=c("germline_alignment"),
+               col_none_empty=col_none_empty,
                check_NA=T, 
-               col_NA=c("PRCONS","CREGION","germline_alignment","junction", "productive"),
+               col_NA=col_NA,
                check_len_mod3=T, col_len_mod3="junction")
     
 }
