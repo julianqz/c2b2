@@ -299,7 +299,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         		"${PARTIAL}" \
         		--format "${MK_FORMAT}" \
         		-i "${PATH_ALIGN}" \
-        		-r "${PATH_REFS}concat_no_dup_"[VDJ].fasta \
+        		-r "${PATH_REFS}concat_no_dup_"*.fasta \
         		-s "${PATH_INPUT_IG}" \
         		"${CSV_10X}" \
         		&>> "${PATH_LOG_ID}"
