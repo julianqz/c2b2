@@ -59,21 +59,31 @@ usage () {
     echo -e "  -W  [MK] --format. One of {airr, changeo}."
 	echo -e "  -X  [QCSP] Path to wrapper script to perform QC & split."
     echo -e "  -Y  [QCSP] Path to helper script to perform QC & split."
-    echo -e "  -Z  [QCSP] --qcSeq. Boolean."
-    echo -e "  -1  [QCSP] --qcCell. Boolean."
-    echo -e "  -2  [QCSP] --qcMaxPercN."
-    echo -e "  -3  [QCSP] --qcColPercN. If multuple values, separate by comma.\n" \
+    echo -e "  -Z  [QCSP] --qcSeq. Boolean for R."
+    echo -e "  -1  [QCSP] --qcCell. Boolean for R."
+    echo -e "  -2  [QCSP] --qcColV."
+    echo -e "  -3  [QCSP] --qcColD."
+    echo -e "  -4  [QCSP] --qcColJ."
+    echo -e "  -5  [QCSP] --qcColC."
+    echo -e "  -6  [QCSP] --qcColObsv."
+    echo -e "  -7  [QCSP] --qcColGerm."
+    echo -e "  -8  [QCSP] --qcMaxPercN."
+    echo -e "  -9  [QCSP] --qcColPercN. If multuple values, separate by comma.\n" \
             "             E.g. 'sequence_alignment, junction' "
-    echo -e "  -4  [QCSP] --qcMaxNumNonATGCN."
-    echo -e "  -5  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
+    echo -e "  -a  [QCSP] --qcMaxNumNonATGCN."
+    echo -e "  -b  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, junction' "
-    echo -e "  -6  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
+    echo -e "  -c  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, junction, PRCONS' "
+	echo -e "  -d  [QCSP] --qcColLenMod3."
+	echo -e "  -e  [QCSP] --spColV."
+	echo -e "  -f  [QCSP] --spColProd."            
+	echo -e "  -g  [QCSP] --spValProd."
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:h" OPT; do
     case "$OPT" in
     A)  PROJ_ID="${OPTARG}"
         ;;
@@ -129,15 +139,35 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:h
 		;;
 	1)  BOOL_QC_CELL="${OPTARG}"
 		;;
-	2)  QC_MAX_PERC_N="${OPTARG}"
+	2)  QC_COL_V="${OPTARG}"
 		;;
-	3)  QC_COL_PERC_N="${OPTARG}"
+	3)  QC_COL_D="${OPTARG}"
 		;;
-	4)  QC_MAX_NUM_NONATGCN="${OPTARG}"
+	4)  QC_COL_J="${OPTARG}"
 		;;
-	5)  QC_COL_NONE_EMPTY="${OPTARG}"
+	5)  QC_COL_C="${OPTARG}"
 		;;
-	6)  QC_COL_NA="${OPTARG}"
+	6)  QC_COL_OBSV="${OPTARG}"
+		;;
+	7)  QC_COL_GERM="${OPTARG}"
+		;;	
+	8)  QC_MAX_PERC_N="${OPTARG}"
+		;;
+	9)  QC_COL_PERC_N="${OPTARG}"
+		;;
+	a)  QC_MAX_NUM_NONATGCN="${OPTARG}"
+		;;
+	b)  QC_COL_NONE_EMPTY="${OPTARG}"
+		;;
+	c)  QC_COL_NA="${OPTARG}"
+		;;
+	d)  QC_COL_LEN_MOD3="${OPTARG}"
+		;;
+	e)  SP_COL_V="${OPTARG}"
+		;;
+	f)  SP_COL_PROD="${OPTARG}"
+		;;
+	g)  SP_VAL_PROD="${OPTARG}"
 		;;
     h)  usage
         exit
@@ -332,11 +362,18 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		--qcDb "${PATH_MK}" \
     		--qcOutname "${CUR_ID}" \
     		--qcOutdir "${PATH_OUTPUT_ID}" \
+    		--qcColV "${QC_COL_V}" \
+    		--qcColD "${QC_COL_D}" \
+    		--qcColJ "${QC_COL_J}" \
+    		--qcColC "${QC_COL_C}" \
+    		--qcColObsv "${QC_COL_OBSV}" \
+    		--qcColGerm "${QC_COL_GERM}" \
     		--qcMaxPercN "${QC_MAX_PERC_N}" \
     		--qcColPercN "${QC_COL_PERC_N}" \
     		--qcMaxNumNonATGCN "${QC_MAX_NUM_NONATGCN}" \
     		--qcColNoneEmpty "${QC_COL_NONE_EMPTY}" \
     		--qcColNA "${QC_COL_NA}" \
+    		--qcColLenMod3 "${QC_COL_LEN_MOD3}" \
     		--sp "FALSE" \
     		&>> "${PATH_LOG_ID}"
 
@@ -363,6 +400,9 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		--spDb "${PATH_INPUT_SP}" \
     		--spOutname "${CUR_ID} " \
     		--spOutdir "${PATH_OUTPUT_ID}" \
+    		--spColV "${SP_COL_V}" \
+    		--spColProd "${SP_COL_PROD}" \
+    		--spValProd "${SP_VAL_PROD}" \
     		&>> "${PATH_LOG_ID}"
    
     fi
