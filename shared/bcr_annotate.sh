@@ -9,7 +9,7 @@
 # 1) In ${PROJ_ID}/aux, an "input_annotate_${PROJ_ID}_${RUN_TYPE}.csv" 
 #    in which each row indicates the sample ID and the path to its input fasta
 #
-# 2) If annotator is imgt, in ${PATH_IMGT} (`-U`), imgt output .zip or .txz files 
+# 2) If annotator is imgt, in ${MK_PATH_IMGT} (`-U`), imgt output .zip or .txz files 
 #    with names that follow ${sample_id}${MK_IMGT_SUFFIX}, where
 #    ${sample_id} matches the sample IDs in aux/input_fasta_${PROJ_ID}_${RUN_TYPE}, and
 #    ${MK_IMGT_SUFFIX} is defined via `-V`
@@ -112,9 +112,8 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:h" OP
  	S)  MK_PARTIAL="${OPTARG}"
  		;;
  	T)  MK_10X="${OPTARG}"
-		MK_10X_SET=true
  		;;
- 	U)  PATH_IMGT=$(realpath "${OPTARG}")
+ 	U)  MK_PATH_IMGT=$(realpath "${OPTARG}")
  		;;
  	V)  MK_IMGT_SUFFIX="${OPTARG}"
  		;;
@@ -273,7 +272,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
     	elif [[ ${ANNOTATOR} == "imgt" ]]; then
 
-    		PATH_ALIGN="${PATH_IMGT}/${CUR_ID}${MK_IMGT_SUFFIX}"
+    		PATH_ALIGN="${MK_PATH_IMGT}/${CUR_ID}${MK_IMGT_SUFFIX}"
 
     	fi
 
