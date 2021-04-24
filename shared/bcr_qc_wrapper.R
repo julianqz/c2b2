@@ -55,9 +55,9 @@ option_list = list(
     make_option("--spDb", action="store", default=NA, type="character", 
                 help="db_name for split_db."),
     make_option("--spOutname", action="store", default=NA, type="character", 
-                help="[outname]_[heavy|light]_[pr|npr].tsv."),
+                help="[outname]_[heavy\\|light]_[pr\\|npr].tsv."),
     make_option("--spOutdir", action="store", default=NA, type="character", 
-                help="Path to write [outname]_[heavy|light]_[pr|npr].tsv.")
+                help="Path to write [outname]_[heavy\\|light]_[pr\\|npr].tsv.")
     make_option("--spColV", action="store", default=NA, type="character", 
                 help="col_v_call."),
     make_option("--spColProd", action="store", default=NA, type="character", 
