@@ -5,60 +5,135 @@
 # Date:   2021-04-22
 #
 # Prereqs:  
-# 1) In ${PROJ_ID}/aux, a csv "input_fasta_${PROJ_ID}_${RUN_ID}" 
+#
+# 1) In ${PROJ_ID}/aux, an "input_annotate_${PROJ_ID}_${RUN_TYPE}.csv" 
 #    in which each row indicates the sample ID and the path to its input fasta
+#
+# 2) If annotator is imgt, in ${PATH_IMGT} (`-U`), imgt output .zip or .txz files 
+#    with names that follow ${sample_id}${MK_IMGT_SUFFIX}, where
+#    ${sample_id} matches the sample IDs in aux/input_fasta_${PROJ_ID}_${RUN_TYPE}, and
+#    ${MK_IMGT_SUFFIX} is defined via `-V`
+#
+# 3) If run type is "10x" (`-B`) and 10x input is indicated for MakeDb.py (`-T`), 
+#    the paths to sample-specific 10x csv/tsv are parsed from a third column in 
+#    "input_fasta_${PROJ_ID}_${RUN_TYPE}.csv"
+#    The filename of the 10x csv/tsv for each sample is assumed to be the same: 
+#    "filtered_contig_annotations.csv"
+#
+# Note:
+# The Boolean run controls, with the exception of BOOL_QC, are not meant to alter the workflow.
+# Rather, they are meant to control whether the workflow is executed in one setting.
+# In other words, setting BOOL_IG to FALSE does not mean MakdeDb.py can run without 
+#    the annotation step having been previously performed.
+# The only exception is BOOL_QC. If FALSE, split_db will run on MakeDb.py output, 
+#    instead of QC output.
+
 
 # Print usage
 usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
-    echo -e "  -J  Project ID."          
-    echo -e "  -Z  Run ID. Usually one of {bulk, mAb, 10x}, but can be anything."              
-    echo -e "  -T  Path to the top-level working dir." 
-    echo -e "  -Y  Number of cores for parallelization." 
-    echo -e "  -A  Whether to run IgBLAST. Boolean."
-    echo -e "  -B  Whether to run MakeDb.py. Boolean."
-    echo -e "  -C  Whether to split by chain. Boolean."
-    echo -e "  -D  Whether to perform additional QC. Boolean."
-    echo -e "  -E  Whether to split by productive vs. non-productive rearrangement. Boolean."
-    echo -e "  -F  Path to script to split by chain."
-    echo -e "  -G  Path to script to perform additional QC."
-    echo -e "  -H  Path to IGDATA."
-    echo -e "  -I  Path to igblastn."
-    echo -e "  -K  Path to IMGT germline reference fastas."
+    echo -e "  -A  Project ID."          
+    echo -e "  -B  Run type. One of {bulk, mAb, 10x}. Note the lowercase 'x'." 
+    echo -e "  -C  Annotator. One of {igblast, imgt}."             
+    echo -e "  -D  Path to the top-level working dir." 
+    echo -e "  -E  Number of cores for parallelization." 
+    echo -e "  -F  Whether to run IgBLAST. Boolean."
+    echo -e "  -G  Whether to run MakeDb.py. Boolean."
+    echo -e "  -H  Whether to perform QC. Boolean."
+    echo -e "  -I  Whether to perform post-QC split. Boolean."
+    echo -e "  -J  [IG] Path to IGDATA."
+    echo -e "  -K  [IG] Path to igblastn."
+    echo -e "  -L  [IG] Path to IMGT germline reference fastas."
+    echo -e "  -M  [IG] Organism."
+    echo -e "  -N  [IG] Loci. One of {ig, tr}."
+    echo -e "  -O  [IG] --vdb. Name of custom V reference in IgBLAST database/."
+    echo -e "  -P  [IG] --ddb. Name of custom D reference in IgBLAST database/."
+    echo -e "  -Q  [IG] --jdb. Name of custom J reference in IgBLAST database/."
+    echo -e "  -R  [IG] --format. One of {blast, airr}."
+    echo -e "  -S  [MK] Whether to set the --partial flag. Boolean."
+    echo -e "  -T  [MK] Whether to set the --10x flag. Boolean.\n" \
+            "           If true, path to sample-specific 10x annotation csv/tsv is parsed (see prereqs)."
+    echo -e "  -U  [MK] If annotator is 'imgt', path to IMGT/HighV-QUEST files."
+    echo -e "  -V  [MK] If annotator is 'imgt', common suffix in IMGT/HighV-QUEST filenames.\n" \
+            "           E.g. '_imgt.txz' or '_imgt.zip' in [sample_id]_imgt.txz or [sample_id]_imgt.zip respectively."
+    echo -e "  -W  [MK] --format. One of {airr, changeo}."
+	echo -e "  -X  [QCSP] Path to wrapper script to perform QC & split."
+    echo -e "  -Y  [QCSP] Path to helper script to perform QC & split."
+    echo -e "  -Z  [QCSP] --qcMaxPercN."
+    echo -e "  -1  [QCSP] --qcColPercN. If multuple values, separate by comma.\n" \
+            "             E.g. 'sequence_alignment, junction' "
+    echo -e "  -2  [QCSP] --qcMaxNumNonATGCN."
+    echo -e "  -3  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
+            "             E.g. 'germline_alignment, junction' "
+    echo -e "  -4  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
+            "             E.g. 'germline_alignment, junction, PRCONS' "
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "J:Z:T:Y:A:B:C:D:E:F:G:H:I:K:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:h" OPT; do
     case "$OPT" in
-    J)  PROJ_ID="${OPTARG}"
+    A)  PROJ_ID="${OPTARG}"
         ;;
-    Z)  RUN_ID="${OPTARG}"
+    B)  RUN_TYPE="${OPTARG}"
 		;;
-    T)  PATH_ROOT=$(realpath "${OPTARG}")
+	C)  ANNOTATOR="${OPTARG}"
+		;;
+    D)  PATH_ROOT=$(realpath "${OPTARG}")
         ;;
-    Y)  NPROC="${OPTARG}"
+    E)  NPROC="${OPTARG}"
         ;;
-    A)  BOOL_IG="${OPTARG}"
+    F)  BOOL_IG="${OPTARG}"
         ;;
-    B)  BOOL_MK="${OPTARG}"
+    G)  BOOL_MK="${OPTARG}"
         ;;
-    C)  BOOL_SC="${OPTARG}"
+    H)  BOOL_QC="${OPTARG}"
         ;;
-    D)  BOOL_QC="${OPTARG}"
+    I)  BOOL_SP="${OPTARG}"
         ;;
-    E)  BOOL_SP="${OPTARG}"
+    J)  PATH_IGDATA=$(realpath "${OPTARG}")
         ;;
-    F)  PATH_SCRIPT_SC=$(realpath "${OPTARG}")
+    K)  PATH_IGBLASTN=$(realpath "${OPTARG}")
         ;;
-    G)  PATH_SCRIPT_QC=$(realpath "${OPTARG}")
+    L)  PATH_REFS=$(realpath "${OPTARG}")
         ;;
-    H)  PATH_IGDATA=$(realpath "${OPTARG}")
-        ;;
-    I)  PATH_IGBLASTN=$(realpath "${OPTARG}")
-        ;;
-    K)  PATH_REF=$(realpath "${OPTARG}")
-        ;;
+    M)  IG_ORGANISM="${OPTARG}"
+ 		;;
+ 	N)  IG_LOCI="${OPTARG}"
+ 		;;
+ 	O)  IG_VDB="${OPTARG}"
+ 		;;
+ 	P)  IG_DDB="${OPTARG}"
+ 		;;
+ 	Q)  IG_JDB="${OPTARG}"
+ 		;;
+ 	R)  IG_FORMAT="${OPTARG}"
+ 		;;
+ 	S)  MK_PARTIAL="${OPTARG}"
+ 		;;
+ 	T)  MK_10X="${OPTARG}"
+		MK_10X_SET=true
+ 		;;
+ 	U)  PATH_IMGT=$(realpath "${OPTARG}")
+ 		;;
+ 	V)  MK_IMGT_SUFFIX="${OPTARG}"
+ 		;;
+ 	W)  MK_FORMAT="${OPTARG}"
+ 		;;
+ 	X)  PATH_SCRIPT_QCSP_WRAPPER=$(realpath "${OPTARG}")
+		;;
+	Y)  PATH_SCRIPT_QCSP_MAIN=$(realpath "${OPTARG}")
+		;;
+	Z)  QC_MAX_PERC_N="${OPTARG}"
+		;;
+	1)  QC_COL_PERC_N="${OPTARG}"
+		;;
+	2)  QC_MAX_NUM_NONATGCN="${OPTARG}"
+		;;
+	3)  QC_COL_NONE_EMPTY="${OPTARG}"
+		;;
+	4)  QC_COL_NA="${OPTARG}"
+		;;
     h)  usage
         exit
         ;;
@@ -72,6 +147,12 @@ while getopts "J:Z:T:Y:A:B:C:D:E:F:G:H:I:K:h" OPT; do
 done
 
 
+if $MK_PARTIAL; then
+	PARTIAL="--partial"
+else
+	PARTIAL=""
+fi
+
 # paths
 
 PATH_PROJ="${PATH_ROOT}/${PROJ_ID}"
@@ -83,135 +164,201 @@ PATH_AUX="${PATH_PROJ}/aux/"
 mkdir -p "${PATH_AUX}"
 
 # output directory
-PATH_OUTPUT="${PATH_PROJ}/data/annotate_${RUN_ID}/"
+PATH_OUTPUT="${PATH_PROJ}/data/annotate_${RUN_TYPE}/"
 mkdir -p "${PATH_OUTPUT}"
 
 
-# overall log for looping thru sample list
-PATH_LOG="${PATH_AUX}log_bcr_annotate_${RUN_ID}_$(date '+%m%d%Y_%H%M%S').log"
+# overall log for looping thru sample csv
+PATH_LOG="${PATH_AUX}log_bcr_annotate_${RUN_TYPE}_$(date '+%m%d%Y_%H%M%S').log"
 
-NAME_LIST="input_fasta_${PROJ_ID}_${RUN_ID}.csv"
-PATH_LIST="${PATH_AUX}${NAME_LIST}" 
+NAME_CSV="input_annotate_${PROJ_ID}_${RUN_TYPE}.csv"
+PATH_CSV="${PATH_AUX}${NAME_CSV}" 
 
 
 MakeDb.py --version &> "${PATH_LOG}"
 echo $("${PATH_IGBLASTN}" -version | head -n 1) &>> "${PATH_LOG}"
 echo "NPROC=${NPROC}" &>> "${PATH_LOG}"
-echo "Input fasta list: ${NAME_LIST}" &>> "${PATH_LOG}"
+echo "Input csv: ${NAME_CSV}" &>> "${PATH_LOG}"
+echo "ANNOTATOR: ${ANNOTATOR}" &>> "${PATH_LOG}"
 echo "BOOL_IG: ${BOOL_IG}" &>> "${PATH_LOG}"
 echo "BOOL_MK: ${BOOL_MK}" &>> "${PATH_LOG}"
-echo "BOOL_SC: ${BOOL_SC}" &>> "${PATH_LOG}"
 echo "BOOL_QC: ${BOOL_QC}" &>> "${PATH_LOG}"
 echo "BOOL_SP: ${BOOL_SP}" &>> "${PATH_LOG}"
 
 
-N_LINES=$(wc -l < "${PATH_LIST}")
+N_LINES=$(wc -l < "${PATH_CSV}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
 
 
 for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
-	# read sample ID from file
-	CUR_ID=$(sed "${IDX}q;d" "${PATH_LIST}") 
 
-	echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
-
+	# input_annotate_${PROJ_ID}_${RUN_TYPE}.csv
 	
-    #* sample input fastq files
-    RAW_1="${PATH_RAW}/${CUR_ID}_R1.fastq"
-    RAW_2="${PATH_RAW}/${CUR_ID}_R2.fastq"
+	# read current line
+	CUR_LINE=$(sed "${IDX}q;d" "${PATH_CSV}") 
 
-    
-    # phix removal
-    if $BOOL_PR; then
+	# split strings in unix
+	# https://linuxhint.com/bash_split_examples/ 
+	# following example 2
 
-        echo "- phix removal" &>> "${PATH_LOG}"
+	# $IFS: internal field separator (default is white space)
+	# -r: read backslash (\) as a character rather than escape character
+	# -a: store split words into an array variable
+	IFS=","
+	read -a strarr <<< "${CUR_LINE}"
 
-        # sample-specific log for phix removal
-        PATH_LOG_PR_ID="${PATH_AUX}log_PR_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
+	# ID
+	CUR_ID=${strarr[0]}
 
-        # R1
-        echo "   - R1" &>> "${PATH_LOG}"
-        echo "---------------- R1 ----------------" &> "${PATH_LOG_PR_ID}"
-        "${PATH_SCRIPT_PR}" \
-            -s "${RAW_1}" \
-            -r "${PATH_REF_PHIX}" \
-            -n "${CUR_ID}_R1" \
-            -o "${PATH_OUTPUT_PR}" \
-            -p "${NPROC}" \
-            -t "${PATH_SCRIPT_Q2A}" \
-            &>> "${PATH_LOG_PR_ID}"
+    # sample-specific path to input fasta file
+    PATH_INPUT_IG=${strarr[1]}
 
-        # R2
-        echo "   - R2" &>> "${PATH_LOG}"
-        echo "---------------- R2 ----------------" &>> "${PATH_LOG_PR_ID}"  
-        "${PATH_SCRIPT_PR}" \
-            -s "${RAW_2}" \
-            -r "${PATH_REF_PHIX}" \
-            -n "${CUR_ID}_R2" \
-            -o "${PATH_OUTPUT_PR}" \
-            -p "${NPROC}" \
-            -t "${PATH_SCRIPT_Q2A}" \
-            &>> "${PATH_LOG_PR_ID}"
+    # sample-specific path to 10x csv/tsv file    
+    if [[ ${RUN_TYPE} == "10x" ]] && $MK_1OX; then
+    	PATH_10X_ID=${strarr[2]}
 
-        # input files to presto-abseq pipeline are now output files from phix removal
-        # phix removal adds "_R2_nophix_selected.fastq" to ${CUR_ID}
-        INPUT_ABSEQ_1="${PATH_OUTPUT_PR}/${CUR_ID}_R1_nophix_selected.fastq"
-        INPUT_ABSEQ_2="${PATH_OUTPUT_PR}/${CUR_ID}_R2_nophix_selected.fastq"
-
+    	# CSV_10X gets passed to MakeDb.py
+    	CSV_10X="--10x ${PATH_10X_ID}filtered_contig_annotations.csv"
     else
-        # input files to presto-abseq pipeline are original files
-        INPUT_ABSEQ_1="${RAW_1}"
-        INPUT_ABSEQ_2="${RAW_2}"
+    	CSV_10X=""
+    fi
+
+    echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
+
+    # sample-specific log
+    PATH_LOG_ID="${PATH_AUX}log_annotation_${RUN_TYPE}_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
+    
+    # initiate log outside any if/else so that anything from inside if/else can use &>>
+    echo "${PROJ_ID}_${RUN_TYPE}_${CUR_ID}" &> "${PATH_LOG_ID}"
+    echo "${PATH_INPUT_IG}" &>> "${PATH_LOG_ID}"
+    echo "${CSV_10X}" &>> "${PATH_LOG_ID}"
+
+    # sample-specific output directory
+    PATH_OUTPUT_ID="${PATH_OUTPUT}${CUR_ID}/"
+    mkdir -p "${PATH_OUTPUT_ID}"
+
+
+    # Run IgBLAST
+    if $BOOL_IG; then
+    	
+    	echo "- running IgBLAST" &>> "${PATH_LOG}"
+
+    	# output: [outname]_igblast.fmt7
+
+    	AssignGenes.py \
+    		--outdir "${PATH_OUTPUT_ID}" \
+    		--outname "${CUR_ID}" \
+    		--nproc "${NPROC}" \
+    		-s "${PATH_INPUT_IG}" \
+    		-b "${PATH_IGDATA}" \
+    		--exec "${PATH_IGBLASTN}" \
+    		--organism "${IG_ORGANISM}" \
+    		--loci "${IG_LOCI}" \
+    		--vdb "${IG_VDB}" \
+    		--ddb "${IG_DDB}" \
+    		--jdb "${IG_JDB}" \
+    		--format "${IG_FORMAT}" \
+    		&>> "${PATH_LOG_ID}"
+
     fi
 
 
-    # presto-abseq pipeline
-    if $BOOL_PA; then
+    # Run MakeDb.py
+    if $BOOL_MK; then
 
-        echo "- presto-abseq pipeline" &>> "${PATH_LOG}"
+    	if [[ ${ANNOTATOR} == "igblast" ]]; then
 
-        # sample-specific log for presto-abseq pipeline
-        PATH_LOG_PA_ID="${PATH_AUX}log_PA_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
+    		PATH_ALIGN="${PATH_OUTPUT_ID}${CUR_ID}_igblast.fmt7"
 
-        # sample-specific presto directory
-        PATH_OUTPUT_PA_ID="${PATH_OUTPUT_PA}${CUR_ID}/"
+    	elif [[ ${ANNOTATOR} == "imgt" ]]; then
 
-        # if existing, remove first
-        if [ -d "${PATH_OUTPUT_PA_ID}" ]; then
-            echo "    Removed pre-exisitng folder for ${CUR_ID}" &>> "${PATH_LOG}"
-            rm -r "${PATH_OUTPUT_PA_ID}"
+    		PATH_ALIGN="${PATH_IMGT}/${CUR_ID}${MK_IMGT_SUFFIX}"
+
+    	fi
+
+    	# assumes that igblast/imgt output exists
+    	if [ -s "${PATH_ALIGN}" ]; then
+
+    		echo "- running MakeDb.py; annotator is ${ANNOTATOR}" &>> "${PATH_LOG}"
+
+    		# do not put "" around ${PATH_REFS} (otherwise * will be interpreted as is)
+			# output: [outname]_db-pass.tab
+
+			# if `false` passed to `MK_PARTIAL`, `PARTIAL` is set to empty
+			# if `MK_10X` is set, `CSV_10X` is set to `--10x ${?}`; otherwise, empty
+
+        	MakeDb.py "${ANNOTATOR}" \
+        		--outdir "${PATH_OUTPUT_ID}" \
+        		--outname "${CUR_ID}" \
+        		--log "${PATH_OUTPUT_ID}log_makedb_${ANNOTATOR}_${CUR_ID}.log" \
+        		--failed \
+        		--extended \
+        		"${PARTIAL}" \
+        		--format "${MK_FORMAT}" \
+        		-i "${PATH_ALIGN}" \
+        		-r ${PATH_REFS} \
+        		-s "${PATH_INPUT_IG}" \
+        		"${CSV_10X}" \
+        		&>> "${PATH_LOG_ID}"
+
+        else
+        	echo "${PATH_ALIGN} does not exist." &>> "${PATH_LOG_ID}"
         fi
 
-        echo "    Created new presto-abseq folder for ${CUR_ID}" &>> "${PATH_LOG}"
-        mkdir "${PATH_OUTPUT_PA_ID}"
+    fi
 
-        "${PATH_SCRIPT_PA}" \
-            -1 "${INPUT_ABSEQ_1}" \
-            -2 "${INPUT_ABSEQ_2}" \
-            -j "${PATH_PRIMER_R1}" \
-            -v "${PATH_PRIMER_R2}" \
-            -c "${PATH_IC}" \
-            -r "${PATH_REF_V}" \
-            -y "${PATH_YAML}" \
-            -n "${CUR_ID}" \
-            -o "${PATH_OUTPUT_PA_ID}" \
-            -x "${COORD}" \
-            -p "${NPROC}" \
-            -t "${PATH_SCRIPT_C}" \
-            -s "${BOOL_CS_KEEP}" \
-            &> "${PATH_LOG_PA_ID}"
+    PATH_MK="${PATH_OUTPUT_ID}${CUR_ID}_db-pass.tab"
 
-        # convert fastq to fasta
-        # creates ${CUR_ID}-final_collapse-unique_atleast-2.fasta
-        cd "${PATH_OUTPUT_PA_ID}"
 
-        echo "    Converting output fastq to fasta" &>> "${PATH_LOG}"
+    # QC
+    if $BOOL_QC; then
 
-        "${PATH_SCRIPT_Q2A}" \
-            "${PATH_OUTPUT_PA_ID}${CUR_ID}-final_collapse-unique_atleast-2.fastq" \
-            &>> "${PATH_LOG_PA_ID}"
+    	echo "- performing QC" &>> "${PATH_LOG}"
+    	
+    	# [outname]_qc.tsv
 
+    	"${PATH_SCRIPT_QCSP_WRAPPER}" \
+    		--helper "${PATH_SCRIPT_QCSP_MAIN}" \
+    		--qc "TRUE" \
+    		--qcSeq "${BOOL_QC_SEQ}" \
+    		--qcCell "${BOOL_QC_CELL}" \
+    		--qcDb "${PATH_MK}" \
+    		--qcOutname "${CUR_ID}" \
+    		--qcOutdir "${PATH_OUTPUT_ID}" \
+    		--qcMaxPercN "${QC_MAX_PERC_N}" \
+    		--qcColPercN "${QC_COL_PERC_N}" \
+    		--qcMaxNumNonATGCN "${QC_MAX_NUM_NONATGCN}" \
+    		--qcColNoneEmpty "${QC_COL_NONE_EMPTY}" \
+    		--qcColNA "${QC_COL_NA}" \
+    		--sp "FALSE" \
+    		&>> "${PATH_LOG_ID}"
+
+    	# set input name for split db
+    	PATH_INPUT_SP="${CUR_ID}_qc.tsv"
+
+    else
+    	# set input name for split db
+    	PATH_INPUT_SP="${PATH_MK}"
+    fi
+
+
+    # split
+    if $BOOL_SP; then
+
+    	echo "- splitting db" &>> "${PATH_LOG}"
+
+    	# output: [outname]_[heavy|light]_[pr|npr].tsv
+
+    	"${PATH_SCRIPT_QCSP_WRAPPER}" \
+    		--helper "${PATH_SCRIPT_QCSP_MAIN}" \
+    		--qc "FALSE" \
+    		--sp "TRUE" \
+    		--spDb "${PATH_INPUT_SP}" \
+    		--spOutname "${CUR_ID} " \
+    		--spOutdir "${PATH_OUTPUT_ID}" \
+    		&>> "${PATH_LOG_ID}"
+   
     fi
 
 done
