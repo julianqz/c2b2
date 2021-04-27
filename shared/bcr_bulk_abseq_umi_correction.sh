@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Preprocess bulk NEB AbSeq data (phix removal and presto-abseq pipeline)
+# Preprocess bulk NEB AbSeq data (phix removal and presto-abseq pipeline
+# with UMI correction)
 #
 # Author: Julian Q Zhou
-# Date:   2021-04-20
+# Date:   2021-04-26
 #
 # Prereqs:  
 # 1) raw fastq files from all samples should be in ${PROJ_ID}/data/raw/
@@ -18,9 +19,9 @@ usage () {
     echo -e "  -T  Path to the top-level working dir." 
     echo -e "  -Y  Number of cores for parallelization." 
     echo -e "  -A  Whether to run phix removal (PR). Boolean."
-    echo -e "  -B  Whether to run presto-abseq pipeline (PA). Boolean."
+    echo -e "  -B  Whether to run presto-abseq pipeline (PA) with UMI correction. Boolean."
     echo -e "  -C  [PR] Path to script for phix removal."
-    echo -e "  -D  [PA] Path to script for presto-abseq pipeline."
+    echo -e "  -D  [PA] Path to script for presto-abseq pipeline with UMI correction."
     echo -e "  -E  [PR] Path to fastq2fasta.py."
     echo -e "  -F  [PA] Path to Python script removing inconsistent C primer and internal C alignments."
     echo -e "  -G  [PR] Directory containing phiX174 reference db."
@@ -30,11 +31,15 @@ usage () {
     echo -e "  -L  [PA] Path to V-segment reference file."
     echo -e "  -M  [PA] The mate-pair coordinate format of the raw data."
     echo -e "  -N  [PA] Parameter that sets ${CS_KEEP}. Boolean."
+    echo -e "  -O  [PA] Parameter that sets ${BOOL_PRE}. Boolean."
+    echo -e "  -P  [PA] Parameter that sets ${BOOL_MID}. Boolean."
+    echo -e "  -Q  [PA] Parameter that sets ${BOOL_POST}. Boolean."
+    echo -e "  -R  [PA] Parameter that sets ${N_SUBSAMPLE}."
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "J:T:Y:A:B:C:D:E:F:G:H:I:K:L:M:N:h" OPT; do
+while getopts "J:T:Y:A:B:C:D:E:F:G:H:I:K:L:M:N:O:P:Q:R:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID="${OPTARG}"
         ;;
@@ -68,6 +73,14 @@ while getopts "J:T:Y:A:B:C:D:E:F:G:H:I:K:L:M:N:h" OPT; do
         ;;
     N)  BOOL_CS_KEEP="${OPTARG}"
         ;;
+    O)  BOOL_PRE="${OPTARG}"
+        ;;
+    P)  BOOL_MID="${OPTARG}"
+        ;;
+    Q)  BOOL_POST="${OPTARG}"
+        ;;
+    R)  N_SUBSAMPLE="${OPTARG}"
+        ;;
     h)  usage
         exit
         ;;
@@ -99,18 +112,18 @@ mkdir -p "${PATH_AUX}"
 PATH_OUTPUT_PR="${PATH_PROJ}/data/phix/"
 mkdir -p "${PATH_OUTPUT_PR}"
 
-# output directory for presto-abseq pipeline
-PATH_OUTPUT_PA="${PATH_PROJ}/data/presto/"
+# output directory for presto-abseq pipeline with umi correction
+PATH_OUTPUT_PA="${PATH_PROJ}/data/presto_umi/"
 mkdir -p "${PATH_OUTPUT_PA}"
 
 # overall log for looping thru sample list
-PATH_LOG="${PATH_AUX}log_bcr_bulk_abseq_$(date '+%m%d%Y_%H%M%S').log"
+PATH_LOG="${PATH_AUX}log_bcr_bulk_abseq_umi_$(date '+%m%d%Y_%H%M%S').log"
 
 NAME_LIST="sample_list_${PROJ_ID}.txt"
 PATH_LIST="${PATH_AUX}${NAME_LIST}" 
 
 NAME_YAML="${PROJ_ID}.yaml"
-PATH_YAML="${PATH_AUX}${NAME_YAML}" 
+PATH_YAML="${PATH_AUX}${NAME_YAML}"
 
 MaskPrimers.py --version &> "${PATH_LOG}"
 echo "NPROC=${NPROC}" &>> "${PATH_LOG}"
@@ -120,35 +133,40 @@ echo "Primers to Read 1: ${PATH_PRIMER_R1}" &>> "${PATH_LOG}"
 echo "Primers to Read 2: ${PATH_PRIMER_R2}" &>> "${PATH_LOG}"
 echo "Internal-C fasta: ${PATH_IC}" &>> "${PATH_LOG}"
 echo "V segment reference: ${PATH_REF_V}" &>> "${PATH_LOG}"
+echo "BOOL_PR: ${BOOL_PRE}" &>> "${PATH_LOG}"
+echo "BOOL_PRE: ${BOOL_PRE}" &>> "${PATH_LOG}"
+echo "BOOL_MID: ${BOOL_MID}" &>> "${PATH_LOG}"
+echo "BOOL_POST: ${BOOL_POST}" &>> "${PATH_LOG}"
+echo "N_SUBSAMPLE: ${N_SUBSAMPLE}" &>> "${PATH_LOG}"
 echo "CS_KEEP: ${BOOL_CS_KEEP}" &>> "${PATH_LOG}"
 
-N_LINES=$(wc -l < "${PATH_LIST}")
-echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
 
+# phix removal
 
-for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
+if $BOOL_PR; then
 
-	# read sample ID from file
-	CUR_ID=$(sed "${IDX}q;d" "${PATH_LIST}") 
+    echo "***** phix removal *****" &>> "${PATH_LOG}"
 
-	echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
+    N_LINES=$(wc -l < "${PATH_LIST}")
+    echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
 
-	
-    #* sample input fastq files
-    RAW_1="${PATH_RAW}/${CUR_ID}_R1.fastq"
-    RAW_2="${PATH_RAW}/${CUR_ID}_R2.fastq"
+    for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
-    
-    # phix removal
-    if $BOOL_PR; then
+        # read sample ID from file
+        CUR_ID=$(sed "${IDX}q;d" "${PATH_LIST}") 
 
-        echo "- phix removal" &>> "${PATH_LOG}"
+        echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
+
+        
+        #* sample input fastq files
+        RAW_1="${PATH_RAW}/${CUR_ID}_R1.fastq"
+        RAW_2="${PATH_RAW}/${CUR_ID}_R2.fastq"
 
         # sample-specific log for phix removal
         PATH_LOG_PR_ID="${PATH_AUX}log_PR_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
 
         # R1
-        echo "   - R1" &>> "${PATH_LOG}"
+        echo "  - R1" &>> "${PATH_LOG}"
         echo "---------------- R1 ----------------" &> "${PATH_LOG_PR_ID}"
         "${PATH_SCRIPT_PR}" \
             -s "${RAW_1}" \
@@ -160,7 +178,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             &>> "${PATH_LOG_PR_ID}"
 
         # R2
-        echo "   - R2" &>> "${PATH_LOG}"
+        echo "  - R2" &>> "${PATH_LOG}"
         echo "---------------- R2 ----------------" &>> "${PATH_LOG_PR_ID}"  
         "${PATH_SCRIPT_PR}" \
             -s "${RAW_2}" \
@@ -173,68 +191,49 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
         # input files to presto-abseq pipeline are now output files from phix removal
         # phix removal adds "_R2_nophix_selected.fastq" to ${CUR_ID}
-        INPUT_ABSEQ_1="${PATH_OUTPUT_PR}/${CUR_ID}_R1_nophix_selected.fastq"
-        INPUT_ABSEQ_2="${PATH_OUTPUT_PR}/${CUR_ID}_R2_nophix_selected.fastq"
+        PATH_INPUT="${PATH_OUTPUT_PR}"
+        SUFFIX_1="_R1_nophix_selected.fastq"
+        SUFFIX_2="_R2_nophix_selected.fastq"
+        
+    done
+    
+else
+    
+    PATH_INPUT="${PATH_RAW}"
+    SUFFIX_1="_R1.fastq"
+    SUFFIX_2="_R2.fastq"
 
-    else
-        # input files to presto-abseq pipeline are original files
-        INPUT_ABSEQ_1="${RAW_1}"
-        INPUT_ABSEQ_2="${RAW_2}"
-    fi
+fi
 
 
-    # presto-abseq pipeline
-    if $BOOL_PA; then
+# presto-abseq pipeline with umi correction
 
-        echo "- presto-abseq pipeline" &>> "${PATH_LOG}"
+if $BOOL_PA; then
 
-        # sample-specific log for presto-abseq pipeline
-        PATH_LOG_PA_ID="${PATH_AUX}log_PA_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
+    echo "***** presto-abseq with umi correction *****" &>> "${PATH_LOG}"
 
-        # sample-specific presto directory
-        PATH_OUTPUT_PA_ID="${PATH_OUTPUT_PA}${CUR_ID}/"
+    "${PATH_SCRIPT_PA}" \
+        -a "${PATH_LIST}" \
+        -b "${PATH_INPUT}" \
+        -c "${SUFFIX_1}" \
+        -d "${SUFFIX_2}" \
+        -e "${N_SUBSAMPLE}" \
+        -f "${PATH_PRIMER_R1}" \
+        -g "${PATH_PRIMER_R2}" \
+        -i "${PATH_IC}" \
+        -j "${PATH_REF_V}" \
+        -k "${PATH_YAML}" \
+        -l "${PATH_OUTPUT_PA}" \
+        -m "${COORD}" \
+        -n "${NPROC}" \
+        -o "${PATH_SCRIPT_C}" \
+        -p "${PATH_SCRIPT_Q2A}" \
+        -q "${BOOL_CS_KEEP}" \
+        -r "${BOOL_PRE}" \
+        -s "${BOOL_MID}" \
+        -t "${BOOL_POST}" \
+        &> "${PATH_LOG}"
 
-        # if existing, remove first
-        if [ -d "${PATH_OUTPUT_PA_ID}" ]; then
-            echo "    Removed pre-exisitng folder for ${CUR_ID}" &>> "${PATH_LOG}"
-            rm -r "${PATH_OUTPUT_PA_ID}"
-        fi
-
-        echo "    Created new presto-abseq folder for ${CUR_ID}" &>> "${PATH_LOG}"
-        mkdir "${PATH_OUTPUT_PA_ID}"
-
-        "${PATH_SCRIPT_PA}" \
-            -1 "${INPUT_ABSEQ_1}" \
-            -2 "${INPUT_ABSEQ_2}" \
-            -j "${PATH_PRIMER_R1}" \
-            -v "${PATH_PRIMER_R2}" \
-            -c "${PATH_IC}" \
-            -r "${PATH_REF_V}" \
-            -y "${PATH_YAML}" \
-            -n "${CUR_ID}" \
-            -o "${PATH_OUTPUT_PA_ID}" \
-            -x "${COORD}" \
-            -p "${NPROC}" \
-            -t "${PATH_SCRIPT_C}" \
-            -s "${BOOL_CS_KEEP}" \
-            &> "${PATH_LOG_PA_ID}"
-
-        # rename prestor report
-        # name generated from yaml is the same for all samples b/c one yaml file used for entire project
-        mv "${PATH_OUTPUT_PA_ID}report/"*.html "${PATH_OUTPUT_PA_ID}report/${CUR_ID}_prestor.html"
-
-        # convert fastq to fasta
-        # creates ${CUR_ID}-final_collapse-unique_atleast-2.fasta
-        cd "${PATH_OUTPUT_PA_ID}"
-
-        echo "    Converting output fastq to fasta" &>> "${PATH_LOG}"
-
-        "${PATH_SCRIPT_Q2A}" \
-            "${PATH_OUTPUT_PA_ID}${CUR_ID}-final_collapse-unique_atleast-2.fastq" \
-            &>> "${PATH_LOG_PA_ID}"
-
-    fi
-
-done
+fi
 
 echo "Finished" &>> "${PATH_LOG}"
