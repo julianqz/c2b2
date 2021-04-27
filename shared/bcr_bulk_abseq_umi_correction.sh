@@ -15,71 +15,74 @@
 # Print usage
 usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
-    echo -e "  -J  Project ID."                        
-    echo -e "  -T  Path to the top-level working dir." 
-    echo -e "  -Y  Number of cores for parallelization." 
-    echo -e "  -A  Whether to run phix removal (PR). Boolean."
-    echo -e "  -B  Whether to run presto-abseq pipeline (PA) with UMI correction. Boolean."
-    echo -e "  -C  [PR] Path to script for phix removal."
-    echo -e "  -D  [PA] Path to script for presto-abseq pipeline with UMI correction."
-    echo -e "  -E  [PR] Path to fastq2fasta.py."
-    echo -e "  -F  [PA] Path to Python script removing inconsistent C primer and internal C alignments."
-    echo -e "  -G  [PR] Directory containing phiX174 reference db."
-    echo -e "  -H  [PA] Path to Read 1 FASTA primer sequences."
-    echo -e "  -I  [PA] Path to Read 2 FASTA primer or template switch sequences."
-    echo -e "  -K  [PA] Path to C-region FASTA sequences for the C-region internal to the primer."
-    echo -e "  -L  [PA] Path to V-segment reference file."
-    echo -e "  -M  [PA] The mate-pair coordinate format of the raw data."
-    echo -e "  -N  [PA] Parameter that sets ${CS_KEEP}. Boolean."
-    echo -e "  -O  [PA] Parameter that sets ${BOOL_PRE}. Boolean."
-    echo -e "  -P  [PA] Parameter that sets ${BOOL_MID}. Boolean."
-    echo -e "  -Q  [PA] Parameter that sets ${BOOL_POST}. Boolean."
-    echo -e "  -R  [PA] Parameter that sets ${N_SUBSAMPLE}."
+    echo -e "  -A  Project ID."                        
+    echo -e "  -B  Path to the top-level working dir." 
+    echo -e "  -C  Number of cores for parallelization." 
+    echo -e "  -D  Whether to run phix removal (PR). Boolean."
+    echo -e "  -E  Whether PR had been run already. Boolean."
+    echo -e "  -F  Whether to run presto-abseq pipeline (PA) with UMI correction. Boolean."
+    echo -e "  -G  [PR] Path to script for phix removal."
+    echo -e "  -H  [PA] Path to script for presto-abseq pipeline with UMI correction."
+    echo -e "  -I  [PR] Path to fastq2fasta.py."
+    echo -e "  -J  [PA] Path to Python script removing inconsistent C primer and internal C alignments."
+    echo -e "  -K  [PR] Directory containing phiX174 reference db."
+    echo -e "  -L  [PA] Path to Read 1 FASTA primer sequences."
+    echo -e "  -M  [PA] Path to Read 2 FASTA primer or template switch sequences."
+    echo -e "  -N  [PA] Path to C-region FASTA sequences for the C-region internal to the primer."
+    echo -e "  -O  [PA] Path to V-segment reference file."
+    echo -e "  -P  [PA] The mate-pair coordinate format of the raw data."
+    echo -e "  -Q  [PA] Parameter that sets ${CS_KEEP}. Boolean."
+    echo -e "  -R  [PA] Parameter that sets ${BOOL_PRE}. Boolean."
+    echo -e "  -S  [PA] Parameter that sets ${BOOL_MID}. Boolean."
+    echo -e "  -T  [PA] Parameter that sets ${BOOL_POST}. Boolean."
+    echo -e "  -U  [PA] Parameter that sets ${N_SUBSAMPLE}."
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "J:T:Y:A:B:C:D:E:F:G:H:I:K:L:M:N:O:P:Q:R:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:h" OPT; do
     case "$OPT" in
-    J)  PROJ_ID="${OPTARG}"
+    A)  PROJ_ID="${OPTARG}"
         ;;
-    T)  PATH_ROOT=$(realpath "${OPTARG}")
+    B)  PATH_ROOT=$(realpath "${OPTARG}")
         ;;
-    Y)  NPROC="${OPTARG}"
+    C)  NPROC="${OPTARG}"
         ;;
-    A)  BOOL_PR="${OPTARG}"
+    D)  BOOL_PR="${OPTARG}"
         ;;
-    B)  BOOL_PA="${OPTARG}"
+    E)  RAN_PR_ALREADY="${OPTARG}"
         ;;
-    C)  PATH_SCRIPT_PR=$(realpath "${OPTARG}")
+    F)  BOOL_PA="${OPTARG}"
         ;;
-    D)  PATH_SCRIPT_PA=$(realpath "${OPTARG}")
+    G)  PATH_SCRIPT_PR=$(realpath "${OPTARG}")
         ;;
-    E)  PATH_SCRIPT_Q2A=$(realpath "${OPTARG}")
+    H)  PATH_SCRIPT_PA=$(realpath "${OPTARG}")
         ;;
-    F)  PATH_SCRIPT_C=$(realpath "${OPTARG}")
+    I)  PATH_SCRIPT_Q2A=$(realpath "${OPTARG}")
         ;;
-    G)  PATH_REF_PHIX=$(realpath "${OPTARG}")
+    J)  PATH_SCRIPT_C=$(realpath "${OPTARG}")
         ;;
-    H)  PATH_PRIMER_R1=$(realpath "${OPTARG}")
+    K)  PATH_REF_PHIX=$(realpath "${OPTARG}")
         ;;
-    I)  PATH_PRIMER_R2=$(realpath "${OPTARG}")
+    L)  PATH_PRIMER_R1=$(realpath "${OPTARG}")
         ;;
-    K)  PATH_IC=$(realpath "${OPTARG}")
+    M)  PATH_PRIMER_R2=$(realpath "${OPTARG}")
         ;;
-    L)  PATH_REF_V=$(realpath "${OPTARG}")
+    N)  PATH_IC=$(realpath "${OPTARG}")
         ;;
-    M)  COORD="${OPTARG}"
+    O)  PATH_REF_V=$(realpath "${OPTARG}")
         ;;
-    N)  BOOL_CS_KEEP="${OPTARG}"
+    P)  COORD="${OPTARG}"
         ;;
-    O)  BOOL_PRE="${OPTARG}"
+    Q)  BOOL_CS_KEEP="${OPTARG}"
         ;;
-    P)  BOOL_MID="${OPTARG}"
+    R)  BOOL_PRE="${OPTARG}"
         ;;
-    Q)  BOOL_POST="${OPTARG}"
+    S)  BOOL_MID="${OPTARG}"
         ;;
-    R)  N_SUBSAMPLE="${OPTARG}"
+    T)  BOOL_POST="${OPTARG}"
+        ;;
+    U)  N_SUBSAMPLE="${OPTARG}"
         ;;
     h)  usage
         exit
@@ -199,10 +202,18 @@ if $BOOL_PR; then
     
 else
     
-    PATH_INPUT="${PATH_RAW}"
-    SUFFIX_1="_R1.fastq"
-    SUFFIX_2="_R2.fastq"
-
+    if $RAN_PR_ALREADY; then
+        # skipping PR because already ran PR before
+        PATH_INPUT="${PATH_OUTPUT_PR}"
+        SUFFIX_1="_R1_nophix_selected.fastq"
+        SUFFIX_2="_R2_nophix_selected.fastq"
+    else
+        # skipping PR for good
+        PATH_INPUT="${PATH_RAW}"
+        SUFFIX_1="_R1.fastq"
+        SUFFIX_2="_R2.fastq"
+    fi
+    
 fi
 
 
@@ -211,6 +222,10 @@ fi
 if $BOOL_PA; then
 
     echo "***** presto-abseq with umi correction *****" &>> "${PATH_LOG}"
+    echo "PATH_INPUT: ${PATH_INPUT}" &>> "${PATH_LOG}"
+    echo "SUFFIX_1: ${SUFFIX_1}" &>> "${PATH_LOG}"
+    echo "SUFFIX_2: ${SUFFIX_2}" &>> "${PATH_LOG}"
+
 
     "${PATH_SCRIPT_PA}" \
         -a "${PATH_LIST}" \
