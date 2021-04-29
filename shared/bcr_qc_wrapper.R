@@ -36,13 +36,17 @@ option_list = list(
     make_option("--qcColGerm", action="store", default="germline_alignment", 
                 type="character", 
                 help="col_germ."),
-    make_option("--qcMaxPercN", action="store", default=10, type="numeric", 
-                help="max_perc_N."),
-    make_option("--qcColPercN", action="store", default="sequence_alignment", 
+    make_option("--qcMaxN", action="store", default=10, type="numeric", 
+                help="max_N."),
+    make_option("--qcColN", action="store", default="junction", 
                 type="character", 
-                help="col_perc_N."),
-    make_option("--qcMaxNumNonATGCN", action="store", default=4, type="numeric", 
-                help="max_num_nonATGCN."),
+                help="col_N."),
+    make_option("--qcAsPercN", action="store", default=FALSE, type="logical", 
+                help="as_perc_N."),
+    make_option("--qcMaxNonATGC", action="store", default=4, type="numeric", 
+                help="max_nonATGC."),
+    make_option("--qcAsPercNonATGC", action="store", default=FALSE, type="logical", 
+                help="as_perc_nonATGC."),
     make_option("--qcColNoneEmpty", action="store", default="germline_alignment", 
                 type="character", 
                 help="col_none_empty."),
@@ -80,12 +84,12 @@ source(opt$helper)
 
 # \s is space
 # ? means preceding item is optional and will be matched at most once
-col_perc_N = strsplit(opt$qcColPercN, "\\s?,\\s?")[[1]]
+col_N = strsplit(opt$qcColPercN, "\\s?,\\s?")[[1]]
 col_none_empty = strsplit(opt$qcColNoneEmpty, "\\s?,\\s?")[[1]]
 col_NA = strsplit(opt$qcColNA, "\\s?,\\s?")[[1]]
 
 # for debugging
-#cat("col_perc_N:", col_perc_N, "; len:", length(col_perc_N), "\n")
+#cat("col_N:", col_N, "; len:", length(col_N), "\n")
 #cat("col_none_empty:", col_none_empty, "; len:", length(col_none_empty), "\n")
 #cat("col_NA:", col_NA, "; len:", length(col_NA), "\n")
 
@@ -100,11 +104,12 @@ if (opt$qc) {
                col_j_call=opt$qcColJ, col_c_call=opt$qcColC,
                check_valid_vj=T, 
                check_chain_consistency=T, 
-               check_perc_N=T, max_perc_N=opt$qcMaxPercN, 
-               col_perc_N=col_perc_N, last_pos_N=312,
-               check_num_nonATGCN=T, col_obsv=opt$qcColObsv, 
+               check_perc_N=T, max_N=opt$qcMaxN, 
+               col_N=col_N, last_pos_N=312, as_perc_N=opt$qcAsPercN,
+               check_num_nonATGC=T, col_obsv=opt$qcColObsv, 
                col_germ=opt$qcColGerm,
-               max_num_nonATGCN=opt$qcMaxNumNonATGCN, last_pos_nonATGCN=312,
+               max_nonATGC=opt$qcMaxNonATGC, last_pos_nonATGC=312,
+               as_perc_nonATGC=opt$qcAsPercNonATGC,
                check_none_empty=T, 
                col_none_empty=col_none_empty,
                check_NA=T, 
