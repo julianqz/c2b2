@@ -75,23 +75,26 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
 #'                                      V and J gene annotations are valid & non-empty.
 #' @param   check_chain_consistency     Boolean. Whether to check that gene
 #'                                      annotations have chain consistency.
-#' @param   check_perc_N                Boolean. Whether to check the % of 
-#'                                      N's in `col_perc_N`.
-#' @param   max_perc_N                  Max % of N's in `col_perc_N` allowed from
+#' @param   check_N                     Boolean. Whether to check the # or % of 
+#'                                      N's in `col_N`.
+#' @param   max_N                       Max # or % of N's in `col_N` allowed from
 #'                                      position 1 thru `last_pos_N`.
-#' @param   col_perc_N                  Column name(s) in which to perform 
-#'                                      `check_perc_N`.
-#' @param   last_pos_N                  Last position(s) in `col_perc_N` thru which
-#'                                      to perform `check_perc_N`. Length should 
-#'                                      match that of `col_perc_N`.
-#' @param   check_num_nonATGCN          Boolean. Whether to check the number of 
-#'                                      non-ATGCN positions in `col_obsv` using
+#' @param   col_N                       Column name(s) in which to perform `check_N`.
+#' @param   last_pos_N                  Last position(s) in `col_N` thru which
+#'                                      to perform `check_N`. Length should 
+#'                                      match that of `col_N`.
+#' @param   as_perc_N                   Boolean. If `TRUE`, check the % of N's.
+#'                                      If `FALSE`, check the number of N's.                                    
+#' @param   check_nonATGC               Boolean. Whether to check the number of 
+#'                                      non-ATGC positions in `col_obsv` using
 #'                                      `col_germ` as reference.
-#' @param   max_num_nonATGCN            Max number of non-ATGCN positions allowed
+#' @param   max_nonATGC                 Max number of non-ATGC positions allowed
 #'                                      in `col_obsv` from position 1 thru 
-#'                                      `last_pos_nonATGCN`.
-#' @param   last_pos_nonATGCN           The last position thru `col_obsv` to perform
-#'                                      `check_num_nonATGCN`.
+#'                                      `last_pos_nonATGC`.
+#' @param   last_pos_nonATGC            The last position thru `col_obsv` to perform
+#'                                      `check_nonATGC`.
+#' @param   as_perc_nonATGC             Boolean. If `TRUE`, check the % of non-ATGC
+#'                                      positions. If `FALSE`, check the number.                                     
 #' @param   check_none_empty            Boolean. Whether to check for `[Nn]one`
 #'                                      and empty (`""`) values.
 #' @param   col_none_empty              Column name(s) in which to perform 
@@ -116,16 +119,20 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
 #'            Ok to one or more, but not all, of `col_[vdjc]_call` as `NA`.
 #'            Also see `inspect_chain_consistency`.
 #'
-#'          - `check_perc_N` checks if the % of positions that are N in 
-#'            `col_perc_N` from position 1 thru `last_pos_N` is `<=` (at most)
-#'            `max_perc_N`. This check is skipped for a row which has
+#'          - `check_N` checks if the # or % of positions that are N in 
+#'            `col_N` from position 1 thru `last_pos_N` is `<=` (at most)
+#'            `max_N`. This check is skipped for a row which has
 #'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
 #'
-#'          - `check_num_nonATGCN` checks if the number of positions that are
-#'            non-ATGCN in `col_obsv`, between position 1 thru `last_pos_nonATGCN`,
-#'            at positions that are ATGCN in `col_germ`, is `<=` (at most)
-#'            `max_num_nonATGCN`. This check is skipped for a row which has
+#'          - `check_nonATGC` checks if the number of positions that are
+#'            non-ATGC in `col_obsv`, between position 1 thru `last_pos_nonATGC`,
+#'            at positions that are ATGC in `col_germ`, is `<=` (at most)
+#'            `max_nonATGC`. This check is skipped for a row which has
 #'            `""`, `"[Nn]one"`, or `NA` for `col_germ`.
+#'            
+#'          - When `as_perc_N` or `as_perc_nonATGC` is `TRUE`, `max_N` or 
+#'            `max_nonATGC` should be in the range of [0, 100]. A value of 10 
+#'            would mean 10%.
 #'
 #'          - `check_none_empty` checks if `col_none_empty` is `[Nn]one` or `""`.
 #'            This check is for column(s) of class `character`.
@@ -145,9 +152,9 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                           col_v_call, col_d_call, col_j_call, col_c_call,
                           check_valid_vj=F, 
                           check_chain_consistency=F, 
-                          check_perc_N=F, max_perc_N, col_perc_N, last_pos_N,
-                          check_num_nonATGCN=F, col_obsv, col_germ,
-                          max_num_nonATGCN, last_pos_nonATGCN,
+                          check_N=F, max_N, col_N, last_pos_N, as_perc_N,
+                          check_nonATGC=F, col_obsv, col_germ,
+                          max_nonATGC, last_pos_nonATGC, as_perc_nonATGC,
                           check_none_empty=F, col_none_empty,
                           check_NA=F, col_NA,
                           check_len_mod3=F, col_len_mod3) {
@@ -155,9 +162,22 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     require(stringi)
     require(seqinr)
     
-    if (check_perc_N) {
-        stopifnot( length(col_perc_N) == length(last_pos_N) )
+    if (check_N) {
+        stopifnot( length(col_N) == length(last_pos_N) )
+        if (as_perc_N) {
+            stopifnot( max_N>=0 & max_N<=100 )
+        } else {
+            stopifnot( max_N>=0 )
+        }
     }
+    
+    if (check_nonATGC) {
+        if (as_perc_nonATGC) {
+            stopifnot( max_nonATGC>=0 & max_nonATGC<=100 )
+        } else {
+            stopifnot( max_nonATGC>=0 )
+        }
+    } 
     
     nseqs = nrow(db)
     cat("\nPerforming sequence-level QC on", nseqs, "sequences\n")
@@ -223,24 +243,24 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     }
     
     
-    if (check_perc_N) {
+    if (check_N) {
         
         # the next stopifnot will fail if column does not exist in db
         # remove such cols first
-        col_perc_N = col_perc_N[col_perc_N %in% colnames(db)]
-        stopifnot(length(col_perc_N)>=1)
+        col_N = col_N[col_N %in% colnames(db)]
+        stopifnot(length(col_N)>=1)
         
         # check that all columns to be checked are characters
-        stopifnot(all( sapply(col_perc_N, 
+        stopifnot(all( sapply(col_N, 
                               function(s){ class(db[[s]]) }) == "character" ))
         
-        # matrix, even when col_perc_N is of length 1
-        # each col is a col in col_perc_N
+        # matrix, even when col_N is of length 1
+        # each col is a col in col_pN
         # each row is a seq in db
-        # TRUE means % of N's in pos 1 thru last_pos_N <= max_perc_N
-        mtx_perc_N = do.call(cbind, 
-                             sapply(1:length(col_perc_N), function(i){
-                                 s = col_perc_N[i]
+        # TRUE means #/% of N's in pos 1 thru last_pos_N <= max_N
+        mtx_N = do.call(cbind, 
+                             sapply(1:length(col_N), function(i){
+                                 s = col_N[i]
                                  p = last_pos_N[i]
                                  
                                  # skip if NA, "", "[Nn]one"
@@ -253,26 +273,29 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                                  cur_s_count = stri_count_fixed(str=cur_s,
                                                                 pattern="N")
                                  # calc %
-                                 cur_s_perc = cur_s_count / p * 100
+                                 if (as_perc_N) {
+                                     cur_s_count = cur_s_count / p * 100   
+                                 }
                                  
-                                 return( (cur_s_perc <= max_perc_N) | bool_skip )
+                                 return( (cur_s_count <= max_N) | bool_skip )
                              }, simplify=F))
         # sum across columns
         # if all TRUE, rowSums should be the same as number of cols
-        bool_perc_N = rowSums(mtx_perc_N, na.rm=T) == ncol(mtx_perc_N)
+        bool_N = rowSums(mtx_N, na.rm=T) == ncol(mtx_N)
         
         # count
-        cat("\ncheck_perc_N ( max_perc_N=", max_perc_N, "; <=):\n")
-        cat("cols:", col_perc_N, "\n")
-        print(table(bool_perc_N, useNA="ifany"))
+        cat("\ncheck_N ( max_N=", max_N, 
+            ifelse(as_perc_N, "%", ""), "; <=):\n")
+        cat("cols:", col_N, "\n")
+        print(table(bool_N, useNA="ifany"))
         cat("\n")
         
     } else {
-        bool_perc_N = rep(T, nseqs)
+        bool_N = rep(T, nseqs)
     }
     
     
-    if (check_num_nonATGCN) {
+    if (check_nonATGC) {
         
         # check that col_obsv and col_germ exist
         stopifnot(all(c(col_obsv, col_germ) %in% colnames(db)))
@@ -280,20 +303,20 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         bool_skip = is.na(db[[col_germ]]) | db[[col_germ]]=="" | tolower(db[[col_germ]])=="none"
         
         # convert to uppercase so no need to deal with cases
-        # truncate to pos 1 to last_pos_nonATGCN
+        # truncate to pos 1 to last_pos_nonATGC
         germ_upper_trunc = sapply(db[[col_germ]], function(s){
-            toupper( substr(s, 1, min(nchar(s), last_pos_nonATGCN) ) )
+            toupper( substr(s, 1, min(nchar(s), last_pos_nonATGC) ) )
         })
         # same for observed
         obsv_upper_trunc = sapply(db[[col_obsv]], function(s){
-            toupper( substr(s, 1, min(nchar(s), last_pos_nonATGCN) ) )
+            toupper( substr(s, 1, min(nchar(s), last_pos_nonATGC) ) )
         })
         
-        # positions in germline from pos 1 thru last_pos_nonATGCN 
+        # positions in germline from pos 1 thru last_pos_nonATGC
         # that are non-ATGC (e.g. ".")
         # this should be a list
         germ_idx = sapply(germ_upper_trunc, function(s){
-            return(which(!s2c(s) %in% c("A","T","G","C","N")))
+            return(which(!s2c(s) %in% c("A","T","G","C")))
         }, simplify=F)
         
         # count the number of non-ATGCs in obsv, excl non-ATGC positions in germ
@@ -307,24 +330,29 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                 cur_obsv = obsv_upper_trunc[i]
             }
             
-            cur_obsv_count = stri_count_regex(str=cur_obsv, pattern="[^ATGCN]")
+            cur_obsv_count = stri_count_regex(str=cur_obsv, pattern="[^ATGC]")
+            
+            if (as_perc_nonATGC) {
+                cur_obsv_count = cur_obsv_count / nchar(cur_obsv) *100
+            }
             
             return(cur_obsv_count)
         })
         
-        # TRUE means # of non-ATGCs in pos 1 thru last_pos_nonATGCN <= max_num_nonATGCN
+        # TRUE means # of non-ATGCs in pos 1 thru last_pos_nonATGC <= max_nonATGC
         # skip check if germline missing (and set to TRUE for that row)
-        bool_num_nonATGCN = (obsv_count <= max_num_nonATGCN) | bool_skip
+        bool_nonATGC = (obsv_count <= max_nonATGC) | bool_skip
           
         # count
-        cat("\ncheck_num_nonATGCN ( max_num_nonATGCN=", max_num_nonATGCN, "; <=):\n")
+        cat("\ncheck_nonATGC ( max_nonATGC=", max_nonATGC, 
+            ifelse(as_perc_nonATGC, "%", ""), "; <=):\n")
         cat("observed col:", col_obsv, "; germline col:", col_germ, "\n")
-        print(table(bool_num_nonATGCN, useNA="ifany"))
+        print(table(bool_nonATGC, useNA="ifany"))
         cat("\n")
          
         
     } else {
-        bool_num_nonATGCN = rep(T, nseqs)
+        bool_nonATGC = rep(T, nseqs)
     }
     
     
@@ -431,13 +459,13 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     # combine
     stopifnot(!any(is.na(bool_valid_vj)))
     stopifnot(!any(is.na(bool_chain)))
-    stopifnot(!any(is.na(bool_perc_N)))
-    stopifnot(!any(is.na(bool_num_nonATGCN)))
+    stopifnot(!any(is.na(bool_N)))
+    stopifnot(!any(is.na(bool_num_nonATGC)))
     stopifnot(!any(is.na(bool_none_empty)))
     stopifnot(!any(is.na(bool_NA)))
     stopifnot(!any(is.na(bool_len_mod3)))
 
-    bool = bool_valid_vj & bool_chain & bool_perc_N & bool_num_nonATGCN & bool_none_empty & bool_NA & bool_len_mod3
+    bool = bool_valid_vj & bool_chain & bool_N & bool_nonATGC & bool_none_empty & bool_NA & bool_len_mod3
     
     # count
     cat("\nCombined:\n")
@@ -470,9 +498,9 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
                       col_v_call, col_d_call, col_j_call, col_c_call,
                       check_valid_vj=F, 
                       check_chain_consistency=F, 
-                      check_perc_N=F, max_perc_N, col_perc_N, last_pos_N,
-                      check_num_nonATGCN=F, col_obsv, col_germ,
-                      max_num_nonATGCN, last_pos_nonATGCN,
+                      check_N=F, max_N, col_N, last_pos_N, as_perc_N,
+                      check_nonATGC=F, col_obsv, col_germ,
+                      max_nonATGC, last_pos_nonATGC, as_perc_nonATGC,
                       check_none_empty=F, col_none_empty,
                       check_NA=F, col_NA,
                       check_len_mod3=F, col_len_mod3) {
@@ -484,9 +512,9 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
                                   col_v_call, col_d_call, col_j_call, col_c_call,
                                   check_valid_vj, 
                                   check_chain_consistency, 
-                                  check_perc_N, max_perc_N, col_perc_N, last_pos_N,
-                                  check_num_nonATGCN, col_obsv, col_germ,
-                                  max_num_nonATGCN, last_pos_nonATGCN,
+                                  check_N, max_N, col_N, last_pos_N, as_perc_N,
+                                  check_nonATGC, col_obsv, col_germ,
+                                  max_nonATGC, last_pos_nonATGC, as_perc_nonATGC,
                                   check_none_empty, col_none_empty,
                                   check_NA, col_NA,
                                   check_len_mod3, col_len_mod3)
