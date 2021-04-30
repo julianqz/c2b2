@@ -16,6 +16,8 @@ option_list = list(
                 help="Boolean. Whether to perform sequence-level QC."),
     make_option("--qcCell", action="store", default=FALSE, type="logical", 
                 help="Boolean. Whether to perform cell-level QC."),
+    make_option("--qcSequential", action="store", default=FALSE, type="logical", 
+                help="Boolean. Whether to perform sequence- and cell-level QCs sequentially."),
     make_option("--qcDb", action="store", default=NA, type="character", 
                 help="db_name for perform_qc."),
     make_option("--qcOutname", action="store", default=NA, type="character", 
@@ -57,6 +59,15 @@ option_list = list(
     make_option("--qcColLenMod3", action="store", default="junction", 
                 type="character", 
                 help="col_len_mod3."),
+    make_option("--qcColLocus", action="store", default=NA, 
+                type="character", 
+                help="col_locus."),
+    make_option("--qcColCell", action="store", default=NA, 
+                type="character", 
+                help="col_cell."),
+    make_option("--qcLogicNumHL", action="store", default=NA, 
+                type="character", 
+                help="logic_num_HL."),
     make_option("--sp", action="store", default=FALSE, type="logical", 
                 help="Boolean. Whether to split db."),
     make_option("--spDb", action="store", default=NA, type="character", 
@@ -84,9 +95,10 @@ source(opt$helper)
 
 # \s is space
 # ? means preceding item is optional and will be matched at most once
-col_N = strsplit(opt$qcColPercN, "\\s?,\\s?")[[1]]
+col_N = strsplit(opt$qcColN, "\\s?,\\s?")[[1]]
 col_none_empty = strsplit(opt$qcColNoneEmpty, "\\s?,\\s?")[[1]]
 col_NA = strsplit(opt$qcColNA, "\\s?,\\s?")[[1]]
+col_len_mod3 = strsplit(opt$qcColLenMod3, "\\s?,\\s?")[[1]]
 
 # for debugging
 #cat("col_N:", col_N, "; len:", length(col_N), "\n")
@@ -98,15 +110,16 @@ col_NA = strsplit(opt$qcColNA, "\\s?,\\s?")[[1]]
 if (opt$qc) {
     
     perform_qc(db_name=opt$qcDb, seq_level=opt$qcSeq, cell_level=opt$qcCell, 
+               sequential=opt$qcSequential,
                outname=opt$qcOutname, outdir=opt$qcOutdir,
                chain_type="IG",
                col_v_call=opt$qcColV, col_d_call=opt$qcColD, 
                col_j_call=opt$qcColJ, col_c_call=opt$qcColC,
                check_valid_vj=T, 
                check_chain_consistency=T, 
-               check_perc_N=T, max_N=opt$qcMaxN, 
+               check_N=T, max_N=opt$qcMaxN, 
                col_N=col_N, last_pos_N=312, as_perc_N=opt$qcAsPercN,
-               check_num_nonATGC=T, col_obsv=opt$qcColObsv, 
+               check_nonATGC=T, col_obsv=opt$qcColObsv, 
                col_germ=opt$qcColGerm,
                max_nonATGC=opt$qcMaxNonATGC, last_pos_nonATGC=312,
                as_perc_nonATGC=opt$qcAsPercNonATGC,
@@ -114,7 +127,11 @@ if (opt$qc) {
                col_none_empty=col_none_empty,
                check_NA=T, 
                col_NA=col_NA,
-               check_len_mod3=T, col_len_mod3=opt$qcColLenMod3)
+               check_len_mod3=T, col_len_mod3=col_len_mod3,
+               col_locus=opt$qcColLocus, col_cell=opt$qcColCell,
+               check_locus=T,
+               check_num=T, logic_num_HL=opt$qcLogicNumHL
+               )
     
 }
 
