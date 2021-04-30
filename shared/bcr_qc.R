@@ -468,7 +468,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     bool = bool_valid_vj & bool_chain & bool_N & bool_nonATGC & bool_none_empty & bool_NA & bool_len_mod3
     
     # count
-    cat("\nCombined:\n")
+    cat("\nSeq-level QC, combined:\n")
     print(table(bool, useNA="ifany"))
     cat("\n")
     
@@ -476,8 +476,103 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 }
 
 
-# TODO
-# perform_qc_cell = function() { }
+# currently only supports `chain_type="IG"`
+
+perform_qc_cell = function(db, chain_type=c("IG", "TR"), 
+                           col_locus, col_cell,
+                           check_locus, col_v_call, 
+                           check_num_HL, logic=c("1H_1L", "1H_min1L", "1H")
+                           ) {
+    
+    stopifnot( all(c(col_locus, col_cell) %in% colnames(db)) )
+    if (check_locus) { stopifnot( col_v_call %in% colnames(db) ) }
+    
+    uniq_cells = unique(db[[col_cell]])
+    idx_uniq_cells = match(uniq_cells, db[[col_cell]])
+    stopifnot( all.equal(uniq_cells, db[[col_cell]][idx_uniq_cells]) )
+    
+    # validate locus
+    if (check_locus) {
+        # based on V call
+        vec_chain = substr(db[[col_v_call]], 1, 3)
+        
+        #* currently only supports chain_type="IG"
+        #  expect values {IGH, IGK, IGL}
+        stopifnot( all.equal(vec_chain, db[[col_locus]]) )
+    }
+    
+    # number of heavy and light chain(s) per cell
+    if (check_num_HL) {
+        #* currently only supports chain_type="IG"
+        chain_count_mtx = matrix(NA, nrow=length(uniq_cells), ncol=2)
+        colnames(chain_count_mtx) = c("heavy", "light")
+        rownames(chain_count_mtx) = uniq_cells
+        
+        # row: IG[HKL]
+        # col: cell ID
+        tab_cell_chain = table(db[[col_locus]], db[[col_cell]], useNA="ifany")
+        
+        # wrt tab_cell_chain
+        idx_tab = match(uniq_cells, colnames(tab_cell_chain))
+        stopifnot(all.equal(uniq_cells, colnames(tab_cell_chain)[idx_tab]))
+        
+        chain_count_mtx[, "heavy"] = tab_cell_chain["IGH", idx_tab]
+        chain_count_mtx[, "light"] = colSums(tab_cell_chain[c("IGL", "IGK"), idx_tab])
+        
+        # sanity check
+        stopifnot( all.equal( rowSums(chain_count_mtx), 
+                              colSums(tab_cell_chain)[idx_tab], 
+                              check.attributes=F ) )
+        
+        cat("\nNumber of heavy chains per cell:\n")
+        print(table(chain_count_mtx[, "heavy"], useNA="ifany"))
+        cat("\n")
+        
+        cat("\nNumber of light chains per cell:\n")
+        print(table(chain_count_mtx[, "light"], useNA="ifany"))
+        cat("\n")
+        
+        cat("\nNumber of heavy and light chains per cell:\n")
+        print(table(chain_count_mtx[, "heavy"], chain_count_mtx[, "light"]))
+        cat("\n")
+        
+        if (logic=="1H_1L") {
+            # exactly 1 heavy, exactly 1 light
+            bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]==1
+        } else if (logic=="1H_min1L") {
+            # exactly 1 heavy, at least 1 light
+            bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]>=1
+        } else if (logic=="1H") {
+            # excatly 1 heavy, regardless of the number of light chain(s)
+            # (could be 0 light chain)
+            bool_num_HL = chain_count_mtx[, "heavy"]==1
+        } else {
+            warning("Unrecognized option for `logic`. `check_num_HL` skipped.\n")
+            bool_num_HL = rep(T, nrow(chain_count_mtx))
+        }
+        
+        cat("\ncheck_num_HL:\n")
+        cat("col:", col_cell, "\n")
+        print(table(bool_num_HL), useNA="ifany")
+        
+        # map back to db
+        uniq_cells_pass = uniq_cells[bool_num_HL]
+        
+        bool_num_HL_db = db[[col_cell]] %in% uniq_cells_pass
+
+    } else {
+        bool_num_HL_db = rep(T, nrow(db))
+    }
+    
+    bool = bool_num_HL_db
+    
+    # count
+    cat("\nCell-level QC, combined:\n")
+    print(table(bool, useNA="ifany"))
+    cat("\n")
+    
+    return(bool)
+}
 
 
 #' BCR sequence-level and/or cell-level QC
