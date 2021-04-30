@@ -268,13 +268,20 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                                  
                                  # convert to uppercase so no need to deal with cases
                                  # truncate to pos 1 to last_pos_N
-                                 cur_s = toupper(substr(db[[s]], 1, p))
+                                 idx_truncate = which( nchar(db[[s]]) > p )
+                                 if (length(idx_truncate)>0) {
+                                     cur_s[idx_truncate] = sapply(idx_truncate, function(i_db){
+                                         return(substr(db[[s]][i_db], 1, p))
+                                     }, USE.NAMES=F)
+                                 }
+                                 cur_s = toupper(cur_s)
+                                 
                                  # count number of occurrences of N characters
                                  cur_s_count = stri_count_fixed(str=cur_s,
                                                                 pattern="N")
                                  # calc %
                                  if (as_perc_N) {
-                                     cur_s_count = cur_s_count / p * 100   
+                                     cur_s_count = cur_s_count / nchar(cur_s) * 100   
                                  }
                                  
                                  return( (cur_s_count <= max_N) | bool_skip )
