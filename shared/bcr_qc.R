@@ -578,10 +578,10 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
         if (logic_num_HL=="1H_1L") {
             # exactly 1 heavy, exactly 1 light
             bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]==1
-        } else if (logic=="1H_min1L") {
+        } else if (logic_num_HL=="1H_min1L") {
             # exactly 1 heavy, at least 1 light
             bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]>=1
-        } else if (logic=="1H") {
+        } else if (logic_num_HL=="1H") {
             # excatly 1 heavy, regardless of the number of light chain(s)
             # (could be 0 light chain)
             bool_num_HL = chain_count_mtx[, "heavy"]==1
