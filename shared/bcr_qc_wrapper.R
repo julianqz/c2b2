@@ -137,7 +137,7 @@ if (opt$qc) {
                check_len_mod3=T, col_len_mod3=col_len_mod3,
                col_locus=opt$qcColLocus, col_cell=opt$qcColCell,
                check_locus=T,
-               check_num=T, logic_num_HL=opt$qcLogicNumHL
+               check_num_HL=T, logic_num_HL=opt$qcLogicNumHL
                )
     
 }

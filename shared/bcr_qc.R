@@ -658,7 +658,7 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
                       check_len_mod3=F, col_len_mod3,
                       col_locus, col_cell, 
                       check_locus,
-                      check_num, logic_num_HL) {
+                      check_num_HL, logic_num_HL) {
     
     db = read.table(db_name, header=T, sep="\t", stringsAsFactors=F)
     
