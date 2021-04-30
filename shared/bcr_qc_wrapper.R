@@ -43,7 +43,10 @@ option_list = list(
     make_option("--qcColN", action="store", default="junction", 
                 type="character", 
                 help="col_N."),
-    make_option("--qcLastPosN", action="store", default=NA, type="numeric", 
+    # Set type fr --qcLastPosN as character so that the command line input can be
+    # parsed (this enables multiple values separated by "," to be inputted)
+    # After parsing, the values are typecast to integer
+    make_option("--qcLastPosN", action="store", default=NA, type="character", 
                 help="last_pos_N."),
     make_option("--qcAsPercN", action="store", default=FALSE, type="logical", 
                 help="as_perc_N."),
