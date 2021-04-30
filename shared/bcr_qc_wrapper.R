@@ -43,6 +43,8 @@ option_list = list(
     make_option("--qcColN", action="store", default="junction", 
                 type="character", 
                 help="col_N."),
+    make_option("--qcLastPosN", action="store", default=NA, type="numeric", 
+                help="last_pos_N."),
     make_option("--qcAsPercN", action="store", default=FALSE, type="logical", 
                 help="as_perc_N."),
     make_option("--qcMaxNonATGC", action="store", default=4, type="numeric", 
@@ -100,6 +102,8 @@ col_none_empty = strsplit(opt$qcColNoneEmpty, "\\s?,\\s?")[[1]]
 col_NA = strsplit(opt$qcColNA, "\\s?,\\s?")[[1]]
 col_len_mod3 = strsplit(opt$qcColLenMod3, "\\s?,\\s?")[[1]]
 
+last_pos_N = as.integer(strsplit(opt$qcLastPosN, "\\s?,\\s?")[[1]])
+
 # for debugging
 #cat("col_N:", col_N, "; len:", length(col_N), "\n")
 #cat("col_none_empty:", col_none_empty, "; len:", length(col_none_empty), "\n")
@@ -118,7 +122,7 @@ if (opt$qc) {
                check_valid_vj=T, 
                check_chain_consistency=T, 
                check_N=T, max_N=opt$qcMaxN, 
-               col_N=col_N, last_pos_N=312, as_perc_N=opt$qcAsPercN,
+               col_N=col_N, last_pos_N=last_pos_N, as_perc_N=opt$qcAsPercN,
                check_nonATGC=T, col_obsv=opt$qcColObsv, 
                col_germ=opt$qcColGerm,
                max_nonATGC=opt$qcMaxNonATGC, last_pos_nonATGC=312,
