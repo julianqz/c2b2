@@ -262,19 +262,21 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                              sapply(1:length(col_N), function(i){
                                  s = col_N[i]
                                  p = last_pos_N[i]
-                                 
-                                 # skip if NA, "", "[Nn]one"
-                                 bool_skip = is.na(db[[s]]) | db[[s]]=="" | tolower(db[[s]])=="none"
+                                 cur_s = db[[s]]
                                  
                                  # convert to uppercase so no need to deal with cases
+                                 cur_s = toupper(cur_s)
+                                 
+                                 # skip if NA, "", "[Nn]one"
+                                 bool_skip = is.na(cur_s) | cur_s=="" | cur_s=="NONE"
+                                 
                                  # truncate to pos 1 to last_pos_N
-                                 idx_truncate = which( nchar(db[[s]]) > p )
+                                 idx_truncate = which( nchar(cur_s) > p )
                                  if (length(idx_truncate)>0) {
                                      cur_s[idx_truncate] = sapply(idx_truncate, function(i_db){
-                                         return(substr(db[[s]][i_db], 1, p))
+                                         return(substr(cur_s[i_db], 1, p))
                                      }, USE.NAMES=F)
                                  }
-                                 cur_s = toupper(cur_s)
                                  
                                  # count number of occurrences of N characters
                                  cur_s_count = stri_count_fixed(str=cur_s,
@@ -313,11 +315,11 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
         # truncate to pos 1 to last_pos_nonATGC
         germ_upper_trunc = sapply(db[[col_germ]], function(s){
             toupper( substr(s, 1, min(nchar(s), last_pos_nonATGC) ) )
-        })
+        }, USE.NAMES=F)
         # same for observed
         obsv_upper_trunc = sapply(db[[col_obsv]], function(s){
             toupper( substr(s, 1, min(nchar(s), last_pos_nonATGC) ) )
-        })
+        }, USE.NAMES=F)
         
         # positions in germline from pos 1 thru last_pos_nonATGC
         # that are non-ATGC (e.g. ".")
@@ -343,13 +345,15 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
                 cur_obsv_count = cur_obsv_count / nchar(cur_obsv) *100
             }
             
+            names(cur_obsv_count) = NULL
+            
             return(cur_obsv_count)
         })
         
         # TRUE means # of non-ATGCs in pos 1 thru last_pos_nonATGC <= max_nonATGC
         # skip check if germline missing (and set to TRUE for that row)
         bool_nonATGC = (obsv_count <= max_nonATGC) | bool_skip
-          
+        
         # count
         cat("\ncheck_nonATGC ( max_nonATGC=", max_nonATGC, 
             ifelse(as_perc_nonATGC, "%", ""), "; <=):\n")
@@ -467,7 +471,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     stopifnot(!any(is.na(bool_valid_vj)))
     stopifnot(!any(is.na(bool_chain)))
     stopifnot(!any(is.na(bool_N)))
-    stopifnot(!any(is.na(bool_num_nonATGC)))
+    stopifnot(!any(is.na(bool_nonATGC)))
     stopifnot(!any(is.na(bool_none_empty)))
     stopifnot(!any(is.na(bool_NA)))
     stopifnot(!any(is.na(bool_len_mod3)))
