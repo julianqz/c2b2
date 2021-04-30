@@ -76,25 +76,27 @@ usage () {
     echo -e "  -9  [QCSP] --qcMaxN."
     echo -e "  -a  [QCSP] --qcColN. If multuple values, separate by comma.\n" \
             "             E.g. 'sequence_alignment, junction' "
-    echo -e "  -b  [QCSP] --qcAsPercN. Boolean for R."        
-    echo -e "  -c  [QCSP] --qcMaxNonATGC."
-    echo -e "  -d  [QCSP] --qcAsPercNonATGC. Boolean for R."
-    echo -e "  -e  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
+    echo -e "  -b  [QCSP] --qcLastPosN. If multiple values, separate by comma.\n" \
+            "             E.g. '12, 312' "
+    echo -e "  -c  [QCSP] --qcAsPercN. Boolean for R."        
+    echo -e "  -d  [QCSP] --qcMaxNonATGC."
+    echo -e "  -e  [QCSP] --qcAsPercNonATGC. Boolean for R."
+    echo -e "  -f  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, junction' "
-    echo -e "  -f  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
+    echo -e "  -g  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, junction, PRCONS' "
-	echo -e "  -g  [QCSP] --qcColLenMod3."
-    echo -e "  -i  [QCSP] --qcColLocus."
-    echo -e "  -j  [QCSP] --qcColCell."
-    echo -e "  -k  [QCSP] --qcLogicNumHL."
-	echo -e "  -m  [QCSP] --spColV."
-	echo -e "  -n  [QCSP] --spColProd."            
-	echo -e "  -o  [QCSP] --spValProd."
+	echo -e "  -i  [QCSP] --qcColLenMod3."
+    echo -e "  -j  [QCSP] --qcColLocus."
+    echo -e "  -k  [QCSP] --qcColCell."
+    echo -e "  -m  [QCSP] --qcLogicNumHL."
+	echo -e "  -n  [QCSP] --spColV."
+	echo -e "  -o  [QCSP] --spColProd."            
+	echo -e "  -p  [QCSP] --spValProd."
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:h" OPT; do
     case "$OPT" in
     A)  PROJ_ID="${OPTARG}"
         ;;
@@ -166,29 +168,31 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7
 		;;
 	a)  QC_COL_N="${OPTARG}"
 		;;
-    b)  BOOL_AS_PERC_N="${OPTARG}"
+    b)  QC_LAST_POS_N="${OPTARG}"
         ;;
-	c)  QC_MAX_NONATGC="${OPTARG}"
-		;;
-    d)  BOOL_AS_PERC_NONATGC="${OPTARG}"
+    c)  BOOL_AS_PERC_N="${OPTARG}"
         ;;
-	e)  QC_COL_NONE_EMPTY="${OPTARG}"
+	d)  QC_MAX_NONATGC="${OPTARG}"
 		;;
-	f)  QC_COL_NA="${OPTARG}"
-		;;
-	g)  QC_COL_LEN_MOD3="${OPTARG}"
-		;;
-    i)  QC_COL_LOCUS="${OPTARG}"
+    e)  BOOL_AS_PERC_NONATGC="${OPTARG}"
         ;;
-    j)  QC_COL_CELL="${OPTARG}"
-        ;;
-    k)  QC_LOGIC_NUM_HL="${OPTARG}"
-        ;;
-	m)  SP_COL_V="${OPTARG}"
+	f)  QC_COL_NONE_EMPTY="${OPTARG}"
 		;;
-	n)  SP_COL_PROD="${OPTARG}"
+	g)  QC_COL_NA="${OPTARG}"
 		;;
-	o)  SP_VAL_PROD="${OPTARG}"
+	i)  QC_COL_LEN_MOD3="${OPTARG}"
+		;;
+    j)  QC_COL_LOCUS="${OPTARG}"
+        ;;
+    k)  QC_COL_CELL="${OPTARG}"
+        ;;
+    m)  QC_LOGIC_NUM_HL="${OPTARG}"
+        ;;
+	n)  SP_COL_V="${OPTARG}"
+		;;
+	o)  SP_COL_PROD="${OPTARG}"
+		;;
+	p)  SP_VAL_PROD="${OPTARG}"
 		;;
     h)  usage
         exit
@@ -401,6 +405,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		--qcColGerm "${QC_COL_GERM}" \
     		--qcMaxN "${QC_MAX_N}" \
     		--qcColN "${QC_COL_N}" \
+            --qcLastPosN "${QC_LAST_POS_N}" \
             --qcAsPercN "${BOOL_AS_PERC_N}" \
     		--qcMaxNonATGC "${QC_MAX_NONATGC}" \
             --qcAsPercNonATGC "${BOOL_AS_PERC_NONATGC}" \
