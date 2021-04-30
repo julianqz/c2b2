@@ -76,9 +76,9 @@ usage () {
     echo -e "  -9  [QCSP] --qcMaxN."
     echo -e "  -a  [QCSP] --qcColN. If multuple values, separate by comma.\n" \
             "             E.g. 'sequence_alignment, junction' "
-    echo -e "  -b  [QCSP] --qcAsPercN."        
+    echo -e "  -b  [QCSP] --qcAsPercN. Boolean for R."        
     echo -e "  -c  [QCSP] --qcMaxNonATGC."
-    echo -e "  -d  [QCSP] --qcAsPercNonATGC."
+    echo -e "  -d  [QCSP] --qcAsPercNonATGC. Boolean for R."
     echo -e "  -e  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, junction' "
     echo -e "  -f  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
