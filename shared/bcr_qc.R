@@ -479,7 +479,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     bool = bool_valid_vj & bool_chain & bool_N & bool_nonATGC & bool_none_empty & bool_NA & bool_len_mod3
     
     # count
-    cat("\nSeq-level QC, combined:\n")
+    cat("\nAfter seq-level QC, number of seqs:\n")
     print(table(bool, useNA="ifany"))
     cat("\n")
     
@@ -527,6 +527,9 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
     if (check_locus) { stopifnot( col_v_call %in% colnames(db) ) }
     
     uniq_cells = unique(db[[col_cell]])
+    cat("\nNumber of unique cells before cell-level QC:", 
+        length(uniq_cells), "\n")
+    
     idx_uniq_cells = match(uniq_cells, db[[col_cell]])
     stopifnot( all.equal(uniq_cells, db[[col_cell]][idx_uniq_cells]) )
     
@@ -590,7 +593,7 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
             bool_num_HL = rep(T, nrow(chain_count_mtx))
         }
         
-        cat("\ncheck_num_HL:\n")
+        cat("\ncheck_num_HL, number of cells:\n")
         cat("col:", col_cell, "\n")
         print(table(bool_num_HL), useNA="ifany")
         
@@ -606,7 +609,7 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
     bool = bool_num_HL_db
     
     # count
-    cat("\nCell-level QC, combined:\n")
+    cat("\nAfter cell-level QC, number of seqs:\n")
     print(table(bool, useNA="ifany"))
     cat("\n")
     
@@ -680,18 +683,27 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
     if (cell_level) {
         
         if (seq_level & sequential) {
-            db_cell_input = db[bool_seq, ]
-            if (nrow(db_cell_input)==0) {
+            cat("\nPerforming seq-level and cell-level QCs sequentially\n")
+            
+            db = db[bool_seq, ]
+            
+            if (nrow(db)==0) {
                 stop("No data left after sequence-level QC. Halted before cell-level QC.")
             }
-        } else {
-            db_cell_input = db
-        }
+            
+        } 
         
-        bool_cell = perform_qc_cell(db_cell_input, chain_type,
+        # - If seq_level & sequential, bool_cell length could be shorter than 
+        #   bool_seq, because db nrow could have changed by subsetting by bool_seq
+        
+        # - Otherwise, bool_cell length should be the same as bool_seq,
+        #   because db nrow would have stayed unchanged
+        
+        bool_cell = perform_qc_cell(db, chain_type,
                                     col_locus, col_cell,
                                     check_locus, col_v_call,
                                     check_num_HL, logic_num_HL)
+
     } else {
          bool_cell = rep(T, nrow(db))
     }
