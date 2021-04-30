@@ -476,12 +476,40 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 }
 
 
-# currently only supports `chain_type="IG"`
-
+#' Perform cell-level QC for BCR sequences
+#' 
+#' @param   db                          data.frame
+#' @param   chain_type                  One of "IG" or "TR.
+#' @param   col_locus                   Column name for locus. Expected values
+#'                                      for `chain_type="IG"` are `{IGH, IGK, IGL}`.
+#' @param   col_cell                    Column name for cell ID.                                     
+#' @param   check_locus                 Boolean. Whether to perform check on the 
+#'                                      consistency between V call and locus annotation.
+#' @param   col_v_call                  Column name for V call.
+#' @param   check_num_HL                Boolean. Whether to perform check on the 
+#'                                      number of heavy and light chains per cell.
+#' @param   logic_num_HL                The logic to be applied to the check on the
+#'                                      number of heavy and light chains per cell.
+#'                                      One of `1H_1L`, `1H_min1L`, or `1H`,
+#'
+#' @returns A bool vector of length `nrow(db)` indicating whether each row
+#'          passed all checks of choice.
+#'          
+#' @details While each row in `db` is expected to represent a sequence, the `db`
+#'          is supplied as input to the function, the cell-level QC is applied 
+#'          on a cell-by-cell basis, and considers all sequences linked to a cell
+#'          during the check for that cell. The result of the check is then 
+#'          propagated to all sequences linked to that cell.    
+#'          
+#'          `1H_1L`: pass if a cell has exactly 1 heavy chain and exactly 1 light chain
+#'          `1H_min1L`: pass if a cell has exactly 1 heavy chain and at least 1 light chain
+#'          `1H`: pass if a cell has exactly 1 heavy chain    
+#'                                                                                                                                                                          
 perform_qc_cell = function(db, chain_type=c("IG", "TR"), 
                            col_locus, col_cell,
                            check_locus, col_v_call, 
-                           check_num_HL, logic=c("1H_1L", "1H_min1L", "1H")
+                           check_num_HL, 
+                           logic_num_HL=c("1H_1L", "1H_min1L", "1H")
                            ) {
     
     stopifnot( all(c(col_locus, col_cell) %in% colnames(db)) )
@@ -536,7 +564,7 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
         print(table(chain_count_mtx[, "heavy"], chain_count_mtx[, "light"]))
         cat("\n")
         
-        if (logic=="1H_1L") {
+        if (logic_num_HL=="1H_1L") {
             # exactly 1 heavy, exactly 1 light
             bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]==1
         } else if (logic=="1H_min1L") {
@@ -581,14 +609,32 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
 #'                      input data
 #' @param   seq_level   Boolean. Whether to perform sequence-level QC.
 #' @param   cell_level  Boolean. Whether to perform cell-level QC.
+#' @param   sequential  Boolean. Whether to perform sequence-level QC first 
+#'                      before performing cell-level QC, as opposed to performing
+#'                      both in parallel and then performing an `&` operation. 
+#'                      Only applicable if both `seq_level` and `cell_level` are 
+#'                      `TRUE`.
 #' @param   outname     Stem of output filename. Prefix to 
 #'                      `_qc.tsv`.
 #' @param   outdir      Path to output directory.
 #' @param   ...         All other parameters are passed to helper functions.        
 #' 
 #' @returns Writes a `[outname]_qc-pass/fail.tsv` to `outdir`.
+#' 
+#' @details When both `seq_level` and `cell_level` are `TRUE`, `sequential` being
+#'          `FALSE` could give slightly different results than `TRUE`. For example,
+#'          a cell may be linked to 2 light chains pre-QC.Suppose one of the two light
+#'          chains gets filtered by sequence-level QC. Suppose that `logic_num_HL`
+#'          is set to `1H_1L`. If cell-level QC is applied sequentially after
+#'          one of the two light chains is filtered, this cell is considered by
+#'          cell-level QC to be linked to 1 light chain only, and would pass QC.
+#'          In contrast, if cell-level QC is applied in parallel with sequence-level
+#'          QC, then this cell is considered by cell-level QC to be linked to 2
+#'          light chains and would therefore fail cell-level QC. After the `&`
+#'          operation, all sequences from this cell would then fail QC. 
 
-perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
+perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
+                      outname, outdir,
                       chain_type,
                       col_v_call, col_d_call, col_j_call, col_c_call,
                       check_valid_vj=F, 
@@ -598,7 +644,10 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
                       max_nonATGC, last_pos_nonATGC, as_perc_nonATGC,
                       check_none_empty=F, col_none_empty,
                       check_NA=F, col_NA,
-                      check_len_mod3=F, col_len_mod3) {
+                      check_len_mod3=F, col_len_mod3,
+                      col_locus, col_cell, 
+                      check_locus,
+                      check_num, logic_num_HL) {
     
     db = read.table(db_name, header=T, sep="\t", stringsAsFactors=F)
     
@@ -617,15 +666,40 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
         bool_seq = rep(T, nrow(db))
     }
     
-    # if (cell_level) {
-    #     # TODO
-    #     # bool_cell = perform_qc_cell(db)
-    # } else {
+    if (cell_level) {
+        
+        if (seq_level & sequential) {
+            db_cell_input = db[bool_seq, ]
+            if (nrow(db_cell_input)==0) {
+                stop("No data left after sequence-level QC. Halted before cell-level QC.")
+            }
+        } else {
+            db_cell_input = db
+        }
+        
+        bool_cell = perform_qc_cell(db_cell_input, chain_type,
+                                    col_locus, col_cell,
+                                    check_locus, col_v_call,
+                                    check_num_HL, logic_num_HL)
+    } else {
          bool_cell = rep(T, nrow(db))
-    # }
+    }
     
-    bool_final = bool_seq & bool_cell
-         
+    # cases
+    # seq_level  cell_level
+    # F          F
+    # T          F
+    # F          T
+    # T          T           sequential
+    # T          T           parallel
+    if (seq_level & cell_level & sequential) {
+        # T T sequential
+        bool_final = bool_cell
+    } else {
+        # all other cases
+        bool_final = bool_seq & bool_cell
+    }
+    
     setwd(outdir)
     
     if (any(bool_final)) {
@@ -649,8 +723,6 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, outname, outdir,
 #' 
 #' @param   db_name     Name of tab-separated file with headers that contains
 #'                      input data
-#' @param   seq_level   Boolean. Whether to perform sequence-level QC.
-#' @param   cell_level  Boolean. Whether to perform cell-level QC.
 #' @param   col_v_call  Column name for V gene annotation. 
 #' @param   col_prod    Column name for productive/non-productive.
 #' @param   val_prod    Value in `col_prod` indicating productive.
