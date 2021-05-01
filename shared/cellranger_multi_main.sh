@@ -6,7 +6,7 @@
 #
 # Prereqs:  
 # The following must be in ${PROJ_ID}/aux/
-# - a sample list: "cr_list_${PROJ_ID}.txt"
+# - a sample list: "cr_list_multi_${PROJ_ID}.txt"
 # - sample-specific config csvs: "cr_multi_*.csv"
 
 
@@ -74,7 +74,7 @@ mkdir -p "${PATH_OUTPUT}"
 
 PATH_LOG="${PATH_AUX}log_cr_multi_$(date '+%m%d%Y_%H%M%S').log"
 
-NAME_LIST="cr_list_${PROJ_ID}.txt"
+NAME_LIST="cr_list_multi_${PROJ_ID}.txt"
 PATH_LIST="${PATH_AUX}${NAME_LIST}" 
 
 
@@ -96,7 +96,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 	echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
 
 	# sample-specific log
-	PATH_LOG_ID="${PATH_AUX}log_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
+	PATH_LOG_ID="${PATH_AUX}log_cr_multi_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
 
     # sample-specific config csv
     NAME_CSV_ID="cr_multi_${CUR_ID}.csv"
