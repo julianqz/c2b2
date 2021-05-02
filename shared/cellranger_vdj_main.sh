@@ -142,6 +142,9 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 		--localmem "${CR_M}" \
 		&> "${PATH_LOG_ID}"
 
+    # remove .bam, .bambi
+    rm "${CUR_ID}"/outs/*.bam*
+
 done
 
 echo "ALL DONE" &>> "${PATH_LOG}"
