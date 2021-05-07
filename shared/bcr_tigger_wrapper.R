@@ -76,7 +76,6 @@ for (subj in vec_subj) {
                col_junc_len=opt$colJuncLen,
                p_find_unmutated=opt$findUnmutated,
                p_text_size=opt$textSize)
-    
-    rm(fn, db)
+
 }
 
