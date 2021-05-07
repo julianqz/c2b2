@@ -10,6 +10,8 @@
 suppressPackageStartupMessages(require(optparse))
 
 option_list = list(
+    make_option("--pathRunTigger", action="store", default=NA, type="character", 
+                help="Path to bcr_tigger.R."),
     make_option("--subjList", action="store", default=NA, 
                 type="character", help="Comma-separated list of subjects."),
     make_option("--prefix", action="store", default=NA, 
@@ -38,13 +40,16 @@ option_list = list(
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
+# run_tigger()
+source(opt$pathRunTigger)
+
 # parse
 
 # \s is space
 # ? means preceding item is optional and will be matched at most once
 vec_subj = strsplit(opt$subjList, "\\s?,\\s?")[[1]]
 
-library(tigger)
+suppressPackageStartupMessages(library(tigger))
 
 setwd(opt$pathWork)
 sinkName = paste0("computingEnv_tigger_", Sys.Date(), "-", 
