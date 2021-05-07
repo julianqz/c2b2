@@ -163,7 +163,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
                              v_call=col_v, seq=col_seq, 
                              method="hamming", keep_gene="gene")
         
-        fn = paste0("db_reassign_", subj, "_", chain_type, ".pdf")
+        fn = paste0("db_reassign_", subj, "_", chain_type, ".RData")
         save(db, file=fn)
         
         ### split & export
