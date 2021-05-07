@@ -4,7 +4,7 @@
 
 # assumes:
 # - pathCSV points to a comma-separated file with the following headers
-#   "subj", "pathDb" where "pathDb" points to a .tsv file
+#   "subj", "path_db" where "path_db" points to a .tsv file
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -63,7 +63,7 @@ if (opt$calcWithin) {
     
     for (i in 1:nrow(subj_info)) {
         
-        db = read.table(sub_info[["pathDb"]][i],
+        db = read.table(sub_info[["path_db"]][i],
                         header=T, sep="\t", stringsAsFactors=F)
         
         subj = sub_info[["subj"]][i]
@@ -126,7 +126,7 @@ if (opt$calcBetween) {
     
     for (i in 1:nrow(subj_info)) {
         
-        db_tmp = read.table(sub_info[["pathDb"]][i],
+        db_tmp = read.table(sub_info[["path_db"]][i],
                             header=T, sep="\t", stringsAsFactors=F)
         
         stopifnot(all(cols_keep %in% colnames(db_tmp)))
