@@ -40,6 +40,7 @@ opt = parse_args(OptionParser(option_list=option_list))
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
 suppressPackageStartupMessages(library(shazam))
+suppressPackageStartupMessages(library(dplyr))
 
 setwd(opt$pathWork)
 sinkName = paste0("computingEnv_dtn_heavy_", Sys.Date(), "-", 
