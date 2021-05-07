@@ -78,7 +78,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
     cat("\n# junction lengths being NA:", num_jl_NA, "\n")
     
     # subset
-    db = db[(bool_jl_0 & !bool_jl_NA), ]
+    db = db[(!bool_jl_0 & !bool_jl_NA), ]
     cat("\nnrow, after removing junction_length of 0 and NA:", nrow(db), "\n")
     
     if (nrow(db)>0) {
