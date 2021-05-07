@@ -87,7 +87,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
         # - using only unmutated sequences (default), and
         # - checking for the use of the novel alleles inferred (skipped here)
         
-        nodelDf = NA
+        novelDf = NA
         
         cat("\ninferGenotype()\n")
         # geno: a data.frame
