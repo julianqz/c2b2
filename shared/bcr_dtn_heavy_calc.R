@@ -63,10 +63,10 @@ if (opt$calcWithin) {
     
     for (i in 1:nrow(subj_info)) {
         
-        db = read.table(sub_info[["path_db"]][i],
+        db = read.table(subj_info[["path_db"]][i],
                         header=T, sep="\t", stringsAsFactors=F)
         
-        subj = sub_info[["subj"]][i]
+        subj = subj_info[["subj"]][i]
         
         cat("\n", subj, "; nrow(db):", nrow(db), "\n")
         
@@ -126,12 +126,12 @@ if (opt$calcBetween) {
     
     for (i in 1:nrow(subj_info)) {
         
-        db_tmp = read.table(sub_info[["path_db"]][i],
+        db_tmp = read.table(subj_info[["path_db"]][i],
                             header=T, sep="\t", stringsAsFactors=F)
         
         stopifnot(all(cols_keep %in% colnames(db_tmp)))
         db_tmp = db_tmp[, cols_keep]
-        db_tmp[[opt$colSubj]] = sub_info[["subj"]][i]
+        db_tmp[[opt$colSubj]] = subj_info[["subj"]][i]
         
         if (i==1) {
             # initiate db
