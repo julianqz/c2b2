@@ -10,8 +10,8 @@ suppressPackageStartupMessages(require(optparse))
 
 
 option_list = list(
-    make_option("--pathHelper", action="store", default=NA, type="character", 
-                help="Path to bcr_dtn.R."),
+    make_option("--pathCSV", action="store", default=NA, 
+                type="character", help="Path to CSV containing subject list and paths to input files."),
     make_option("--pathWork", action="store", default=NA, type="character", 
                 help="path_work."),
     make_option("--nproc", action="store", default=1, type="numeric", 
@@ -24,8 +24,6 @@ option_list = list(
                 help="Within-subject subsampling."),
     make_option("--subsampleBetween", action="store", default=NULL, type="numeric", 
                 help="Between-subject subsampling."),
-    make_option("--pathCSV", action="store", default=NA, 
-                type="character", help="Path to CSV containing subject list and paths to input files."),
     make_option("--colSubj", action="store", default=NA, 
                 type="character", help="Column name containing subject info."),
     make_option("--colSeqID", action="store", default="sequence_id", 
@@ -38,8 +36,6 @@ option_list = list(
                 type="character", help="col_j.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
-
-source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
