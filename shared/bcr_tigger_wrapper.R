@@ -34,7 +34,7 @@ option_list = list(
     make_option("--findUnmutated", action="store", default=TRUE, 
                 type="logical", help="p_find_unmutated."),
     make_option("--textSize", action="store", default=12, 
-                type="numeric", help="p_text_size."),
+                type="numeric", help="p_text_size.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
