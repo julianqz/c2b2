@@ -1,3 +1,40 @@
+# copied from tigger/R/functions.R 
+# last commit 2becdde on 2021-04-07; pulled 2021-05-07
+# contains bug fix for `genotypeFasta` pushed in commit 9b023e2 on 2021-03-16
+# bug fix not in stable release v1.0.0
+# JZ added `alakazam::` before addGene and getAllele
+genotypeFasta_fix = function(genotype, germline_db, novel=NA){
+    if(!is.null(nrow(novel))){
+        # Extract novel alleles if any and add them to germline_db
+        novel <- filter(novel, !is.na(!!rlang::sym("polymorphism_call"))) %>%
+            select(!!!rlang::syms(c("germline_call", "polymorphism_call", "novel_imgt")))
+        if(nrow(novel) > 0){
+            novel_gl <- novel$novel_imgt
+            names(novel_gl) <- novel$polymorphism_call
+            germline_db <- c(germline_db, novel_gl)
+        }
+    }
+    
+    genotype$gene <- alakazam::getGene(genotype$gene, first = T, strip_d = T)
+    g_names <- names(germline_db)
+    names(g_names) <- alakazam::getAllele(names(germline_db), first = T, strip_d = T)
+    
+    table_calls <- mapply(paste, genotype$gene, strsplit(genotype$alleles, ","),
+                          sep="*")
+    table_calls_names <- unlist(table_calls)
+    seq_names <- g_names[names(g_names) %in% table_calls_names]
+    seqs <- germline_db[seq_names]
+    not_found <- !table_calls_names %in% names(g_names)
+    
+    if ( any(not_found) ) {
+        stop("The following genotype alleles were not found in germline_db: ",
+             paste(table_calls_names[not_found], collapse = ", "))
+    }
+    
+    return(seqs)
+}
+
+
 #' Run tigger to infer genotype for an individual (without inferring novel alleles)
 #'
 #' @param   path_imgt              Path to fasta file containing IMGT germline reference.
@@ -100,8 +137,9 @@ run_tigger = function(path_imgt, path_helper, path_work,
         # genotype sequences to a vector
         cat("\ngenotypeFasta() \n")
         # genoSeqs: a named vector
-        genoSeqs = genotypeFasta(genotype=geno, 
-                                 germline_db=germIMGT, novel=novelDf)
+        #* bug fixed in commit 9b023e2 but not in stable release yet
+        genoSeqs = genotypeFasta_fix(genotype=geno, 
+                                     germline_db=germIMGT, novel=novelDf)
         
         setwd(path_work)
         fn = paste0("geno_", subj, "_", chain_type, ".RData")
@@ -164,4 +202,3 @@ run_tigger = function(path_imgt, path_helper, path_work,
     }
     
 }
-
