@@ -1,7 +1,5 @@
-path_imgt="~/Dropbox (recherche)/common/germline_refs/imgt_select/IMGT_vquest_release202113-2/Homo_sapiens/IG/IGHV_no_dup.fasta"
-path_helper="~/Dropbox (recherche)/wustl/code/main/shared/sequence_processing.R"
-
-
+#' Run tigger to infer genotype for an individual (without inferring novel alleles)
+#'
 #' @param   path_imgt              Path to fasta file containing IMGT germline reference.
 #'                                 E.g. "./IGHV_no_dup.fasta".
 #' @param   path_helper            Path to helper R script containing `read_multiline_fasta`.
@@ -34,6 +32,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
                       p_find_unmutated=T,
                       p_text_size=12) {
     
+    # compatible with v1.0.0
     suppressPackageStartupMessages(require(tigger))
     
     ### read_multiline_fasta

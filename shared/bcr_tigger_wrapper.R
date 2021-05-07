@@ -14,7 +14,7 @@ option_list = list(
                 type="character", help="Comma-separated list of subjects."),
     make_option("--prefix", action="store", default=NA, 
                 type="character", 
-                help="Common filename prefix to input .RData file. Eg: 'db_combined_'."),
+                help="Common filename prefix to input .RData files. Eg: 'db_combined_'."),
     make_option("--pathDb", action="store", default=NA, type="character", 
                 help="Common path to input .RData files."),
     make_option("--pathIMGT", action="store", default=NA, type="character", 
@@ -44,7 +44,18 @@ opt = parse_args(OptionParser(option_list=option_list))
 # ? means preceding item is optional and will be matched at most once
 vec_subj = strsplit(opt$subjList, "\\s?,\\s?")[[1]]
 
+library(tigger)
+
+setwd(opt$pathWork)
+sinkName = paste0("computingEnv_tigger_", Sys.Date(), "-", 
+                  format(Sys.time(), "%H%M%S"), '.txt')
+sink(sinkName)
+sessionInfo()
+sink()
+
+
 for (subj in vec_subj) {
+    
     # load db
     setwd(opt$pathDb)
     fn = paste0(opt$prefix, subj, ".RData")
