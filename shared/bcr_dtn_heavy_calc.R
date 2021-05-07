@@ -153,14 +153,18 @@ if (opt$calcBetween) {
                 ifelse(is.null(opt$subsampleBetween), "", 
                        paste0("_subsample-", opt$subsampleBetween)),
                 ".RData")
-
-    dtn_between_heavy_only(db=db, fn=fn, 
-                           nproc=opt$nproc,
-                           col_seq=opt$colSeq, 
-                           col_v=opt$colV, 
-                           col_j=opt$colJ,
-                           subsample=opt$subsampleBetween,
-                           col_cross=opt$colSubj)
+    
+    db = distToNearest(db, 
+                       sequenceColumn=opt$colSeq,
+                       vCallColumn=opt$colV,
+                       jCallColumn=opt$colJ,
+                       cross=opt$colSubj,
+                       subsample=opt$subsampleBetween,
+                       model="ham", normalize="len", 
+                       first=F, VJthenLen=F, keepVJLgroup=T,
+                       nproc=opt$nproc, progress=T)
+    
+    save(db, file=fn)
     
     rm(db, fn)
 }
