@@ -2,7 +2,6 @@
 # last commit 2becdde on 2021-04-07; pulled 2021-05-07
 # contains bug fix for `genotypeFasta` pushed in commit 9b023e2 on 2021-03-16
 # bug fix not in stable release v1.0.0
-# JZ added `alakazam::` before addGene and getAllele
 genotypeFasta_fix = function(genotype, germline_db, novel=NA){
     if(!is.null(nrow(novel))){
         # Extract novel alleles if any and add them to germline_db
@@ -15,9 +14,9 @@ genotypeFasta_fix = function(genotype, germline_db, novel=NA){
         }
     }
     
-    genotype$gene <- alakazam::getGene(genotype$gene, first = T, strip_d = T)
+    genotype$gene <- getGene(genotype$gene, first = T, strip_d = T)
     g_names <- names(germline_db)
-    names(g_names) <- alakazam::getAllele(names(germline_db), first = T, strip_d = T)
+    names(g_names) <- getAllele(names(germline_db), first = T, strip_d = T)
     
     table_calls <- mapply(paste, genotype$gene, strsplit(genotype$alleles, ","),
                           sep="*")
@@ -71,6 +70,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
     
     # compatible with v1.0.0
     suppressPackageStartupMessages(require(tigger))
+    suppressPackageStartupMessages(require(alakazam))
     
     ### read_multiline_fasta
     source(path_helper) 
