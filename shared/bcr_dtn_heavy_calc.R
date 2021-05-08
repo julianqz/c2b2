@@ -6,8 +6,6 @@
 # - pathCSV points to a comma-separated file with the following headers
 #   "subj", "path_db" where "path_db" points to a .tsv file
 
-# KIV: remove --pathFix when next shazam stable release (>1.0.2) is out
-
 suppressPackageStartupMessages(require(optparse))
 
 option_list = list(
@@ -34,16 +32,13 @@ option_list = list(
     make_option("--colV", action="store", default="v_call", 
                 type="character", help="col_v."),
     make_option("--colJ", action="store", default="j_call", 
-                type="character", help="col_j."),
-    make_option("--pathFix", action="store", default=NA, 
-                type="character", help="Path to bcr_dtn_fix.R.")
+                type="character", help="col_j.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
 suppressPackageStartupMessages(library(shazam))
-suppressPackageStartupMessages(library(magrittr))
 
 setwd(opt$pathWork)
 sinkName = paste0("computingEnv_dtn_heavy_", Sys.Date(), "-", 
@@ -160,18 +155,18 @@ if (opt$calcBetween) {
                        paste0("_subsample-", opt$subsampleBetween)),
                 ".RData")
     
-    #* bug-fixed version (needed for btw-subj as of v1.0.2)
-    source(opt$pathFix)
-    
-    db = distToNearest_fix(db, 
-                           sequenceColumn=opt$colSeq,
-                           vCallColumn=opt$colV,
-                           jCallColumn=opt$colJ,
-                           cross=opt$colSubj,
-                           subsample=opt$subsampleBetween,
-                           model="ham", normalize="len", 
-                           first=F, VJthenLen=F, keepVJLgroup=T,
-                           nproc=opt$nproc, progress=T)
+    #* v1.0.2 stable release requires a bug fix from commit 47bffe0
+    #* this bug fix is packed into julianqz/wu_cimm:main_0.1.1
+    #* but if not using that docker image, v1.0.2 will fail next line
+    db = distToNearest(db, 
+                       sequenceColumn=opt$colSeq,
+                       vCallColumn=opt$colV,
+                       jCallColumn=opt$colJ,
+                       cross=opt$colSubj,
+                       subsample=opt$subsampleBetween,
+                       model="ham", normalize="len", 
+                       first=F, VJthenLen=F, keepVJLgroup=T,
+                       nproc=opt$nproc, progress=T)
     
     save(db, file=fn)
     
