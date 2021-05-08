@@ -71,7 +71,7 @@ plotCrossHam = function(vec1, vec2, plotFreq=T, binSize=0.01,
         
         # vec1
         plot(vec1Hist, freq=plotFreq, 
-             col=scales::alpha(vec1Col, transparency), border=NA, # if border not NA, tiny bit shows up for density=0
+             col=scales::alpha(vec1Col, transparency), border="white", 
              xlim=c(0, vecMax*1.05), #* 
              ylim=c(vec2HistMax, vec1HistMax), #*
              xlab=labX, ylab=labY, yaxt="n",
@@ -103,7 +103,7 @@ plotCrossHam = function(vec1, vec2, plotFreq=T, binSize=0.01,
              cex.axis=cexAxis, cex.lab=cexLab)
         
         # vec2
-        plot(vec2Hist, freq=plotFreq, add=T, col=scales::alpha(vec2Col, transparency), border=NA)
+        plot(vec2Hist, freq=plotFreq, add=T, col=scales::alpha(vec2Col, transparency), border="white")
         
         # horizontal line at count 0
         if (zeroLine) {
