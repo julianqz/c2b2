@@ -20,36 +20,48 @@ usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
     echo -e "  -A  Path to CSV containing subject info."
     echo -e "  -B  Path to save outputs."
-    echo -e "  -C  Path to IMGT reference fasta(s)."
-    echo -e "  -D  Column name of sequence."
-    echo -e "  -E  Column name of V call ."
-    echo -e "  -F  Column name of D call."
-    echo -e "  -G  Column name of J call."
-    echo -e "  -H  Column name of clone ID."
-    echo -e "  -I  Output foramt. Either 'airr' or 'changeo'."
+    echo -e "  -C  Path to IMGT reference fasta for V."
+    echo -e "  -D  Path to IMGT reference fasta for D."
+    echo -e "  -E  Path to IMGT reference fasta for J."
+    echo -e "  -F  Path to IMGT reference fasta for novel alleles (if any). Optional."
+    echo -e "  -G  Column name of sequence."
+    echo -e "  -H  Column name of V call ."
+    echo -e "  -I  Column name of D call."
+    echo -e "  -J  Column name of J call."
+    echo -e "  -K  Column name of clone ID."
+    echo -e "  -L  Output foramt. Either 'airr' or 'changeo'."
     echo -e "  -h  This message."
 }
 
+PATH_REF_N_SET=false
+
 # Get commandline arguments
-while getopts "A:B:C:D:E:F:G:H:I:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:h" OPT; do
     case "$OPT" in
     A)  PATH_CSV=$(realpath "${OPTARG}")
         ;;
     B)  PATH_WORK=$(realpath "${OPTARG}")
 		;;
-	C)  PATH_REFS="${OPTARG}"
+	C)  PATH_REF_V=$(realpath "${OPTARG}")
 		;;
-    D)  COL_SEQ="${OPTARG}"
+    D)  PATH_REF_D=$(realpath "${OPTARG}")
         ;;
-    E)  COL_V="${OPTARG}"
+    E)  PATH_REF_J=$(realpath "${OPTARG}")
         ;;
-    F)  COL_D="${OPTARG}"
+    F)  PATH_REF_N=$(realpath "${OPTARG}")
+        PATH_REF_N_SET=true
         ;;
-    G)  COL_J="${OPTARG}"
+    G)  COL_SEQ="${OPTARG}"
         ;;
-    H)  COL_CLONE="${OPTARG}"
+    H)  COL_V="${OPTARG}"
         ;;
-    I)  CG_FORMAT="${OPTARG}"
+    I)  COL_D="${OPTARG}"
+        ;;
+    J)  COL_J="${OPTARG}"
+        ;;
+    K)  COL_CLONE="${OPTARG}"
+        ;;
+    L)  CG_FORMAT="${OPTARG}"
         ;;
     h)  usage
         exit
@@ -69,7 +81,14 @@ PATH_LOG="${PATH_WORK}/log_bcr_createGermlines_${RUN_TYPE}_$(date '+%m%d%Y_%H%M%
 
 CreateGermlines.py --version &> "${PATH_LOG}"
 echo "Input csv: ${PATH_CSV}" &>> "${PATH_LOG}"
-echo "References: " ${PATH_REFS} &>> "${PATH_LOG}"
+echo "Reference, V: ${PATH_REF_V}" &>> "${PATH_LOG}"
+echo "Reference, D: ${PATH_REF_D}" &>> "${PATH_LOG}"
+echo "Reference, J: ${PATH_REF_J}" &>> "${PATH_LOG}"
+if $PATH_REF_N_SET; then
+    echo "Reference, N: ${PATH_REF_N}" &>> "${PATH_LOG}"
+else
+    echo "Reference, N: not supplied" &>> "${PATH_LOG}"
+fi
 echo "--vf: ${COL_V}" &>> "${PATH_LOG}"
 
 
@@ -110,22 +129,46 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # no nproc
 
     # appends _germ-pass.tab, _germ-fail.tab (even if input -d is .tsv)
-    CreateGermlines.py \
-        -d "${PATH_INPUT}" \
-        -r ${PATH_REFS} \
-        -g "full dmask vonly regions" \
-        --sf "${COL_SEQ}" \
-        --vf "${COL_V}" \
-        --df "${COL_D}" \
-        --jf "${COL_J}" \
-        --cf "${COL_CLONE}" \
-        --cloned \
-        --format "${CG_FORMAT}" \
-        --failed \
-        --outname "${CUR_ID}" \
-        --outdir "${PATH_WORK}" \
-        --log "${PATH_WORK}/log_bcr_createGermlines_${CUR_ID}.log" \
-        &>> "${PATH_LOG}"
+
+    if ! $PATH_REF_N_SET; then
+
+        CreateGermlines.py \
+            -d "${PATH_INPUT}" \
+            -r "${PATH_REF_V}" "${PATH_REF_D}" "${PATH_REF_J}" \
+            -g full dmask vonly regions \
+            --sf "${COL_SEQ}" \
+            --vf "${COL_V}" \
+            --df "${COL_D}" \
+            --jf "${COL_J}" \
+            --cf "${COL_CLONE}" \
+            --cloned \
+            --format "${CG_FORMAT}" \
+            --failed \
+            --outname "${CUR_ID}" \
+            --outdir "${PATH_WORK}" \
+            --log "${PATH_WORK}/log_bcr_createGermlines_${CUR_ID}.log" \
+            &>> "${PATH_LOG}"
+
+    else
+
+        CreateGermlines.py \
+            -d "${PATH_INPUT}" \
+            -r "${PATH_REF_V}" "${PATH_REF_D}" "${PATH_REF_J}" "${PATH_REF_N}" \
+            -g full dmask vonly regions \
+            --sf "${COL_SEQ}" \
+            --vf "${COL_V}" \
+            --df "${COL_D}" \
+            --jf "${COL_J}" \
+            --cf "${COL_CLONE}" \
+            --cloned \
+            --format "${CG_FORMAT}" \
+            --failed \
+            --outname "${CUR_ID}" \
+            --outdir "${PATH_WORK}" \
+            --log "${PATH_WORK}/log_bcr_createGermlines_${CUR_ID}.log" \
+            &>> "${PATH_LOG}"
+
+    fi
 
 done
 
