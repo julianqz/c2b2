@@ -18,7 +18,7 @@ option_list = list(
     make_option("--pathHelper", action="store", default=NA, type="character", 
                 help="Path to bcr_infer_clone.R."),
     make_option("--threshold", action="store", default=NA, 
-                type="numeric", help="Clustering threshold."),
+                type="character", help="Clustering threshold."),
     make_option("--colSeq", action="store", default="junction", 
                 type="character", help="sequenceColumn."),
     make_option("--colVJLgroup", action="store", default="vjl_group", 
@@ -36,6 +36,22 @@ source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
+# parse
+# \s is space
+# ? means preceding item is optional and will be matched at most once
+
+# first parse into strings
+thresh_str = strsplit(opt$threshold, "\\s?,\\s?")[[1]]
+# check length
+stopifnot( length(thresh_str) == nrow(subj_info) )
+# convert into numeric
+thresh_vec = as.numeric(thresh_str)
+names(thresh_vec) = subj_info[["subj"]]
+# sanity check
+.check_thresh = function(v) { !is.na(v) & is.numeric(v) & v>=0 & v<=1 }
+stopifnot( all(sapply(thresh_vec, .check_thresh)) )
+
+
 setwd(opt$pathWork)
 sinkName = paste0("computingEnv_clust_", Sys.Date(), "-", 
                   format(Sys.time(), "%H%M%S"), '.txt')
@@ -47,7 +63,8 @@ sink()
 for (i in 1:nrow(subj_info)) {
     
     subj = subj_info[["subj"]][i]
-    cat(subj, "\n")
+    thresh = thresh_vec[subj]
+    cat(subj, thresh, "\n")
     
     # load db
     fn_in = subj_info[["path_db"]][i]
@@ -58,7 +75,7 @@ for (i in 1:nrow(subj_info)) {
                               sequenceColumn=opt$colSeq,
                               VJLgroupColumn=opt$colVJLgroup,
                               cloneColumn=opt$colClone,
-                              threshold=opt$threshold,
+                              threshold=thresh,
                               maxmiss=opt$maxmiss,
                               linkage=opt$linkage, 
                               verbose=T)
