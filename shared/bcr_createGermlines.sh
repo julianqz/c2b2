@@ -11,8 +11,8 @@
 # 
 # 2) Input tab files should have a clone ID columns (`--cloned` flag is on)
 # 
-# 3) If novel alleles were inferred and found by tigger, they should have
-#    been added to ${PATH_REFS}
+# 3) If novel alleles were inferred and found by tigger, they should be
+#    supplied via `-F`
 
 
 # Print usage
@@ -77,7 +77,7 @@ done
 
 
 # overall log for looping thru sample csv
-PATH_LOG="${PATH_WORK}/log_bcr_createGermlines_${RUN_TYPE}_$(date '+%m%d%Y_%H%M%S').log"
+PATH_LOG="${PATH_WORK}/log_bcr_createGermlines_$(date '+%m%d%Y_%H%M%S').log"
 
 CreateGermlines.py --version &> "${PATH_LOG}"
 echo "Input csv: ${PATH_CSV}" &>> "${PATH_LOG}"
@@ -128,7 +128,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
     # no nproc
 
-    # appends _germ-pass.tab, _germ-fail.tab (even if input -d is .tsv)
+    # [outname]_germ-pass/fail.tsv
 
     if ! $PATH_REF_N_SET; then
 
