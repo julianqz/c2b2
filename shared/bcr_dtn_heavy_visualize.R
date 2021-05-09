@@ -16,6 +16,8 @@ option_list = list(
                 help="path_work."),
     make_option("--pathBtw", action="store", default=NA, type="character", 
                 help="path_btw. Path to .RData file containing $cross_dist_nearest."),
+    make_option("--pathHelper", action="store", default=NA, type="character", 
+                help="path_helper. Path to helper script containing plotCrossHam()."),
     make_option("--plotWithin", action="store", default=FALSE, type="logical", 
                 help="Whether to visualize within-subject dtn."),
     make_option("--plotBetween", action="store", default=FALSE, type="logical", 
@@ -24,7 +26,7 @@ option_list = list(
                 type="character", help="Column name containing subject info."),
     make_option("--nPlotsPerRow", action="store", default=1, 
                 type="numeric", help="n_plots_per_row."),
-    make_option("--manualThresh", action="store", type="numeric", 
+    make_option("--manualThresh", action="store", type="character", 
                 help="thresh_man_vec. Length must match num of subjects. Can be all NA. Eg: 'NA,NA,NA'.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
@@ -33,6 +35,8 @@ opt = parse_args(OptionParser(option_list=option_list))
 #### global config ####
 
 suppressPackageStartupMessages(library(shazam))
+# plotCrossHam
+source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 n_subj = nrow(subj_info)
@@ -60,11 +64,16 @@ stopifnot( length(thresh_man_str) == n_subj )
 # convert non-NA into integer
 thresh_man_vec = rep(NA, length=n_subj)
 for (i in 1:n_subj) {
-    if (thresh_man_str!="NA") {
+    if (thresh_man_str[i]!="NA") {
         thresh_man_vec[i] = as.numeric(thresh_man_str[i])
     }
 }
 names(thresh_man_vec) = subjects
+# for debugging
+# thresh_man_vec: NA NA NA ; class: logical 
+# thresh_man_vec: NA 0.23 NA ; class: numeric 
+#cat("\nthresh_man_vec:", thresh_man_vec, "; class:", class(thresh_man_vec), "\n") 
+
 
 # not provided as command line options for now
 cex_lab_within = 1.25
@@ -83,38 +92,46 @@ col_dist_btw = "cross_dist_nearest"
 
 #### common ####
 
-# loop thru every subject, $dist_nearest, store in a list
-# distances from all subjects are needed to get standardized xlim
-# do this before plotting to avoid having to load each db a second time
-
-# instead of loading db, can load thresh_obj which also contains $dist_nearest
-dist_lst = vector(mode="list", length=n_subj)
-xden_lst = vector(mode="list", length=n_subj)
-yden_lst = vector(mode="list", length=n_subj)
-thresh_auto_vec = rep(NA, length=n_subj)
-names(dist_lst) = subjects
-names(xden_lst) = subjects
-names(yden_lst) = subjects
-names(thresh_auto_vec) = subjects
-
-for (i in 1:n_subj) {
+if (plot_within | plot_btw) {
     
-    # DensityThreshold object:
-    # - x: input distance vector with NA or infinite values removed
-    # - bandwith: for density estimation
-    # - xdens: vector of distance value for smoothed density estimate
-    # - ydens: vector of density value for smoothed density estimate
-    # - threshold: distance threshold
+    cat("\nLoading... \n")
     
-    # thresh_obj
-    load(subj_info[["path"]][i])
+    # loop thru every subject, $dist_nearest, store in a list
+    # distances from all subjects are needed to get standardized xlim
+    # do this before plotting to avoid having to load each db a second time
     
-    dist_lst[[subj]] = thresh_obj@x
-    xden_lst[[subj]] = thresh_obj@xdens
-    yden_lst[[subj]] = thresh_obj@ydens
-    thresh_auto_vec[subj] = thresh_obj@threshold
+    # instead of loading db, can load thresh_obj which also contains $dist_nearest
+    dist_lst = vector(mode="list", length=n_subj)
+    xden_lst = vector(mode="list", length=n_subj)
+    yden_lst = vector(mode="list", length=n_subj)
+    thresh_auto_vec = rep(NA, length=n_subj)
+    names(dist_lst) = subjects
+    names(xden_lst) = subjects
+    names(yden_lst) = subjects
+    names(thresh_auto_vec) = subjects
     
-    rm(thresh_obj)
+    for (i in 1:n_subj) {
+        
+        # DensityThreshold object:
+        # - x: input distance vector with NA or infinite values removed
+        # - bandwith: for density estimation
+        # - xdens: vector of distance value for smoothed density estimate
+        # - ydens: vector of density value for smoothed density estimate
+        # - threshold: distance threshold
+        
+        # thresh_obj
+        load(subj_info[["path"]][i])
+        
+        subj = subjects[i]
+        cat(subj, "\n")
+        
+        dist_lst[[subj]] = thresh_obj@x
+        xden_lst[[subj]] = thresh_obj@xdens
+        yden_lst[[subj]] = thresh_obj@ydens
+        thresh_auto_vec[subj] = thresh_obj@threshold
+        
+        rm(thresh_obj)
+    }
 }
 
 
