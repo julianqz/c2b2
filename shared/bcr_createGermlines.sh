@@ -6,7 +6,7 @@
 #
 # Prereqs:  
 #
-# 1) A CSV at ${PATH_CSV} containing two columns
+# 1) A CSV at ${PATH_CSV} containing two columns (NO HEADER)
 #    1st col: subject ID; 2nd col: path to input tab file
 # 
 # 2) Input tab files should have a clone ID columns (`--cloned` flag is on)
@@ -65,7 +65,7 @@ done
 
 
 # overall log for looping thru sample csv
-PATH_LOG="${PATH_WORK}log_bcr_createGermlines_${RUN_TYPE}_$(date '+%m%d%Y_%H%M%S').log"
+PATH_LOG="${PATH_WORK}/log_bcr_createGermlines_${RUN_TYPE}_$(date '+%m%d%Y_%H%M%S').log"
 
 CreateGermlines.py --version &> "${PATH_LOG}"
 echo "Input csv: ${PATH_CSV}" &>> "${PATH_LOG}"
