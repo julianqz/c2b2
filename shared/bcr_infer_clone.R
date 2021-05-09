@@ -171,7 +171,7 @@ defineCloneDb = function(db, sequenceColumn="junction", VJLgroupColumn="vjl_grou
     
     for (i_grp in 1:length(uniqGrps)) {
         
-        if (verbose) { if (i_grp%%100==0) { cat(i_grp, "\n") } }
+        if (verbose) { if (i_grp%%1000==0) { cat(i_grp, "\n") } }
         
         grp = uniqGrps[i_grp]
         

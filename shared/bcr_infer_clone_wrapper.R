@@ -53,7 +53,7 @@ stopifnot( all(sapply(thresh_vec, .check_thresh)) )
 
 
 setwd(opt$pathWork)
-sinkName = paste0("computingEnv_clust_", Sys.Date(), "-", 
+sinkName = paste0("computingEnv_cluster_", Sys.Date(), "-", 
                   format(Sys.time(), "%H%M%S"), '.txt')
 sink(sinkName)
 cat("threshold:", opt$threshold, "\n")
@@ -86,16 +86,16 @@ for (i in 1:nrow(subj_info)) {
     
     # export
     if (!is.null(db_clust)) {
-        fn_out_pass_tsv = paste0("clust-pass_", subj, ".tsv")
-        fn_out_pass_r = paste0("clust-pass_", subj, ".RData")
+        fn_out_pass_tsv = paste0("cluster-pass_", subj, ".tsv")
+        fn_out_pass_r = paste0("cluster-pass_", subj, ".RData")
         write.table(x=db_clust, file=fn_out_pass_tsv, quote=F, sep="\t",
                     row.names=F, col.names=T)
         save(db_clust, file=fn_out_pass_r)
     }
     
     if (!is.null(db_fail)) {
-        fn_out_fail_tsv = paste0("clust-fail_", subj, ".tsv")
-        fn_out_fail_r = paste0("clust-fail_", subj, ".RData")
+        fn_out_fail_tsv = paste0("cluster-fail_", subj, ".tsv")
+        fn_out_fail_r = paste0("cluster-fail_", subj, ".RData")
         write.table(x=db_fail, file=fn_out_fail_tsv, quote=F, sep="\t",
                     row.names=F, col.names=T)
         save(db_fail, file=fn_out_fail_r)
