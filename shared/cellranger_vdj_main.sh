@@ -24,6 +24,11 @@ usage () {
     echo -e "  -h  This message."
 }
 
+PROJ_ID_SET=false
+PATH_ROOT_SET=false
+PATH_FASTQ_SET=false
+PATH_REF_SET=false
+
 # Get commandline arguments
 while getopts "J:T:F:R:Y:Z:h" OPT; do
     case "$OPT" in
