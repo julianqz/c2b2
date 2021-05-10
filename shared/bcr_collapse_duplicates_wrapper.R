@@ -144,7 +144,7 @@ for (i in 1:nrow(subj_info)) {
         verify_collapse_duplicates(db=db, N=opt$verifyN,
                                    col_clone=opt$colClone,
                                    col_seq=opt$colSeq,
-                                   col_preserve=col_preserve,
+                                   col_preserve=opt$colPreserve,
                                    val_preserve_vec=val_preserve_vec,
                                    col_distinct_vec=col_distinct_vec)
     }
