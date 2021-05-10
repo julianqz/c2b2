@@ -104,6 +104,9 @@ run_collapse_duplicates = function(db, nproc=1,
     
     if (!is.null(col_preserve)) {
         
+        cat("\nBefore collapsing -", col_preserve, ":\n")
+        print(table(db[[col_preserve]]))
+        
         lst_bool_val = vector(mode="list", length=length(val_preserve_vec))
         lst_db_val = vector(mode="list", length=length(val_preserve_vec))
         names(lst_bool_val) = as.character(val_preserve_vec)
@@ -314,6 +317,11 @@ run_collapse_duplicates = function(db, nproc=1,
     
     cat("\nAfter collapsing - # seqs:",
         nrow(db_new), "\n")
+    
+    if (!is.null(col_preserve)) {
+        cat("\nAfter collapsing -", col_preserve, ":\n")
+        print(table(db_new[[col_preserve]]))
+    }
     
     return(db_new)
 }
