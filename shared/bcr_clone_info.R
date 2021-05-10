@@ -96,6 +96,8 @@ summarize_clone = function(db, col_clone, col_vec,
         }
     }
     
+    rownames(clone_info) = NULL
+    
     # sanity checks
     
     # no NA anywhere
