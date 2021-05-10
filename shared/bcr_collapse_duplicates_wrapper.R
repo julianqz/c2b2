@@ -112,7 +112,7 @@ sink()
 
 for (i in 1:nrow(subj_info)) {
     
-    subj = subj_info[["subj"]]
+    subj = subj_info[["subj"]][i]
     cat("\n", subj, "\n")
     
     #### collapse ####
