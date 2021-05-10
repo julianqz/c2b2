@@ -129,7 +129,7 @@ for (i in 1:nrow(subj_info)) {
                                  col_text_fields=col_text_fields,
                                  col_num_fields=col_num_fields,
                                  col_seq_fields=col_seq_fields,
-                                 col_preserve=col_preserve,
+                                 col_preserve=opt$colPreserve,
                                  val_preserve_vec=val_preserve_vec,
                                  col_distinct_vec=col_distinct_vec)
     
