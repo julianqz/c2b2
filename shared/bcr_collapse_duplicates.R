@@ -359,7 +359,7 @@ verify_collapse_duplicates = function(db, N,
     
     if (!is.null(col_preserve)) {
         for (val in val_preserve_vec) {
-            db = db[db[[col_preserve]]==val, ]
+            db = db[db[[col_preserve]]!=val, ]
         }
         stopifnot(nrow(db)>0)
     }
