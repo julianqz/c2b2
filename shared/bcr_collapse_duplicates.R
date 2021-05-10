@@ -8,20 +8,33 @@ if (RUN) {
     # - before collapsing, "" in c_call[1:3] dropped 
     # - after collapsing,  "" not in c_call for the collapse of [1:3]
     
-    # 2) behavior around sequences with varying lengths
-    # - before collapsing, [5] and [6] differ in lengths; [5] is a substring of [6]
-    # - [5] and [6] are not collapsed; a warning about length difference is displayed
+    # 2) behavior around NA in text_fields
+    # - before collapsing, NA in c_call[5:6] dropped 
+    # - after collapsing,  NA not in c_call for the collapse of [5:6]
+    
+    # 3) behavior around sequences with varying lengths
+    # - before collapsing, [8] and [9] differ in lengths; [8] is a substring of [9]
+    # - [8] and [9] are not collapsed; a warning about length difference is displayed
     
     # [1:3] collapsed
-    # [4] not collapsed 
-    # [5:6] not collapsed due to difference in length
-    tmp = data.frame(sequence_id=LETTERS[1:6],
+    # [4:6] collapsed
+    # [7] not collapsed 
+    # [8:9] not collapsed due to difference in length
+    
+    tmp = data.frame(sequence_id=LETTERS[1:9],
                      sequence_alignment=c("CCCCTGGG","CCCCTGGN","CCCCTGNN",
+                                          "ATGCATGC","ATGCATGC","ATGCATGC",
                                           "NAACTGGN",
                                           "TTTTAAAG","TTTTAAAGC"),
-                     c_call=c("IGHM", "IGHG", "", "IGHA", "IGHE", "IGHE"),
-                     sample_id=c("S1", "S1", "S2", "S2", "S3", "S3"),
-                     duplicate_count=1:6,
+                     c_call=c("IGHM", "IGHG", "",
+                              "IGHD", NA, NA,
+                              "IGHA", 
+                              "IGHE", "IGHE"),
+                     sample_id=c("S1", "S1", "S2", 
+                                 "S4", "S4", "S4",
+                                 "S2",
+                                 "S3", "S3"),
+                     duplicate_count=1:9,
                      stringsAsFactors=FALSE)
     
     alakazam::collapseDuplicates(tmp, 
