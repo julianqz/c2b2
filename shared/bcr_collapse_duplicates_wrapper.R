@@ -53,6 +53,10 @@ option_list = list(
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
+# without next line sink won't be able to capture alakazam version
+# (even if func in opt$pathHelper `require(alakazam)`)
+suppressPackageStartupMessages(require(alakazam))
+
 source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
