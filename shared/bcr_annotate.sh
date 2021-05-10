@@ -76,16 +76,16 @@ usage () {
     echo -e "  -8  [QCSP] --qcColGerm."
     echo -e "  -9  [QCSP] --qcMaxN."
     echo -e "  -a  [QCSP] --qcColN. If multuple values, separate by comma.\n" \
-            "             E.g. 'sequence_alignment, junction' "
+            "             E.g. 'sequence_alignment, cdr3' "
     echo -e "  -b  [QCSP] --qcLastPosN. If multiple values, separate by comma.\n" \
             "             E.g. '12, 312' "
     echo -e "  -c  [QCSP] --qcAsPercN. Boolean for R."        
     echo -e "  -d  [QCSP] --qcMaxNonATGC."
     echo -e "  -e  [QCSP] --qcAsPercNonATGC. Boolean for R."
     echo -e "  -f  [QCSP] --qcColNoneEmpty. If multuple values, separate by comma.\n" \
-            "             E.g. 'germline_alignment, junction' "
+            "             E.g. 'germline_alignment, cdr3' "
     echo -e "  -g  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
-            "             E.g. 'germline_alignment, junction, PRCONS' "
+            "             E.g. 'germline_alignment, cdr3, PRCONS' "
 	echo -e "  -i  [QCSP] --qcColLenMod3."
     echo -e "  -j  [QCSP] --qcColLocus."
     echo -e "  -k  [QCSP] --qcColCell."
@@ -341,6 +341,8 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
 			# if `false` passed to `MK_PARTIAL`, `PARTIAL` is set to empty
 			# if `MK_10X` is set, `CSV_10X` is set to `--10x ${?}`; otherwise, empty
+
+            # use --extended so that fields such as "cdr3" are created
 
 			if $MK_10X; then
 

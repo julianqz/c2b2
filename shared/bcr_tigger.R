@@ -9,7 +9,7 @@
 #' @param   col_seq                Column name of sequence column.
 #' @param   col_v                  Column name of V call.
 #' @param   col_prod               Column name of productive vs. non-productive.
-#' @param   col_junc_len           Column name of junction length.
+#' @param   col_cdr3_len           Column name of cdr3 length.
 #' @param   p_fraction_to_explain  Parameter passed to `inferGenotype`.
 #' @param   p_gene_cutoff          Parameter passed to `inferGenotype`.
 #' @param   p_find_unmutated       Parameter passed to `inferGenotype`.
@@ -26,7 +26,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
                       col_seq="sequence_alignment", 
                       col_v="v_call", 
                       col_prod="productive", 
-                      col_junc_len="junction_length",
+                      col_cdr3_len="cdr3_length",
                       p_fraction_to_explain=0.875,
                       p_gene_cutoff=1e-04,
                       p_find_unmutated=T,
@@ -66,21 +66,21 @@ run_tigger = function(path_imgt, path_helper, path_work,
     print(table(db[[col_prod]]))
     
     
-    ### remove junction_length==0/NA (tigger would fail)
-    cat("\nsummary on distribution of junction lengths:\n")
-    print(summary(db[[col_junc_len]]))
+    ### remove cdr3_length==0/NA (tigger would fail)
+    cat("\nsummary on distribution of", col_cdr3_len, ":\n")
+    print(summary(db[[col_cdr3_len]]))
     
-    # non-productive could contribute junction_length of NA
-    bool_jl_0 = db[[col_junc_len]]==0
+    # non-productive could contribute cdr3_length of NA
+    bool_jl_0 = db[[col_cdr3_len]]==0
     num_jl_0 = sum(bool_jl_0, na.rm=T)
-    bool_jl_NA = is.na(db[[col_junc_len]])
+    bool_jl_NA = is.na(db[[col_cdr3_len]])
     num_jl_NA = sum(bool_jl_NA)
-    cat("\n# junction lengths being 0:", num_jl_0, "\n")
-    cat("\n# junction lengths being NA:", num_jl_NA, "\n")
+    cat("\n# cdr3 lengths being 0:", num_jl_0, "\n")
+    cat("\n# cdr3 lengths being NA:", num_jl_NA, "\n")
     
     # subset
     db = db[(!bool_jl_0 & !bool_jl_NA), ]
-    cat("\nnrow, after removing junction_length of 0 and NA:", nrow(db), "\n")
+    cat("\nnrow, after removing", col_cdr3_len, "of 0 and NA:", nrow(db), "\n")
     
     if (nrow(db)>0) {
         ### genotyping

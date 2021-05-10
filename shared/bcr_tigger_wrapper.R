@@ -31,8 +31,8 @@ option_list = list(
                 type="character", help="col_v."),
     make_option("--colProd", action="store", default="productive", 
                 type="character", help="col_prod."),
-    make_option("--colJuncLen", action="store", default="junction_length", 
-                type="character", help="col_junc_len."),
+    make_option("--colCDR3Len", action="store", default="cdr3_length", 
+                type="character", help="col_cdr3_len."),
     make_option("--findUnmutated", action="store", default=TRUE, 
                 type="logical", help="p_find_unmutated."),
     make_option("--textSize", action="store", default=12, 
@@ -73,7 +73,7 @@ for (subj in vec_subj) {
                col_seq=opt$colSeq, 
                col_v=opt$colV, 
                col_prod=opt$colProd, 
-               col_junc_len=opt$colJuncLen,
+               col_cdr3_len=opt$colCDR3Len,
                p_find_unmutated=opt$findUnmutated,
                p_text_size=opt$textSize)
 

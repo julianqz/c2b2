@@ -5,11 +5,11 @@
 #' Given a single partition of heavy chain-only bulk-seqs based on heavy chain VJL combination, 
 #' or of VH:VL paired single-cell BCRs based on heavy and light chain VJL combinations,
 #' perform clonal clustering with a specified distance threshold. 
-#' (VJL=V gene, J gene, junction length)
+#' (VJL=V gene, J gene, cdr3 length)
 #'
 #' @param    db              data.frame containing sequence data.
-#' @param    sequenceColumn  name of the column containing heavy chain junctions. It is the distance
-#'                           between these heavy chain junction sequences that is used for hierarchical
+#' @param    sequenceColumn  name of the column containing heavy chain cdr3. It is the distance
+#'                           between these heavy chain cdr3 sequences that is used for hierarchical
 #'                           clustering. Note that light chain sequences are not used at this stage.
 #' @param    VJLgroupColumn  name of the column containing information about partitioning of heavy chain
 #'                           bulk-seq based on heavy chain VJL combination, or that of single-cell VH:VL 
@@ -24,7 +24,7 @@
 #'                           clustering. Any value accepted by \link[stats]{hclust} is fine. 
 #'                           Defaults to \code{"single"}.
 #' @param    maxmiss         The maximum number of non-ACGT characters (gaps or Ns) to permit in the 
-#'                           junction sequence before excluding the record from clonal assignment. Note, 
+#'                           cdr3 sequence before excluding the record from clonal assignment. Note, 
 #'                           under single linkage non-informative positions can create artifactual links 
 #'                           between unrelated sequences. Use with caution. Default to \code{0}.    
 #' @param    verbose         if \code{TRUE}, print a message when a sequence is excluded due to the presence
@@ -54,7 +54,7 @@
 #' provided that the partitioning column has been saved via, for instance, \code{keepVJLgroup} in
 #' \link{distToNearest}.
 
-defineClonePerPartition = function(db, sequenceColumn="junction", VJLgroupColumn="vjl_group", cloneColumn="clone_id", 
+defineClonePerPartition = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group", cloneColumn="clone_id", 
                                    threshold, maxmiss=0, verbose=F,
                                    linkage=c("single", "complete", "average", "ward.D", "ward.D2", 
                                              "mcquitty", "median", "centroid")) {
@@ -148,7 +148,7 @@ defineClonePerPartition = function(db, sequenceColumn="junction", VJLgroupColumn
 #' @return  A list containing `db_clust` and `db_fail`, which can be either 
 #'          `data.frame` or `NULL`. 
 
-defineCloneDb = function(db, sequenceColumn="junction", VJLgroupColumn="vjl_group", 
+defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group", 
                          cloneColumn="clone_id", 
                          threshold, maxmiss=0, linkage="single", verbose=T) {
     # checks

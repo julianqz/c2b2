@@ -19,7 +19,7 @@ option_list = list(
                 help="Path to bcr_infer_clone.R."),
     make_option("--threshold", action="store", default=NA, 
                 type="character", help="Clustering threshold."),
-    make_option("--colSeq", action="store", default="junction", 
+    make_option("--colSeq", action="store", default="cdr3", 
                 type="character", help="sequenceColumn."),
     make_option("--colVJLgroup", action="store", default="vjl_group", 
                 type="character", help="VJLgroupColumn."),

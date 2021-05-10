@@ -27,7 +27,7 @@ option_list = list(
                 type="character", help="Column name containing subject info."),
     make_option("--colSeqID", action="store", default="sequence_id", 
                 type="character", help="Column name containing sequence ID."),
-    make_option("--colSeq", action="store", default="junction", 
+    make_option("--colSeq", action="store", default="cdr3", 
                 type="character", help="col_seq."),
     make_option("--colV", action="store", default="v_call", 
                 type="character", help="col_v."),
