@@ -1,5 +1,59 @@
 # miscellaneous operational tasks
 
+#' Convert to numeric values to a specified scale
+#' 
+#' @param vec_orig    A numeric vector of original values.
+#' @param max_scale   Maximum in new scale.
+#' @param min_scale   Minimum in new scale.
+#' @param keep_NA     Whether to keep NAs, if any, in `vec_orig`. Boolean.
+#' 
+#' @return  A numeric vector of scaled values.
+#' 
+#' @details If `keep_NA` is `TRUE`, any `NA` in `vec_orig` will remain `NA`.
+#'          If `keep_NA` is `FALSE`, any `NA` in `vec_orig` will become `min_scale`.
+#' 
+scale_values = function(vec_orig, max_scale, min_scale, keep_NA=FALSE) {
+    
+    max_orig = max(vec_orig, na.rm=T) 
+    min_orig = min(vec_orig, na.rm=T)
+    range_orig = max_orig - min_orig
+    range_scale = max_scale - min_scale
+    
+    vec_new = sapply(vec_orig, function(v){
+        if (is.na(v)) {
+            if (keep_NA) {
+                return(NA)
+            } else {
+                # NA in vec_orig assigned min scaled value
+                return(min_scale)
+            }
+        } else {
+            if (range_orig>0) {
+                # if there's variation in vec_orig entries
+                v_2 = (v-min_orig) / range_orig * range_scale + min_scale
+                return(v_2)
+            } else {
+                # if all vec_orig entries are the same
+                return(min_scale)
+            }
+        }
+    }, USE.NAMES=F)
+    
+    # sanity checks
+    # length should stay unchanged
+    stopifnot(length(vec_orig)==length(vec_new))
+    if (keep_NA) {
+        # if keeping NAs, the number of NAs should stay unchanged
+        stopifnot( sum(is.na(vec_orig)) == sum(is.na(vec_new)) )
+    } else {
+        # if setting NAs to min, there should be no more NAs
+        stopifnot(!any(is.na(vec_new)))
+    }
+    
+    return(vec_new)
+}
+
+
 #' Select rows with specific values in specific columns
 #'
 #' @param  df       A `data.frame`.
