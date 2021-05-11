@@ -53,7 +53,12 @@
 #' or heavy and light chain VJL combinations in single-cell mode, needs to be performed only once, 
 #' provided that the partitioning column has been saved via, for instance, \code{keepVJLgroup} in
 #' \link{distToNearest}.
-
+#' 
+#' The clustering threshold is used as `h` (height) for `cutree`, which then
+#' uses `h` to calculate `k` (number of clusters):
+#' k <- n + 1L - apply(outer(c(tree$height, Inf), h, ">"), 2, which.max)
+#' Notice the ">" sign. This suggests that within each cluster, heights are <= h.
+#' 
 defineClonePerPartition = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group", cloneColumn="clone_id", 
                                    threshold, maxmiss=0, verbose=F,
                                    linkage=c("single", "complete", "average", "ward.D", "ward.D2", 
