@@ -118,7 +118,7 @@ for (i in 1:nrow(subj_info)) {
     cat("\n", subj, "\n")
     
     # db
-    load(sub_info[["path_db"]][i])
+    load(subj_info[["path_db"]][i])
     
     # holder
     lst_add = vector(mode="list", length=length(lst_limits))
