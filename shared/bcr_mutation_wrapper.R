@@ -63,9 +63,9 @@ if (!is.null(opt$segmentLimits)) {
     # "1,312;19,312"
     
     # first, separate different segments
-    # the expected separator between segments is semi-colon
+    # the expected separator between segments is @
     # this works with just one segment without ; too
-    vec_segments = strsplit(opt$segmentLimits, "\\s?;\\s?")[[1]]
+    vec_segments = strsplit(opt$segmentLimits, "\\s?@\\s?")[[1]]
     
     # next, within each segment, get the two limits
     # the expected separator between limits is comma
