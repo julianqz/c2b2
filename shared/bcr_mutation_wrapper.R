@@ -63,7 +63,8 @@ if (!is.null(opt$segmentLimits)) {
     # "1,312;19,312"
     
     # first, separate different segments
-    # the expected separator between segments is @
+    # the expected separator between segments is @ 
+    # (semi-colon ; won't work as separator -- causes parsing problem in .sh)
     # this works with just one segment without ; too
     vec_segments = strsplit(opt$segmentLimits, "\\s?@\\s?")[[1]]
     
