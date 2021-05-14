@@ -260,17 +260,15 @@ run_collapse_duplicates = function(db, nproc=1,
     # If user wants to parallellize this function and specifies nproc > 1, then
     # initialize and register slave R processes/clusters & 
     # export all necesseary environment variables, functions and packages.
-    if(nproc==1) {
+    if (nproc==1) {
         # If needed to run on a single core/cpu then, registerDoSEQ
         # Without doing this, foreach will give warning (though will still run)
         registerDoSEQ()
     } else if (nproc>1) {
         cluster = parallel::makeCluster(nproc, type="PSOCK")
         registerDoParallel(cluster)
-    }
-    
-    # export to cluster
-    if (nproc>1) {
+
+        # export to cluster
         export_functions <- list("clones", 
                                  "db_to_collapse",
                                  "col_clone",
@@ -286,6 +284,7 @@ run_collapse_duplicates = function(db, nproc=1,
                                  )
         parallel::clusterExport(cluster, export_functions, envir=environment())
     }
+    
     
     ## loop thru clones
     lst_collapse = foreach(i=1:length(clones)) %dopar% {
