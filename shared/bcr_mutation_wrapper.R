@@ -25,7 +25,7 @@ option_list = list(
                 help="Whether to calculate using entire/full sequences. Boolean. If FALSE, segmentLimits must be specified."),
     make_option("--segmentLimits", action="store", default=NULL, type="character", 
                 help="Comma-separated string parsed into lst_limits. Do not specify via command line if NULL. If NULL, useFull must be TRUE."),
-    make_option("--colRemove", action="store", default=NULL, type="character", 
+    make_option("--colRmv", action="store", default=NULL, type="character", 
                 help="Comma-separated string parsed into col_rmv. Do not specify via command line if NULL.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
@@ -91,8 +91,8 @@ if (!is.null(opt$segmentLimits)) {
 stopifnot(length(lst_limits)>=1)
 
 
-if (!is.null(opt$colRemove)) {
-    col_rmv = strsplit(opt$colRemove, "\\s?;\\s?")[[1]]
+if (!is.null(opt$colRmv)) {
+    col_rmv = strsplit(opt$colRmv, "\\s?,\\s?")[[1]]
 } else {
     col_rmv = NULL
 }
