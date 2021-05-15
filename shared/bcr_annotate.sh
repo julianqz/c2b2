@@ -433,21 +433,27 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # split
     if $BOOL_SP; then
 
-    	echo "- splitting db" &>> "${PATH_LOG}"
+        if [ -s "${PATH_INPUT_SP}" ]; then
 
-    	# output: [outname]_[heavy|light]_[pr|npr].tsv
+        	echo "- splitting db" &>> "${PATH_LOG}"
 
-    	"${PATH_SCRIPT_QCSP_WRAPPER}" \
-    		--helper "${PATH_SCRIPT_QCSP_MAIN}" \
-    		--qc "FALSE" \
-    		--sp "TRUE" \
-    		--spDb "${PATH_INPUT_SP}" \
-    		--spOutname "${CUR_ID}_qc-pass" \
-    		--spOutdir "${PATH_OUTPUT_ID}" \
-    		--spColV "${SP_COL_V}" \
-    		--spColProd "${SP_COL_PROD}" \
-    		--spValProd "${SP_VAL_PROD}" \
-    		&>> "${PATH_LOG_ID}"
+        	# output: [outname]_[heavy|light]_[pr|npr].tsv
+
+        	"${PATH_SCRIPT_QCSP_WRAPPER}" \
+        		--helper "${PATH_SCRIPT_QCSP_MAIN}" \
+        		--qc "FALSE" \
+        		--sp "TRUE" \
+        		--spDb "${PATH_INPUT_SP}" \
+        		--spOutname "${CUR_ID}_qc-pass" \
+        		--spOutdir "${PATH_OUTPUT_ID}" \
+        		--spColV "${SP_COL_V}" \
+        		--spColProd "${SP_COL_PROD}" \
+        		--spValProd "${SP_VAL_PROD}" \
+        		&>> "${PATH_LOG_ID}"
+
+        else
+            echo "- splitting db skipped (${PATH_INPUT_SP} does not exist)" &>> "${PATH_LOG}"
+        fi
    
     fi
 
