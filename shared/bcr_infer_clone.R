@@ -63,8 +63,9 @@ defineClonePerPartition = function(db, sequenceColumn="cdr3", VJLgroupColumn="vj
                                    threshold, maxmiss=0, verbose=F,
                                    linkage=c("single", "complete", "average", "ward.D", "ward.D2", 
                                              "mcquitty", "median", "centroid")) {
-    require(stringi)
-    require(alakazam)
+    
+    suppressPackageStartupMessages(require(stringi))
+    suppressPackageStartupMessages(require(alakazam))
     
     # all rows must be in same partition
     curGrp = unique(db[[VJLgroupColumn]])
