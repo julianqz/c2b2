@@ -19,7 +19,7 @@
 #'          `spatial/getGermIMGT.R`.         
 
 read_multiline_fasta = function(filename) {
-    require(stringi)
+    suppressPackageStartupMessages(require(stringi))
     rawLines = readLines(filename)
     headerIdx = which(grepl(pattern=">", x=rawLines))
     nSeqs = length(headerIdx)
