@@ -40,7 +40,7 @@
 usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
     echo -e "  -A  Project ID."          
-    echo -e "  -B  Run type. One of {bulk, mab, 10x}. Note the lowercase 'x'." 
+    echo -e "  -B  Run type. One of {bulk, mab, nested, 10x}. Note the lowercase 'x'." 
     echo -e "  -C  Annotator. One of {igblast, imgt}."             
     echo -e "  -D  Path to the top-level working dir." 
     echo -e "  -E  Number of cores for parallelization." 
