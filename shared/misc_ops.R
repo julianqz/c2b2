@@ -3,6 +3,10 @@
 #' Convert to numeric values to a specified scale
 #' 
 #' @param vec_orig    A numeric vector of original values.
+#' @param max_orig    If specified, use this as the upper bound of original values.
+#'                    If `NULL`, the upper bound will be derived from `vec_orig`.
+#' @param min_orig    If specified, use this as the lower bound of original values.                    
+#'                    If `NULL`, the lower bound will be derived from `vec_orig`.
 #' @param max_scale   Maximum in new scale.
 #' @param min_scale   Minimum in new scale.
 #' @param keep_NA     Whether to keep NAs, if any, in `vec_orig`. Boolean.
@@ -12,10 +16,13 @@
 #' @details If `keep_NA` is `TRUE`, any `NA` in `vec_orig` will remain `NA`.
 #'          If `keep_NA` is `FALSE`, any `NA` in `vec_orig` will become `min_scale`.
 #' 
-scale_values = function(vec_orig, max_scale, min_scale, keep_NA=FALSE) {
+scale_values = function(vec_orig, max_orig=NULL, min_orig=NULL,
+                        max_scale, min_scale, keep_NA=FALSE) {
     
-    max_orig = max(vec_orig, na.rm=T) 
-    min_orig = min(vec_orig, na.rm=T)
+    # if max_orig or min_orig is not specified, derive from vec_orig
+    if (is.null(max_orig)) { max_orig = max(vec_orig, na.rm=T) }
+    if (is.null(min_orig)) { min_orig = min(vec_orig, na.rm=T) }
+    
     range_orig = max_orig - min_orig
     range_scale = max_scale - min_scale
     
