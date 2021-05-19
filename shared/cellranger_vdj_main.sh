@@ -148,7 +148,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 		&> "${PATH_LOG_ID}"
 
     # remove .bam, .bambi
-    rm "${CUR_ID}"/outs/*.bam*
+    rm "${PATH_OUTPUT}${CUR_ID}"/outs/*.bam*
 
 done
 
