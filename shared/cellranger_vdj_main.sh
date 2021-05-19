@@ -147,8 +147,11 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 		--localmem "${CR_M}" \
 		&> "${PATH_LOG_ID}"
 
-    # remove .bam, .bambi
+    # remove .bam, .bambi, etc.
     rm "${PATH_OUTPUT}${CUR_ID}"/outs/*.bam*
+    rm "${PATH_OUTPUT}${CUR_ID}"/_*
+    rm -r "${PATH_OUTPUT}${CUR_ID}/SC_VDJ_ASSEMBLER_CS"
+    rm "${PATH_OUTPUT}${CUR_ID}/${CUR_ID}.mri.tgz"
 
 done
 
