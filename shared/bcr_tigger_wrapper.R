@@ -12,13 +12,8 @@ suppressPackageStartupMessages(require(optparse))
 option_list = list(
     make_option("--pathRunTigger", action="store", default=NA, type="character", 
                 help="Path to bcr_tigger.R."),
-    make_option("--subjList", action="store", default=NA, 
-                type="character", help="Comma-separated list of subjects."),
-    make_option("--prefix", action="store", default=NA, 
-                type="character", 
-                help="Common filename prefix to input .RData files. Eg: 'db_combined_'."),
-    make_option("--pathDb", action="store", default=NA, type="character", 
-                help="Common path to input .RData files."),
+    make_option("--pathCSV", action="store", default=NA, 
+                type="character", help="Path to CSV containing subject list and paths to input files."),
     make_option("--pathIMGT", action="store", default=NA, type="character", 
                 help="path_imgt."),
     make_option("--pathHelper", action="store", default=NA, type="character", 
@@ -40,16 +35,15 @@ option_list = list(
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
+# without next line sink won't be able to capture tigger version
+# (even if func in opt$pathRunTigger `require(tigger)`)
+suppressPackageStartupMessages(library(tigger))
+
 # run_tigger()
 source(opt$pathRunTigger)
 
-# parse
+subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
-# \s is space
-# ? means preceding item is optional and will be matched at most once
-vec_subj = strsplit(opt$subjList, "\\s?,\\s?")[[1]]
-
-suppressPackageStartupMessages(library(tigger))
 
 setwd(opt$pathWork)
 sinkName = paste0("computingEnv_tigger_", Sys.Date(), "-", 
@@ -59,12 +53,13 @@ sessionInfo()
 sink()
 
 
-for (subj in vec_subj) {
+for (i in 1:nrow(subj_info)) {
     
-    # load db
-    setwd(opt$pathDb)
-    fn = paste0(opt$prefix, subj, ".RData")
-    load(fn)
+    subj = subj_info[["subj"]][i]
+    cat("\n", subj, "\n")
+    
+    # db
+    load(subj_info[["path_db"]][i])
     
     run_tigger(path_imgt=opt$pathIMGT, 
                path_helper=opt$pathHelper, 
