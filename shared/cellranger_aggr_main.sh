@@ -108,4 +108,8 @@ cellranger aggr \
 	--localmem "${CR_M}" \
 	&> "${PATH_LOG}"
 
+rm "${PATH_OUTPUT}${AGGR_ID}"/_*
+rm -r "${PATH_OUTPUT}${AGGR_ID}/SC_RNA_AGGREGATOR_CS"
+rm "${PATH_OUTPUT}${AGGR_ID}/${AGGR_ID}.mri.tgz"
+
 echo "ALL DONE" &>> "${PATH_LOG}"
