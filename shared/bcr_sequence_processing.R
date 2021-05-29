@@ -70,7 +70,7 @@ export_fasta = function(sequences, headers, add_header_symbol, filename) {
         # header
         cat(ifelse(add_header_symbol, ">", ""), headers[i], sep="", "\n")
         # sequence
-        cat(sequences[i], "\n")
+        cat(sequences[i], sep="", "\n")
     }
     sink()
 }
@@ -167,5 +167,55 @@ remove_duplicate_fasta = function(filename) {
     }
     
     return(vec)
+}
+
+
+#' Remove IMGT gaps in germline sequence and optionally also 
+#' in observed sequence based on gaps present in germline sequence.
+#' 
+#' Adapted from helpers.R for JI 2020
+#' 
+#' @param    germ  IMGT-gapped germline sequence.
+#' @param    obsv  IMGT-gapped observed sequence(s); optional.
+#' 
+#' @return   A list containing `germ_no_gaps` and `obsv_no_gaps`.
+#' 
+#' @details  IMGT gaps are removed from germline. 
+#'           Corresponding gap positions in observed are also removed.
+#'        
+#' @examples
+#' germ = "ABC...EDF..GTGH...JHK.....LOP....W"
+#' obsv = "ABCXXXEDFXXGTGHXXXJHKXXXXXLOPXXXXW"
+#' remove_imgt_gaps(germ, NULL)
+#' remove_imgt_gaps(obsv, NULL)
+#' remove_imgt_gaps(germ, obsv)
+#' 
+remove_imgt_gaps = function(germ, obsv=NULL) {
+    
+    require(stringi)
+    
+    # only IMGT gaps (triple dots "..." are removed)
+    if (stri_detect(str=germ, regex="\\.\\.\\.")) {
+        # remove IMGT gaps from germline
+        germ_no_gaps = stri_replace(str=germ, replacement="", 
+                                    regex="\\.\\.\\.", mode="all")
+        
+        if (!is.null(obsv)) {
+            # locate IMGT gaps in germline
+            # matrix: rows: instances; cols: start & end
+            gap_pos = stri_locate(str=germ, regex="\\.\\.\\.", mode="all")[[1]]
+            # remove IMGT gaps from observed sequence
+            for (i in 1:nrow(gap_pos)) {
+                stri_sub(str=obsv, from=gap_pos[i, "start"], to=gap_pos[i, "end"]) <- ""
+                gap_pos = gap_pos - 3
+            }
+        }
+        obsv_no_gaps = obsv
+    } else {
+        germ_no_gaps = germ
+        obsv_no_gaps = obsv
+    }
+    
+    return(list(germ_no_gaps=germ_no_gaps, obsv_no_gaps=obsv_no_gaps))
 }
 
