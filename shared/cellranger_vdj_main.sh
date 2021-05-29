@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Run `cellranger vdj` for a list of samples
+# Run `cellranger vdj` for a list of BCR or TCR samples
 #
 # Author: Julian Q Zhou
-# Date:   2021-05-01
+# Date:   2021-05-28
 #
 # Prereqs:  
 # 1) The following must be in ${PROJ_ID}/aux/
-#    - a sample list: "cr_list_vdj_${PROJ_ID}.txt"
+#    - a sample list: "cr_list_${RECEPTOR}_${PROJ_ID}.txt"
 #      each row is semi-colon-separated
 #      [sample];[comma-separated fastq id(s)]
 # 2) Assumes that all fastqs are in one centralized folder
@@ -15,7 +15,8 @@
 # Print usage
 usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
-    echo -e "  -J  Project ID."                        
+    echo -e "  -J  Project ID."
+    echo -e "  -K  Receptor type. Either 'bcr' or 'tcr'."                        
     echo -e "  -T  Path to the top-level working dir." 
     echo -e "  -F  Path to the centralized fastq dir." 
     echo -e "  -R  Path to the reference dir." 
@@ -25,15 +26,19 @@ usage () {
 }
 
 PROJ_ID_SET=false
+RECEPTOR_SET=false
 PATH_ROOT_SET=false
 PATH_FASTQ_SET=false
 PATH_REF_SET=false
 
 # Get commandline arguments
-while getopts "J:T:F:R:Y:Z:h" OPT; do
+while getopts "J:K:T:F:R:Y:Z:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID=$OPTARG
         PROJ_ID_SET=true
+        ;;
+    K)  RECEPTOR=$OPTARG
+        RECEPTOR_SET=true
         ;;
     T)  PATH_ROOT=$(realpath $OPTARG)
         PATH_ROOT_SET=true
@@ -63,6 +68,12 @@ done
 # Exit if no project ID provided
 if ! $PROJ_ID_SET; then
     echo "You must specify a project ID via the -J option" >&2
+    exit 1
+fi
+
+# Exit if no receptor type provided
+if ! $RECEPTOR_SET; then
+    echo "You must specify a receptor type via the -K option" >&2
     exit 1
 fi
 
@@ -96,12 +107,12 @@ PATH_AUX="${PATH_PROJ}/aux/"
 mkdir -p "${PATH_AUX}"
 
 # cellranger vdj outputs
-PATH_OUTPUT="${PATH_PROJ}/cr_vdj/"
+PATH_OUTPUT="${PATH_PROJ}/cr_${RECEPTOR}/"
 mkdir -p "${PATH_OUTPUT}"
 
-PATH_LOG="${PATH_AUX}log_cr_vdj_$(date '+%m%d%Y_%H%M%S').log"
+PATH_LOG="${PATH_AUX}log_cr_${RECEPTOR}_$(date '+%m%d%Y_%H%M%S').log"
 
-NAME_LIST="cr_list_vdj_${PROJ_ID}.txt"
+NAME_LIST="cr_list_${RECEPTOR}_${PROJ_ID}.txt"
 PATH_LIST="${PATH_AUX}${NAME_LIST}" 
 
 
@@ -135,7 +146,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 	echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
 
 	# sample-specific log
-	PATH_LOG_ID="${PATH_AUX}log_cr_vdj_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
+	PATH_LOG_ID="${PATH_AUX}log_cr_${RECEPTOR}_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
 
     # vdj does not have --nosecondary option
 	cellranger vdj \
