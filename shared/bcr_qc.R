@@ -493,7 +493,8 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 #' @param   chain_type                  One of "IG" or "TR.
 #' @param   col_locus                   Column name for locus. Expected values
 #'                                      for `chain_type="IG"` are `{IGH, IGK, IGL}`.
-#' @param   col_cell                    Column name for cell ID.                                     
+#' @param   col_cell                    Column name for cell ID.
+#' @param   col_umi                     Column name for UMI count.                                     
 #' @param   check_locus                 Boolean. Whether to perform check on the 
 #'                                      consistency between V call and locus annotation.
 #' @param   col_v_call                  Column name for V call.
@@ -501,26 +502,37 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 #'                                      number of heavy and light chains per cell.
 #' @param   logic_num_HL                The logic to be applied to the check on the
 #'                                      number of heavy and light chains per cell.
-#'                                      One of `1H_1L`, `1H_min1L`, or `1H`,
+#'                                      One of `1H_1L`, `1H_min1L`, 
+#'                                      `1H_min1L_or_min1H_1L`, or `1H`,
 #'
 #' @returns A bool vector of length `nrow(db)` indicating whether each row
 #'          passed all checks of choice.
 #'          
-#' @details While each row in `db` is expected to represent a sequence, the `db`
-#'          is supplied as input to the function, the cell-level QC is applied 
+#' @details While each row in the `db` supplied as input to the function is 
+#'          expected to represent a sequence, the cell-level QC is applied 
 #'          on a cell-by-cell basis, and considers all sequences linked to a cell
 #'          during the check for that cell. The result of the check is then 
 #'          propagated to all sequences linked to that cell.    
 #'          
 #'          `1H_1L`: pass if a cell has exactly 1 heavy chain and exactly 1 light chain
 #'          `1H_min1L`: pass if a cell has exactly 1 heavy chain and at least 1 light chain
+#'          `1H_min1L_or_min1H_1L`: pass if 
+#'          - either a cell has exactly 1 heavy chain and at least 1 light chain
+#'          - or a cell has at least 1 heavy chain and exactly 1 light chain
 #'          `1H`: pass if a cell has exactly 1 heavy chain    
+#'          
+#'          In the cases of `1H_min1L` and `1H_min1L_or_min1H_1L`, within each 
+#'          cell, for the chain type with more than 1 sequence, the most abundant
+#'          sequence (in terms of UMI count) is kept while the rest discarded. 
+#'          When tied, the sequence that appears earlier in the db is kept.
+#'          In other words, exactly 1 heavy and 1 light per cell is kept ultimately.
 #'                                                                                                                                                                          
 perform_qc_cell = function(db, chain_type=c("IG", "TR"), 
-                           col_locus, col_cell,
+                           col_locus, col_cell, col_umi,
                            check_locus, col_v_call, 
                            check_num_HL, 
-                           logic_num_HL=c("1H_1L", "1H_min1L", "1H")
+                           logic_num_HL=c("1H_1L", "1H",
+                                          "1H_min1L", "1H_min1L_or_min1H_1L")
                            ) {
     
     stopifnot( all(c(col_locus, col_cell) %in% colnames(db)) )
@@ -588,6 +600,13 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
             # excatly 1 heavy, regardless of the number of light chain(s)
             # (could be 0 light chain)
             bool_num_HL = chain_count_mtx[, "heavy"]==1
+        } else if (logic_num_HL=="1H_min1L_or_min1H_1L") {
+            # exactly 1 heavy, at least 1 light
+            # OR
+            # at least 1 heavy, exactly 1 light
+            bool_1H_min1L = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]>=1
+            bool_min1H_1L = chain_count_mtx[, "heavy"]>=1 & chain_count_mtx[, "light"]==1
+            bool_num_HL = bool_1H_min1L | bool_min1H_1L
         } else {
             warning("Unrecognized option for `logic`. `check_num_HL` skipped.\n")
             bool_num_HL = rep(T, nrow(chain_count_mtx))
@@ -601,6 +620,69 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
         uniq_cells_pass = uniq_cells[bool_num_HL]
         
         bool_num_HL_db = db[[col_cell]] %in% uniq_cells_pass
+        
+        # filter down to exactly 1 H and exactly 1 L
+        if (logic_num_HL %in% c("1H_min1L", "1H_min1L_or_min1H_1L")) {
+            # if there are cells with more than 1 H or L
+            if ( sum(bool_num_HL_db) != length(uniq_cells_pass)*2 ) {
+                
+                # initialize
+                bool_keep_seq = rep(T, nrow(db))
+                
+                # cells with >1 heavy, or {either >1 heavy or >1 light}
+                cells_min1 = rownames(chain_count_mtx)[rowSums(chain_count_mtx>1)==1]
+                
+                # For each cell, set the boolean in bool_kep_seq for the non-majority
+                # heavy/light (depending on which chain has >1) to F
+                # If tied, keep the seq that appears earlier in the db (which.max) 
+                for (cur_cell in cells_min1) {
+                    # wrt db
+                    idx_cell = which(db[[col_cell]]==cur_cell)
+                    
+                    # which has >1? heavy or light
+                    cur_cell_locus_tab = table(db[[col_locus]][idx_cell])
+                    # wrt cur_cell_locus_tab
+                    i_tab_h = which(names(cur_cell_locus_tab)=="IGH")
+                    
+                    if (cur_cell_locus_tab[i_tab_h]>1) {
+                        # if >1 heavy, must be only 1 light
+                        stopifnot(sum(cur_cell_locus_tab[-i_tab_h])==1)
+                        # keep most abundant heavy; disregard remaining heavy
+                        # wrt db
+                        idx_db_h = which(db[[col_cell]]==cur_cell & db[[col_locus]]=="IGH")
+                        # wrt idx_db_h
+                        idx_db_h_max = which.max(db[[col_umi]][idx_db_h])
+                        bool_keep_seq[idx_db_h[-idx_db_h_max]] = F
+                    } else {
+                        # if 1 heavy, must be >1 light
+                        stopifnot(sum(cur_cell_locus_tab[-i_tab_h])>1)
+                        # keep most abundant light; disregard remaining light
+                        # wrt db
+                        idx_db_l = which(db[[col_cell]]==cur_cell & db[[col_locus]]!="IGH")
+                        # wrt idx_db_l
+                        idx_db_l_max = which.max(db[[col_umi]][idx_db_l])
+                        bool_keep_seq[idx_db_l[-idx_db_l_max]] = F
+                    }
+                }
+                # sanity check
+                # there should be F's in bool_keep_seq (can't be still all T)
+                stopifnot(!all(bool_keep_seq))
+                
+                bool_num_HL_db = bool_num_HL_db & bool_keep_seq
+                
+                # more sanity checks
+                # dimension should still match nrow(db)
+                stopifnot(length(bool_num_HL_db) == nrow(db))
+                # number of cells passed should remain unchanged
+                stopifnot( length(uniq_cells_pass) == 
+                           length(unique(db[[col_cell]][bool_num_HL_db])) )
+                # after filtering there should be exactly 1 H and exactly 1 L per cell
+                stopifnot( sum(bool_num_HL_db) == length(uniq_cells_pass)*2 )
+                stopifnot( sum(db[[col_locus]][bool_num_HL_db]=="IGH") == 
+                               sum(db[[col_locus]][bool_num_HL_db]!="IGH") )
+                
+            } 
+        }
 
     } else {
         bool_num_HL_db = rep(T, nrow(db))
@@ -609,6 +691,9 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
     bool = bool_num_HL_db
     
     # count
+    cat("\nNumber of unique cells after cell-level QC:", 
+        length(unique(db[[col_cell]][bool])), "\n")
+    
     cat("\nAfter cell-level QC, number of seqs:\n")
     print(table(bool, useNA="ifany"))
     cat("\n")
@@ -637,7 +722,7 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
 #' 
 #' @details When both `seq_level` and `cell_level` are `TRUE`, `sequential` being
 #'          `FALSE` could give slightly different results than `TRUE`. For example,
-#'          a cell may be linked to 2 light chains pre-QC.Suppose one of the two light
+#'          a cell may be linked to 2 light chains pre-QC. Suppose one of the two light
 #'          chains gets filtered by sequence-level QC. Suppose that `logic_num_HL`
 #'          is set to `1H_1L`. If cell-level QC is applied sequentially after
 #'          one of the two light chains is filtered, this cell is considered by
@@ -659,7 +744,7 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
                       check_none_empty=F, col_none_empty,
                       check_NA=F, col_NA,
                       check_len_mod3=F, col_len_mod3,
-                      col_locus, col_cell, 
+                      col_locus, col_cell, col_umi,
                       check_locus,
                       check_num_HL, logic_num_HL) {
     
@@ -700,7 +785,7 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
         #   because db nrow would have stayed unchanged
         
         bool_cell = perform_qc_cell(db, chain_type,
-                                    col_locus, col_cell,
+                                    col_locus, col_cell, col_umi,
                                     check_locus, col_v_call,
                                     check_num_HL, logic_num_HL)
 
