@@ -21,6 +21,10 @@
 #' @details Pay close attention to the genotype inferred and adjust 
 #'          `p_find_unmutated` as necessary.
 #'          
+#'          Chain type (heavy or light) is automatically identified and noted in
+#'          the output filenames. Assumes that input `db` contains either all 
+#'          heavy chains or all light chains, but not a mix of heavy and light.
+#'          
 run_tigger = function(path_imgt, path_helper, path_work, 
                       subj, db, 
                       col_seq="sequence_alignment", 
