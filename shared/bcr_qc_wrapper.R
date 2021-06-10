@@ -70,6 +70,9 @@ option_list = list(
     make_option("--qcColCell", action="store", default=NA, 
                 type="character", 
                 help="col_cell."),
+    make_option("--qcColUMI", action="store", default=NA, 
+                type="character", 
+                help="col_umi."),
     make_option("--qcLogicNumHL", action="store", default=NA, 
                 type="character", 
                 help="logic_num_HL."),
@@ -135,7 +138,9 @@ if (opt$qc) {
                check_NA=T, 
                col_NA=col_NA,
                check_len_mod3=T, col_len_mod3=col_len_mod3,
-               col_locus=opt$qcColLocus, col_cell=opt$qcColCell,
+               col_locus=opt$qcColLocus, 
+               col_cell=opt$qcColCell,
+               col_umi=opt$qcColUMI,
                check_locus=T,
                check_num_HL=T, logic_num_HL=opt$qcLogicNumHL
                )

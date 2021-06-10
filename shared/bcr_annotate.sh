@@ -89,15 +89,16 @@ usage () {
 	echo -e "  -i  [QCSP] --qcColLenMod3."
     echo -e "  -j  [QCSP] --qcColLocus."
     echo -e "  -k  [QCSP] --qcColCell."
-    echo -e "  -m  [QCSP] --qcLogicNumHL."
-	echo -e "  -n  [QCSP] --spColV."
-	echo -e "  -o  [QCSP] --spColProd."            
-	echo -e "  -p  [QCSP] --spValProd."
+    echo -e "  -m  [QCSP] --qcColUMI."
+    echo -e "  -n  [QCSP] --qcLogicNumHL."
+	echo -e "  -o  [QCSP] --spColV."
+	echo -e "  -p  [QCSP] --spColProd."            
+	echo -e "  -q  [QCSP] --spValProd."
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:q:h" OPT; do
     case "$OPT" in
     A)  PROJ_ID="${OPTARG}"
         ;;
@@ -187,13 +188,15 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7
         ;;
     k)  QC_COL_CELL="${OPTARG}"
         ;;
-    m)  QC_LOGIC_NUM_HL="${OPTARG}"
+    m)  QC_COL_UMI="${OPTARG}"
         ;;
-	n)  SP_COL_V="${OPTARG}"
+    n)  QC_LOGIC_NUM_HL="${OPTARG}"
+        ;;
+	o)  SP_COL_V="${OPTARG}"
 		;;
-	o)  SP_COL_PROD="${OPTARG}"
+	p)  SP_COL_PROD="${OPTARG}"
 		;;
-	p)  SP_VAL_PROD="${OPTARG}"
+	q)  SP_VAL_PROD="${OPTARG}"
 		;;
     h)  usage
         exit
@@ -417,6 +420,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		--qcColLenMod3 "${QC_COL_LEN_MOD3}" \
             --qcColLocus "${QC_COL_LOCUS}" \
             --qcColCell "${QC_COL_CELL}" \
+            --qcColUMI "${QC_COL_UMI}" \
             --qcLogicNumHL "${QC_LOGIC_NUM_HL}" \
     		--sp "FALSE" \
     		&>> "${PATH_LOG_ID}"
