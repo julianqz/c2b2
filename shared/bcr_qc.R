@@ -590,6 +590,8 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
         print(table(chain_count_mtx[, "heavy"], chain_count_mtx[, "light"]))
         cat("\n")
         
+        cat("\nConfig:", logic_num_HL, "\n")
+        
         if (logic_num_HL=="1H_1L") {
             # exactly 1 heavy, exactly 1 light
             bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]==1
