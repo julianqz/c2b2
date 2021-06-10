@@ -20,6 +20,9 @@ option_list = list(
                 help="path_helper."),
     make_option("--pathWork", action="store", default=NA, type="character", 
                 help="path_work."),
+    make_option("--heavyLight", action="store", default=FALSE, 
+                type="logical", 
+                help="Whether to run separately for both heavy and light chains. Default is heavy only."),
     make_option("--colSeq", action="store", default="sequence_alignment", 
                 type="character", help="col_seq."),
     make_option("--colV", action="store", default="v_call", 
@@ -42,35 +45,50 @@ suppressPackageStartupMessages(library(tigger))
 # run_tigger()
 source(opt$pathRunTigger)
 
-subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
-
+if (opt$heavyLight) {
+    run_mode = c("heavy", "light")
+} else {
+    run_mode = c("heavy")
+}
 
 setwd(opt$pathWork)
 sinkName = paste0("computingEnv_tigger_", Sys.Date(), "-", 
                   format(Sys.time(), "%H%M%S"), '.txt')
 sink(sinkName)
+cat("run_mode:", run_mode, "\n")
 sessionInfo()
 sink()
 
+subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
+
+# check presence of necessary columns
+stopifnot( all( paste0("path_db_", run_mode) %in% colnames(subj_info) ) )
 
 for (i in 1:nrow(subj_info)) {
     
     subj = subj_info[["subj"]][i]
-    cat("\n", subj, "\n")
-    
-    # db
-    load(subj_info[["path_db"]][i])
-    
-    run_tigger(path_imgt=opt$pathIMGT, 
-               path_helper=opt$pathHelper, 
-               path_work=opt$pathWork, 
-               subj=subj, db=db, 
-               col_seq=opt$colSeq, 
-               col_v=opt$colV, 
-               col_prod=opt$colProd, 
-               col_cdr3_len=opt$colCDR3Len,
-               p_find_unmutated=opt$findUnmutated,
-               p_text_size=opt$textSize)
 
+    for (cur_run_mode in run_mode) {
+        
+        cat("\n", subj, ";", cur_run_mode, "\n")
+        
+        # db
+        cur_col_db = paste0("path_db_", cur_run_mode)
+        cur_fn_db = subj_info[[cur_col_db]][i]
+        cat(" - loading", cur_fn_db, "\n")
+        load(cur_fn_db)
+        
+        # chain type automatically detected by run_tigger
+        run_tigger(path_imgt=opt$pathIMGT, 
+                   path_helper=opt$pathHelper, 
+                   path_work=opt$pathWork, 
+                   subj=subj, db=db, 
+                   col_seq=opt$colSeq, 
+                   col_v=opt$colV, 
+                   col_prod=opt$colProd, 
+                   col_cdr3_len=opt$colCDR3Len,
+                   p_find_unmutated=opt$findUnmutated,
+                   p_text_size=opt$textSize)
+    }
 }
 
