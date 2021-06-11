@@ -107,7 +107,7 @@ for (i in 1:nrow(subj_info)) {
     thresh = thresh_vec[subj]
     cat(subj, thresh, "\n")
     
-    # load db from dtn .RData
+    # load `db` from dtn .RData
     fn_in = paste0(subj_info[["path_dtn"]][i],
                    "dtn", out_suffix, "_", subj, ".RData")
     load(fn_in)
@@ -137,7 +137,8 @@ for (i in 1:nrow(subj_info)) {
     
     db_heavy_clust = infer_lst[["db_clust"]]
     db_heavy_fail = infer_lst[["db_fail"]]
-    rm(infer_lst, db)
+    # don't remove db yet (needed for propagating to light)
+    rm(infer_lst)
     
     # export heavy
     if (!is.null(db_heavy_clust)) {
