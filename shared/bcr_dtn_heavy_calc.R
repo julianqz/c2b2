@@ -28,15 +28,31 @@ option_list = list(
     make_option("--colSeqID", action="store", default="sequence_id", 
                 type="character", help="Column name containing sequence ID."),
     make_option("--colSeq", action="store", default="cdr3", 
-                type="character", help="col_seq."),
+                type="character", help="sequenceColumn."),
     make_option("--colV", action="store", default="v_call", 
-                type="character", help="col_v."),
+                type="character", help="vCallColumn."),
     make_option("--colJ", action="store", default="j_call", 
-                type="character", help="col_j.")
+                type="character", help="jCallColumn."),
+    make_option("--heavyLight", action="store", default=FALSE, type="logical", 
+                help="Whether to partition using both heavy and light chains."),
+    make_option("--colCell", action="store", default="cell_id", type="character", 
+                help="cellIdColumn. Ignored if --heavyLight FALSE."),
+    make_option("--colLocus", action="store", default="locus", type="character", 
+                help="locusColumn. Ignored if --heavyLight FALSE.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
+
+# check columns
+# suffix for output filenames
+if (opt$heavyLight) {
+    stopifnot( all(c("path_db_heavy", "path_db_light") %in% colnames(subj_info)) )
+    out_suffix = "_groupByHL"
+} else {
+    stopifnot( "path_db_heavy" %in% colnames(subj_info) )
+    out_suffix = "_groupByHonly"
+}
 
 suppressPackageStartupMessages(library(shazam))
 
@@ -44,6 +60,7 @@ setwd(opt$pathWork)
 sinkName = paste0("computingEnv_dtn_heavy_", Sys.Date(), "-", 
                   format(Sys.time(), "%H%M%S"), '.txt')
 sink(sinkName)
+cat("Partition using both heavy and light:", opt$heavyLight, "\n")
 cat("calcWithin:", opt$calcWithin, "\n")
 # if NULL, will appear as "subsampleWithin: " (i.e. blank)
 cat("subsampleWithin:", opt$subsampleWithin, "\n")
@@ -60,31 +77,72 @@ if (opt$calcWithin) {
     
     cat("\nCalculating within-subject distToNearest... \n")
     
-    sink_name = "thresh_density_all.txt"
+    sink_name = paste0("thresh_density", out_suffix, "_all.txt")
     
     for (i in 1:nrow(subj_info)) {
         
-        db = read.table(subj_info[["path_db"]][i],
-                        header=T, sep="\t", stringsAsFactors=F)
+        if (opt$heavyLight) {
+            # heavy and light
+            db_h = read.table(subj_info[["path_db_heavy"]][i],
+                              header=T, sep="\t", stringsAsFactors=F)
+            db_l = read.table(subj_info[["path_db_light"]][i],
+                              header=T, sep="\t", stringsAsFactors=F)
+            stopifnot(all.equal(colnames(db_h), colnames(db_l)))
+            
+            db = rbind(db_h, db_l)
+            
+            stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db) ))
+        } else {
+            # heavy only
+            db = read.table(subj_info[["path_db_heavy"]][i],
+                            header=T, sep="\t", stringsAsFactors=F)
+        }
         
         subj = subj_info[["subj"]][i]
         
         cat("\n", subj, "; nrow(db):", nrow(db), "\n")
         
-        fn = paste0("dtn_", subj,
+        fn = paste0("dtn", out_suffix, "_", subj, 
                     ifelse(is.null(opt$subsampleWithin), "", 
                            paste0("_subsample-", opt$subsampleWithin)),
                     ".RData")
         
         # adds $dist_nearest and $vjl_group columns
-        db = distToNearest(db, 
-                           sequenceColumn=opt$colSeq,
-                           vCallColumn=opt$colV,
-                           jCallColumn=opt$colJ,
-                           subsample=opt$subsampleWithin,
-                           model="ham", normalize="len", 
-                           first=F, VJthenLen=F, keepVJLgroup=T,
-                           nproc=opt$nproc, progress=T)
+        
+        if (opt$heavyLight) {
+            # heavy and light
+            db = distToNearest(db, 
+                               sequenceColumn=opt$colSeq,
+                               vCallColumn=opt$colV,
+                               jCallColumn=opt$colJ,
+                               cellIdColumn=opt$colCell,
+                               locusColumn=opt$colLocus,
+                               onlyHeavy=F,
+                               subsample=opt$subsampleWithin,
+                               model="ham", normalize="len", 
+                               first=F, VJthenLen=F, keepVJLgroup=T,
+                               nproc=opt$nproc, progress=T)
+            
+            # sanity check
+            # heavy and light chains from the same cell should have the same partition
+            stopifnot(all( sapply(unique(db[[opt$colCell]]), 
+                                  function(s){
+                                      # wrt db
+                                      s_idx = which(db[[opt$colCell]]==s)
+                                      s_bool = length(unique(db[["vjl_group"]][s_idx]))==1
+                                      return(s_bool)
+                                  }, USE.NAMES=F) ))
+        } else {
+            # heavy only
+            db = distToNearest(db, 
+                               sequenceColumn=opt$colSeq,
+                               vCallColumn=opt$colV,
+                               jCallColumn=opt$colJ,
+                               subsample=opt$subsampleWithin,
+                               model="ham", normalize="len", 
+                               first=F, VJthenLen=F, keepVJLgroup=T,
+                               nproc=opt$nproc, progress=T)
+        }
         
         save(db, file=fn)
         
@@ -94,7 +152,7 @@ if (opt$calcWithin) {
         thresh_obj = findThreshold(distances=db[["dist_nearest"]],
                                    method="density", progress=T)
         
-        fn = paste0("thresh_density_", subj, ".RData")
+        fn = paste0("thresh_density", out_suffix, "_", subj, ".RData")
         save(thresh_obj, file=fn)
         
         # print threshold
@@ -122,13 +180,31 @@ if (opt$calcWithin) {
 if (opt$calcBetween) {
     
     # concat all subjects
-    
-    cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ)
+    if (opt$heavyLight) {
+        cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ,
+                      opt$colCell, opt$colLocus)
+    } else {
+        cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ)
+    }
     
     for (i in 1:nrow(subj_info)) {
         
-        db_tmp = read.table(subj_info[["path_db"]][i],
-                            header=T, sep="\t", stringsAsFactors=F)
+        if (opt$heavyLight) {
+            # heavy and light
+            db_tmp_h = read.table(subj_info[["path_db_heavy"]][i],
+                                  header=T, sep="\t", stringsAsFactors=F)
+            db_tmp_l = read.table(subj_info[["path_db_light"]][i],
+                                  header=T, sep="\t", stringsAsFactors=F)
+            stopifnot(all.equal(colnames(db_tmp_h), colnames(db_tmp_l)))
+            
+            db_tmp = rbind(db_tmp_h, db_tmp_l)
+            
+            stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db_tmp) ))
+        } else {
+            # heavy only
+            db_tmp = read.table(subj_info[["path_db_heavy"]][i],
+                                header=T, sep="\t", stringsAsFactors=F)
+        }
         
         stopifnot(all(cols_keep %in% colnames(db_tmp)))
         db_tmp = db_tmp[, cols_keep]
@@ -150,23 +226,50 @@ if (opt$calcBetween) {
     
     cat("\nCalculating between-subject distToNearest... \n")
 
-    fn = paste0("dtn_btwSubj",
+    fn = paste0("dtn_btwSubj", out_suffix,
                 ifelse(is.null(opt$subsampleBetween), "", 
                        paste0("_subsample-", opt$subsampleBetween)),
                 ".RData")
     
     #* v1.0.2 stable release requires a bug fix from commit 47bffe0
     #* this bug fix is packed into julianqz/wu_cimm:main_0.1.1
-    #* but if not using that docker image, v1.0.2 will fail next line
-    db = distToNearest(db, 
-                       sequenceColumn=opt$colSeq,
-                       vCallColumn=opt$colV,
-                       jCallColumn=opt$colJ,
-                       cross=opt$colSubj,
-                       subsample=opt$subsampleBetween,
-                       model="ham", normalize="len", 
-                       first=F, VJthenLen=F, keepVJLgroup=T,
-                       nproc=opt$nproc, progress=T)
+    #* but if not using that docker image, v1.0.2 will fail next block
+    if (opt$heavyLight) {
+        # heavy and light
+        db = distToNearest(db, 
+                           sequenceColumn=opt$colSeq,
+                           vCallColumn=opt$colV,
+                           jCallColumn=opt$colJ,
+                           cellIdColumn=opt$colCell,
+                           locusColumn=opt$colLocus,
+                           onlyHeavy=F,
+                           cross=opt$colSubj,
+                           subsample=opt$subsampleBetween,
+                           model="ham", normalize="len", 
+                           first=F, VJthenLen=F, keepVJLgroup=T,
+                           nproc=opt$nproc, progress=T)
+        
+        # sanity check
+        # heavy and light chains from the same cell should have the same partition
+        stopifnot(all( sapply(unique(db[[opt$colCell]]), 
+                              function(s){
+                                  # wrt db
+                                  s_idx = which(db[[opt$colCell]]==s)
+                                  s_bool = length(unique(db[["vjl_group"]][s_idx]))==1
+                                  return(s_bool)
+                              }, USE.NAMES=F) ))
+    } else {
+        # heavy only
+        db = distToNearest(db, 
+                           sequenceColumn=opt$colSeq,
+                           vCallColumn=opt$colV,
+                           jCallColumn=opt$colJ,
+                           cross=opt$colSubj,
+                           subsample=opt$subsampleBetween,
+                           model="ham", normalize="len", 
+                           first=F, VJthenLen=F, keepVJLgroup=T,
+                           nproc=opt$nproc, progress=T)
+    }
     
     save(db, file=fn)
     
