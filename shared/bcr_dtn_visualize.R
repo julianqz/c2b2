@@ -5,7 +5,7 @@
 # assumes:
 # - findThreshold was called together with distToNearest
 # - pathCSV points to a comma-separated file with the following headers
-#   "subj", "path" where "path" contains a .RData file from findThreshold
+#   "subj", "path_dtn" where "path_dtn" contains a .RData file from findThreshold
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -132,7 +132,7 @@ if (plot_within | plot_btw) {
         cat(subj, "\n")
         
         # thresh_obj
-        fn = paste0(subj_info[["path"]][i],
+        fn = paste0(subj_info[["path_dtn"]][i],
                     "thresh_density", out_suffix, "_", subj, ".RData")
         load(fn)
         
