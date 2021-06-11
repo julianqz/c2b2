@@ -219,11 +219,17 @@ for (i in 1:nrow(subj_info)) {
             # wrt db_light_clust
             idx_cell_wrt_db_light_clust = match(db_heavy_clust[[col_cell]], 
                                                 db_light_clust[[col_cell]])
+            stopifnot(all.equal( db_heavy_clust[[col_cell]],
+                                 db_light_clust[[col_cell]][idx_cell_wrt_db_light_clust] ))
+            
             db_light_clust = db_light_clust[idx_cell_wrt_db_light_clust, ]
+            rownames(db_light_clust) = NULL
             
             cols_ck = c(col_cell, "vjl_group", opt$colClone)
+            
             stopifnot(all.equal(db_heavy_clust[, cols_ck], 
-                                db_light_clust[, cols_ck]))
+                                db_light_clust[, cols_ck],
+                                check.attributes=F))
             
             # export
             fn_out_pass_base = paste0("cluster-pass_partition-", out_suffix_2, 
@@ -247,10 +253,12 @@ for (i in 1:nrow(subj_info)) {
             idx_cell_wrt_db_light_fail = match(db_heavy_fail[[col_cell]], 
                                                db_light_fail[[col_cell]])
             db_light_fail = db_light_fail[idx_cell_wrt_db_light_fail, ]
+            rownames(db_light_fail) = NULL
             
             cols_ck = c(col_cell, "vjl_group")
             stopifnot(all.equal(db_heavy_fail[, cols_ck], 
-                                db_light_fail[, cols_ck]))
+                                db_light_fail[, cols_ck],
+                                check.attributes=F))
             
             # export
             fn_out_fail_base = paste0("cluster-fail_partition-", out_suffix_2, 
