@@ -4,7 +4,9 @@
 
 # assumes:
 # - pathCSV points to a comma-separated file with the following headers
-#   "subj", "path_db" where "path_db" points to a .RData file
+#   "subj", "path_db_heavy" where "path_db_heavy" points to a .RData file
+
+# intended to run based on heavy chains only
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -42,7 +44,7 @@ for (i in 1:nrow(subj_info)) {
     cat("\n", subj, "\n")
     
     # load db
-    load(subj_info[["path_db"]][i])
+    load(subj_info[["path_db_heavy"]][i])
     
     # summarize
     clone_info = summarize_clone(db, 
