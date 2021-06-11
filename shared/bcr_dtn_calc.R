@@ -1,10 +1,17 @@
 #!/opt/conda/bin/Rscript
 
-# wrapper to calculate dist-to-nearest using heavy chains only
+# wrapper to calculate dist-to-nearest for heavy chains after partitioning
+# - either based on heavy chains only
+# - or based on both heavy and light chains
 
 # assumes:
 # - pathCSV points to a comma-separated file with the following headers
-#   "subj", "path_db" where "path_db" points to a .tsv file
+#   "subj", "path_db_heavy/light" where "path_db_*" points to a .tsv file
+# - note that heavy and light chains are expected to be in separate files
+
+# If the data is single-cell heavy:light paired, but partitioning based on
+# heavy chains only is desired, simply set `--heavyLight` to `FALSE` and 
+# light chains will be ignored.
 
 suppressPackageStartupMessages(require(optparse))
 
