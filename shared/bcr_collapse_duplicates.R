@@ -188,6 +188,7 @@ run_collapse_duplicates = function(db, nproc=1,
         rm(mtx_bool_val, lst_bool_val, lst_db_val, bool_preserve)
         
     } else {
+        cat("\nNothing to preserve.\n")
         db_to_collapse = db
         db_preserve = NULL
     }
@@ -195,159 +196,178 @@ run_collapse_duplicates = function(db, nproc=1,
     
     #### collapse ####
     
-    if (!is.null(col_distinct_vec)) {
+    if (nrow(db_to_collapse)>0) {
         
-        cat("\nKeeping sequence-level duplicates separate by:", 
-            col_distinct_vec, "\n")
+        # collapse
+        cat("\nCollapsing...\n")
         
-        # A hack to prevent duplicates derived from different `col_distinct_vec`
-        # (e.g. subset, timepoint, etc.) from being collapsed
-        
-        # Create an artificial column by combining sequence and 
-        # values of `col_distinct_vec` columns
-        
-        # Because collapseDuplicates requires that input seqs have the same length,
-        # use one-letter code to represent values in `col_distinct_vec` columns
-        # (since using full names could introduce varying lengths)
-        
-        lst_encoded = vector(mode="list", length=length(col_distinct_vec))
-        names(lst_encoded) = col_distinct_vec
-        
-        for (col_d in col_distinct_vec) {
-            # unique values
-            col_d_uniq_vals = sort(unique(db_to_collapse[[col_d]]))
-            # only support <=25 unique values
-            # N is excluded from LETTERS because it is part of `ignore`
-            CODES = LETTERS[-which(LETTERS=="N")]
-            if (length(col_d_uniq_vals)>length(CODES)) {
-                stop("Currently only supprting <=", length(CODES), 
-                     " unique values in `", col_d, "`\n")
+        if (!is.null(col_distinct_vec)) {
+            
+            cat("\nKeeping sequence-level duplicates separate by:", 
+                col_distinct_vec, "\n")
+            
+            # A hack to prevent duplicates derived from different `col_distinct_vec`
+            # (e.g. subset, timepoint, etc.) from being collapsed
+            
+            # Create an artificial column by combining sequence and 
+            # values of `col_distinct_vec` columns
+            
+            # Because collapseDuplicates requires that input seqs have the same length,
+            # use one-letter code to represent values in `col_distinct_vec` columns
+            # (since using full names could introduce varying lengths)
+            
+            lst_encoded = vector(mode="list", length=length(col_distinct_vec))
+            names(lst_encoded) = col_distinct_vec
+            
+            for (col_d in col_distinct_vec) {
+                # unique values
+                col_d_uniq_vals = sort(unique(db_to_collapse[[col_d]]))
+                # only support <=25 unique values
+                # N is excluded from LETTERS because it is part of `ignore`
+                CODES = LETTERS[-which(LETTERS=="N")]
+                if (length(col_d_uniq_vals)>length(CODES)) {
+                    stop("Currently only supprting <=", length(CODES), 
+                         " unique values in `", col_d, "`\n")
+                }
+                # one-letter code
+                col_d_code = CODES[1:length(col_d_uniq_vals)]
+                names(col_d_code) = as.character(col_d_uniq_vals)
+                # encode
+                lst_encoded[[col_d]] = col_d_code[db_to_collapse[[col_d]]]
             }
-            # one-letter code
-            col_d_code = CODES[1:length(col_d_uniq_vals)]
-            names(col_d_code) = as.character(col_d_uniq_vals)
-            # encode
-            lst_encoded[[col_d]] = col_d_code[db_to_collapse[[col_d]]]
+            
+            # each row is a sequence
+            # cols: sequence, col_distinct_vec in encoded form
+            db_to_collapse_encoded = data.frame(cbind(db_to_collapse[[col_seq]], 
+                                                      do.call(cbind, lst_encoded)),
+                                                stringsAsFactors=F, row.names=NULL)
+            # concat
+            col_tmp = "CD_TMP"
+            col_tmp_separator = "@"
+            db_to_collapse[[col_tmp]] = apply(db_to_collapse_encoded, 1, 
+                                              stri_join, collapse=col_tmp_separator)
+            
+            stopifnot(!any(is.na(db_to_collapse[[col_tmp]])))
+            
+            rm(db_to_collapse_encoded, lst_encoded)
+            
+        } else {
+            db_to_collapse[[col_tmp]] = db_to_collapse[[col_seq]]
         }
         
-        # each row is a sequence
-        # cols: sequence, col_distinct_vec in encoded form
-        db_to_collapse_encoded = data.frame(cbind(db_to_collapse[[col_seq]], 
-                                                  do.call(cbind, lst_encoded)),
-                                            stringsAsFactors=F, row.names=NULL)
-        # concat
-        col_tmp = "CD_TMP"
-        col_tmp_separator = "@"
-        db_to_collapse[[col_tmp]] = apply(db_to_collapse_encoded, 1, 
-                                        stri_join, collapse=col_tmp_separator)
         
-        stopifnot(!any(is.na(db_to_collapse[[col_tmp]])))
+        ### collapse on a by-clone basis
         
-        rm(db_to_collapse_encoded, lst_encoded)
+        clones = sort(unique(db_to_collapse[[col_clone]]))
+        
+        ## set up cluster
+        
+        # Create cluster of nproc size and export namespaces
+        # If user wants to parallellize this function and specifies nproc > 1, then
+        # initialize and register slave R processes/clusters & 
+        # export all necesseary environment variables, functions and packages.
+        if (nproc==1) {
+            # If needed to run on a single core/cpu then, registerDoSEQ
+            # Without doing this, foreach will give warning (though will still run)
+            registerDoSEQ()
+        } else if (nproc>1) {
+            cluster = parallel::makeCluster(nproc, type="PSOCK")
+            registerDoParallel(cluster)
+            
+            # export to cluster
+            export_functions <- list("clones", 
+                                     "db_to_collapse",
+                                     "col_clone",
+                                     "col_seq",
+                                     "col_id",
+                                     "col_tmp",
+                                     "col_tmp_separator",
+                                     "col_text_fields",
+                                     "col_num_fields",
+                                     "col_seq_fields",
+                                     "make_unique",
+                                     "collapseDuplicates"
+            )
+            parallel::clusterExport(cluster, export_functions, envir=environment())
+        }
+        
+        
+        ## loop thru clones
+        lst_collapse = foreach(i=1:length(clones)) %dopar% {
+            
+            cur_db = db_to_collapse[db_to_collapse[[col_clone]]==clones[i], ]
+            
+            # collapseDuplicates() requires that all entries in the ID field be unique
+            # this may not always be the case
+            # e.g. a seq from sample 5 and a seq from sample 6 (both samples from the same subject)
+            #      could happen to have the same ID (UMI=GGTTATGATAAAGGGTT)
+            #      => append suffix so these become unique: GGTTATGATAAAGGGTT_[12]
+            if (length(unique(cur_db[[col_id]])) < nrow(cur_db)) {
+                cur_db[[col_id]] = make_unique(cur_db[[col_id]])
+            }
+            
+            # text_fields: Character vector of textual columns to collapse
+            
+            # num_fields:  Vector of numeric columns to collapse
+            #              The numeric annotations of duplicate sequences will be summed
+            
+            # seq_fields:  Vector of nucleotide sequence columns to collapse
+            #              The sequence with the fewest number of non-informative characters will be retained
+            #              Note, this is distinct from the seq parameter which is used to determine duplicates.
+            
+            cur_db_collapse = collapseDuplicates(data=cur_db,
+                                                 id=col_id,
+                                                 seq=col_tmp,
+                                                 text_fields=col_text_fields,
+                                                 num_fields=col_num_fields,
+                                                 seq_fields=col_seq_fields,
+                                                 add_count=T, # adds $collapse_count
+                                                 ignore=c("N","-",".","?"), # default
+                                                 sep=",", # default
+                                                 verbose=F) # default
+            
+            # extract col_seq back from $TMP
+            cur_db_collapse[[col_seq]] = sapply(cur_db_collapse[[col_tmp]], 
+                                                function(s){
+                                                    strsplit(s, col_tmp_separator)[[1]][1]
+                                                }, USE.NAMES=F)
+            
+            # remove $TMP (no longer needed)
+            cur_db_collapse[[col_tmp]] = NULL
+            
+            rm(cur_db)
+            
+            return(cur_db_collapse)
+        }
+        
+        ## stop the cluster
+        if (nproc>1) { parallel::stopCluster(cluster) }
+        
+        rm(db_to_collapse)
+        
+        db_collapse = do.call(rbind, lst_collapse)
+        rm(lst_collapse)
         
     } else {
-        db_to_collapse[[col_tmp]] = db_to_collapse[[col_seq]]
+        # nothing to collapse
+        cat("\nNo seq left to collapse. Skipped collapsing.\n")
+        db_collapse = NULL
     }
-    
-    
-    ### collapse on a by-clone basis
-    
-    clones = sort(unique(db_to_collapse[[col_clone]]))
-    
-    ## set up cluster
-    
-    # Create cluster of nproc size and export namespaces
-    # If user wants to parallellize this function and specifies nproc > 1, then
-    # initialize and register slave R processes/clusters & 
-    # export all necesseary environment variables, functions and packages.
-    if (nproc==1) {
-        # If needed to run on a single core/cpu then, registerDoSEQ
-        # Without doing this, foreach will give warning (though will still run)
-        registerDoSEQ()
-    } else if (nproc>1) {
-        cluster = parallel::makeCluster(nproc, type="PSOCK")
-        registerDoParallel(cluster)
 
-        # export to cluster
-        export_functions <- list("clones", 
-                                 "db_to_collapse",
-                                 "col_clone",
-                                 "col_seq",
-                                 "col_id",
-                                 "col_tmp",
-                                 "col_tmp_separator",
-                                 "col_text_fields",
-                                 "col_num_fields",
-                                 "col_seq_fields",
-                                 "make_unique",
-                                 "collapseDuplicates"
-                                 )
-        parallel::clusterExport(cluster, export_functions, envir=environment())
-    }
-    
-    
-    ## loop thru clones
-    lst_collapse = foreach(i=1:length(clones)) %dopar% {
-    
-        cur_db = db_to_collapse[db_to_collapse[[col_clone]]==clones[i], ]
-        
-        # collapseDuplicates() requires that all entries in the ID field be unique
-        # this may not always be the case
-        # e.g. a seq from sample 5 and a seq from sample 6 (both samples from the same subject)
-        #      could happen to have the same ID (UMI=GGTTATGATAAAGGGTT)
-        #      => append suffix so these become unique: GGTTATGATAAAGGGTT_[12]
-        if (length(unique(cur_db[[col_id]])) < nrow(cur_db)) {
-            cur_db[[col_id]] = make_unique(cur_db[[col_id]])
-        }
-        
-        # text_fields: Character vector of textual columns to collapse
-        
-        # num_fields:  Vector of numeric columns to collapse
-        #              The numeric annotations of duplicate sequences will be summed
-        
-        # seq_fields:  Vector of nucleotide sequence columns to collapse
-        #              The sequence with the fewest number of non-informative characters will be retained
-        #              Note, this is distinct from the seq parameter which is used to determine duplicates.
-        
-        cur_db_collapse = collapseDuplicates(data=cur_db,
-                                             id=col_id,
-                                             seq=col_tmp,
-                                             text_fields=col_text_fields,
-                                             num_fields=col_num_fields,
-                                             seq_fields=col_seq_fields,
-                                             add_count=T, # adds $collapse_count
-                                             ignore=c("N","-",".","?"), # default
-                                             sep=",", # default
-                                             verbose=F) # default
-        
-        # extract col_seq back from $TMP
-        cur_db_collapse[[col_seq]] = sapply(cur_db_collapse[[col_tmp]], 
-                                            function(s){
-                                                strsplit(s, col_tmp_separator)[[1]][1]
-                                            }, USE.NAMES=F)
-        
-        # remove $TMP (no longer needed)
-        cur_db_collapse[[col_tmp]] = NULL
-        
-        rm(cur_db)
-        
-        return(cur_db_collapse)
-    }
-    
-    ## stop the cluster
-    if (nproc>1) { parallel::stopCluster(cluster) }
-    
-    rm(db_to_collapse)
-    
-    db_collapse = do.call(rbind, lst_collapse)
-    rm(lst_collapse)
+    # can't both be NULL
+    stopifnot( is.null(db_collapse) & is.null(db_preserve) )
     
     # add missing col in db_preserve (added by collapseDuplicates to db_collapse)
-    db_preserve[["collapse_count"]] = 1
+    if (!is.null(db_preserve)) {
+        db_preserve[["collapse_count"]] = 1
+    }
     
-    stopifnot(all.equal(colnames(db_preserve),
-                        colnames(db_collapse)))
+    if ( (!is.null(db_collapse)) & (!is.null(db_preserve)) ) {
+        stopifnot(all.equal(colnames(db_preserve),
+                            colnames(db_collapse)))
+    }
     
+    # ok if one of the two is NULL
     db_new = rbind(db_preserve, db_collapse)
     rm(db_preserve, db_collapse)
     
@@ -407,36 +427,42 @@ verify_collapse_duplicates = function(db, N,
     
     cat("\nPerforming verification...\n")
     
+    # remove rows to preserve
     if (!is.null(col_preserve)) {
         for (val in val_preserve_vec) {
             db = db[db[[col_preserve]]!=val, ]
         }
-        stopifnot(nrow(db)>0)
     }
     
-    # check top N biggest clones
-    tab = sort(table(db[[col_clone]]), decreasing=T)
-    # `min` in case there're fewer than N clones
-    clones_ck = names(tab)[1:min(N, length(tab))]
-    
-    bool = rep(F, length(clones_ck))
-    
-    for (i in 1:length(clones_ck)) {
+    if (nrow(db)>0) {
         
-        cur_db = db[db[[col_clone]]==clones_ck[i], ]
+        # check top N biggest clones
+        tab = sort(table(db[[col_clone]]), decreasing=T)
+        # `min` in case there're fewer than N clones
+        clones_ck = names(tab)[1:min(N, length(tab))]
         
-        n_uniq = count_uniq(db=cur_db, col_seq=col_seq,
-                            col_distinct_vec=col_distinct_vec)
+        bool = rep(F, length(clones_ck))
         
-        bool[i] = nrow(cur_db)==n_uniq
+        for (i in 1:length(clones_ck)) {
+            
+            cur_db = db[db[[col_clone]]==clones_ck[i], ]
+            
+            n_uniq = count_uniq(db=cur_db, col_seq=col_seq,
+                                col_distinct_vec=col_distinct_vec)
+            
+            bool[i] = nrow(cur_db)==n_uniq
+            
+            rm(cur_db, n_uniq)
+        }
         
-        rm(cur_db, n_uniq)
-    }
-    
-    if (all(bool)) {
-        cat("\nAll verification PASSED.\n")
+        if (all(bool)) {
+            cat("\nAll verification PASSED.\n")
+        } else {
+            cat("\nVerification FAILED for:", clones_ck[!bool], "\n")
+        }
+        
     } else {
-        cat("\nVerification FAILED for:", clones_ck[!bool], "\n")
+        cat("\nNo seq left to collapse after preserving. Verification skipped.\n")
     }
     
     rm(db)
