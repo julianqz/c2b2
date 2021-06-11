@@ -7,6 +7,11 @@
 # - pathCSV points to a comma-separated file with the following headers
 #   "subj", "path_dtn" where "path_dtn" contains a .RData file from findThreshold
 
+# If --pathBtw does not exist, even if --plotBetween is TRUE, 
+# between-subject visualization will be skipped 
+# (such is the case when there's only 1 subject and between-subject calculation 
+# was skipped).
+
 suppressPackageStartupMessages(require(optparse))
 
 option_list = list(
@@ -248,104 +253,114 @@ if (plot_within) {
 
 if (plot_btw) {
     
-    cat("\nVisualizing within- & between-subject distToNearest... \n")
-       
-    # btw-subj distances
-    # db, with $cross_dist_nearest
-    load(path_btw)
+    # path_btw won't exist if between-subject calc was not run
+    # (such is the case when there's only 1 subject)
     
-    # standardized xlim for all subjects
-    global_dist_range = range(c(unlist(dist_lst), db[[col_dist_btw]]), na.rm=T)
-    
-    # 1: histogram
-    # 2: histogram + density curve
-    # 3: histogram + density curve + auto thresh
-    # 4: histogram + density curve + manual thresh
-    
-    setwd(path_work)
-    
-    for (config in 1:4) {
+    if (file.exists(path_btw)) {
         
-        cat("config", config, "\n")
+        cat("\nVisualizing within- & between-subject distToNearest... \n")
         
-        fn = paste0("dtn_btw", out_suffix, "_config-", config, ".pdf")
-        pdf(fn, width=5*n_plots_per_row, height=5*n_rows)
-        par(mfrow=c(n_rows, n_plots_per_row), mar=c(5,5,2,2)) # BLTR
+        # btw-subj distances
+        # db, with $cross_dist_nearest
+        load(path_btw)
         
-        for (subj in subjects) {
-            cat(subj, "\n")
+        # standardized xlim for all subjects
+        global_dist_range = range(c(unlist(dist_lst), db[[col_dist_btw]]), na.rm=T)
+        
+        # 1: histogram
+        # 2: histogram + density curve
+        # 3: histogram + density curve + auto thresh
+        # 4: histogram + density curve + manual thresh
+        
+        setwd(path_work)
+        
+        for (config in 1:4) {
             
-            cur_dist = dist_lst[[subj]]
-            cur_xden = xden_lst[[subj]]
-            cur_yden = yden_lst[[subj]]
-            cur_thresh_auto = thresh_auto_vec[subj]
-            cur_thresh_man = thresh_man_vec[subj]
-            cur_btw = db[[col_dist_btw]][ db[[col_subj]]==subj ]
+            cat("config", config, "\n")
+            
+            fn = paste0("dtn_btw", out_suffix, "_config-", config, ".pdf")
+            pdf(fn, width=5*n_plots_per_row, height=5*n_rows)
+            par(mfrow=c(n_rows, n_plots_per_row), mar=c(5,5,2,2)) # BLTR
+            
+            for (subj in subjects) {
+                cat(subj, "\n")
                 
-            if (all(is.na(cur_dist))) {
+                cur_dist = dist_lst[[subj]]
+                cur_xden = xden_lst[[subj]]
+                cur_yden = yden_lst[[subj]]
+                cur_thresh_auto = thresh_auto_vec[subj]
+                cur_thresh_man = thresh_man_vec[subj]
+                cur_btw = db[[col_dist_btw]][ db[[col_subj]]==subj ]
                 
-                # blank plot if all NA
-                plot(0,0,type="n",xaxt="n",yaxt="n",xlab="",ylab="",bty="n")
-                title(paste0(subj, " (all NAs)"))
-                
-            } else {
-                
-                # local ylims will be calculated by plotCrossHam
-                # but need to re-calculate in case threshold is to be noted
-                local_y_max = max(c( hist(cur_dist, breaks=seq(from=0, to=global_dist_range[2]+0.03, by=0.02), plot=F)$density,
-                                     hist(cur_btw, breaks=seq(from=0, to=global_dist_range[2]+0.03, by=0.02), plot=F)$density,
-                                     cur_yden ), na.rm=T)
-
-                ### histogram and density curve
-                
-                if (config==1) {
-                    cur_xden_plot = NULL
-                    cur_yden_plot = NULL
+                if (all(is.na(cur_dist))) {
+                    
+                    # blank plot if all NA
+                    plot(0,0,type="n",xaxt="n",yaxt="n",xlab="",ylab="",bty="n")
+                    title(paste0(subj, " (all NAs)"))
+                    
                 } else {
-                    cur_xden_plot = cur_xden
-                    cur_yden_plot = cur_yden
-                }
-
-                plotCrossHam(vec1=cur_dist, vec2=cur_btw, vecMax=global_dist_range[2],
-                             line1_x=cur_xden_plot, line1_y=cur_yden_plot,
-                             plotFreq=F, binSize=0.02,
-                             plotTitle=subj, labX=lab_x, labY="Density",
-                             vec1Col="skyblue", vec2Col="springgreen", transparency=1,
-                             zeroLine=F, zeroLineLty=2, zeroLineCol="darkgoldenrod2", 
-                             cexLab=cex_lab_btw, cexAxis=cex_axis_btw, 
-                             cexMain=cex_main_btw, cexTxt=1)
-                
-                ### auto threshold
-                
-                if (config==3) {
-                    if (!is.na(cur_thresh_auto)) {
-                        abline(v=cur_thresh_auto, lty=2, lwd=1.5, col="firebrick2")
-                        text(x=cur_thresh_auto, y=local_y_max*0.7, col="firebrick2", pos=4,
-                             labels=as.character(round(cur_thresh_auto, 3)))
+                    
+                    # local ylims will be calculated by plotCrossHam
+                    # but need to re-calculate in case threshold is to be noted
+                    local_y_max = max(c( hist(cur_dist, breaks=seq(from=0, to=global_dist_range[2]+0.03, by=0.02), plot=F)$density,
+                                         hist(cur_btw, breaks=seq(from=0, to=global_dist_range[2]+0.03, by=0.02), plot=F)$density,
+                                         cur_yden ), na.rm=T)
+                    
+                    ### histogram and density curve
+                    
+                    if (config==1) {
+                        cur_xden_plot = NULL
+                        cur_yden_plot = NULL
                     } else {
-                        cat("auto thresh is NA; skipped plotting abline\n")
+                        cur_xden_plot = cur_xden
+                        cur_yden_plot = cur_yden
                     }
-                }
-                
-                ### manual threshold
-                
-                if (config==4) {
-                    if (!is.na(cur_thresh_man)) {
-                        abline(v=cur_thresh_man, lty=2, lwd=1.5, col="black")
-                        text(x=cur_thresh_man, y=local_y_max*0.9, col="black", pos=4,
-                             labels=as.character(round(cur_thresh_man, 3)))
-                    } else {
-                        cat("manual thresh is NA; skipped plotting abline\n")
+                    
+                    plotCrossHam(vec1=cur_dist, vec2=cur_btw, vecMax=global_dist_range[2],
+                                 line1_x=cur_xden_plot, line1_y=cur_yden_plot,
+                                 plotFreq=F, binSize=0.02,
+                                 plotTitle=subj, labX=lab_x, labY="Density",
+                                 vec1Col="skyblue", vec2Col="springgreen", transparency=1,
+                                 zeroLine=F, zeroLineLty=2, zeroLineCol="darkgoldenrod2", 
+                                 cexLab=cex_lab_btw, cexAxis=cex_axis_btw, 
+                                 cexMain=cex_main_btw, cexTxt=1)
+                    
+                    ### auto threshold
+                    
+                    if (config==3) {
+                        if (!is.na(cur_thresh_auto)) {
+                            abline(v=cur_thresh_auto, lty=2, lwd=1.5, col="firebrick2")
+                            text(x=cur_thresh_auto, y=local_y_max*0.7, col="firebrick2", pos=4,
+                                 labels=as.character(round(cur_thresh_auto, 3)))
+                        } else {
+                            cat("auto thresh is NA; skipped plotting abline\n")
+                        }
                     }
+                    
+                    ### manual threshold
+                    
+                    if (config==4) {
+                        if (!is.na(cur_thresh_man)) {
+                            abline(v=cur_thresh_man, lty=2, lwd=1.5, col="black")
+                            text(x=cur_thresh_man, y=local_y_max*0.9, col="black", pos=4,
+                                 labels=as.character(round(cur_thresh_man, 3)))
+                        } else {
+                            cat("manual thresh is NA; skipped plotting abline\n")
+                        }
+                    }
+                    
                 }
-                
             }
-        }
+            
+            dev.off()
+        }    
         
-        dev.off()
-    }    
+        
+        rm(db)
+        
+    } else {
+        cat("\n", path_btw, "does not exist; skipped visualizing between-subject\n")
+    }
     
-    
-    rm(db)
 }
 

@@ -13,6 +13,9 @@
 # heavy chains only is desired, simply set `--heavyLight` to `FALSE` and 
 # light chains will be ignored.
 
+# If there's only 1 subject in --pathCSV, even if --calcBetween is TRUE,
+# between-subject calculation will be skipped.
+
 suppressPackageStartupMessages(require(optparse))
 
 option_list = list(
@@ -186,100 +189,108 @@ if (opt$calcWithin) {
 
 if (opt$calcBetween) {
     
-    # concat all subjects
-    if (opt$heavyLight) {
-        cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ,
-                      opt$colCell, opt$colLocus)
-    } else {
-        cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ)
-    }
-    
-    for (i in 1:nrow(subj_info)) {
+    # skip if only 1 donor
+    if (nrow(subj_info)>1) {
         
+        # concat all subjects
+        if (opt$heavyLight) {
+            cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ,
+                          opt$colCell, opt$colLocus)
+        } else {
+            cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ)
+        }
+        
+        for (i in 1:nrow(subj_info)) {
+            
+            if (opt$heavyLight) {
+                # heavy and light
+                db_tmp_h = read.table(subj_info[["path_db_heavy"]][i],
+                                      header=T, sep="\t", stringsAsFactors=F)
+                db_tmp_l = read.table(subj_info[["path_db_light"]][i],
+                                      header=T, sep="\t", stringsAsFactors=F)
+                stopifnot(all.equal(colnames(db_tmp_h), colnames(db_tmp_l)))
+                
+                db_tmp = rbind(db_tmp_h, db_tmp_l)
+                
+                stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db_tmp) ))
+            } else {
+                # heavy only
+                db_tmp = read.table(subj_info[["path_db_heavy"]][i],
+                                    header=T, sep="\t", stringsAsFactors=F)
+            }
+            
+            stopifnot(all(cols_keep %in% colnames(db_tmp)))
+            db_tmp = db_tmp[, cols_keep]
+            db_tmp[[opt$colSubj]] = subj_info[["subj"]][i]
+            
+            if (i==1) {
+                # initiate db
+                db = db_tmp
+            } else {
+                # append new rows to db
+                db = rbind(db, db_tmp)
+            }
+            
+            rm(db_tmp)
+        }
+        
+        cat("\nBreakdown by subject:\n")
+        print(table(db[[opt$colSubj]]))
+        
+        cat("\nCalculating between-subject distToNearest... \n")
+        
+        fn = paste0("dtn_btwSubj", out_suffix,
+                    ifelse(is.null(opt$subsampleBetween), "", 
+                           paste0("_subsample-", opt$subsampleBetween)),
+                    ".RData")
+        
+        #* v1.0.2 stable release requires a bug fix from commit 47bffe0
+        #* this bug fix is packed into julianqz/wu_cimm:main_0.1.1
+        #* but if not using that docker image, v1.0.2 will fail next block
         if (opt$heavyLight) {
             # heavy and light
-            db_tmp_h = read.table(subj_info[["path_db_heavy"]][i],
-                                  header=T, sep="\t", stringsAsFactors=F)
-            db_tmp_l = read.table(subj_info[["path_db_light"]][i],
-                                  header=T, sep="\t", stringsAsFactors=F)
-            stopifnot(all.equal(colnames(db_tmp_h), colnames(db_tmp_l)))
+            db = distToNearest(db, 
+                               sequenceColumn=opt$colSeq,
+                               vCallColumn=opt$colV,
+                               jCallColumn=opt$colJ,
+                               cellIdColumn=opt$colCell,
+                               locusColumn=opt$colLocus,
+                               onlyHeavy=F,
+                               cross=opt$colSubj,
+                               subsample=opt$subsampleBetween,
+                               model="ham", normalize="len", 
+                               first=F, VJthenLen=F, keepVJLgroup=T,
+                               nproc=opt$nproc, progress=T)
             
-            db_tmp = rbind(db_tmp_h, db_tmp_l)
-            
-            stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db_tmp) ))
+            # sanity check
+            # heavy and light chains from the same cell should have the same partition
+            stopifnot(all( sapply(unique(db[[opt$colCell]]), 
+                                  function(s){
+                                      # wrt db
+                                      s_idx = which(db[[opt$colCell]]==s)
+                                      s_bool = length(unique(db[["vjl_group"]][s_idx]))==1
+                                      return(s_bool)
+                                  }, USE.NAMES=F) ))
         } else {
             # heavy only
-            db_tmp = read.table(subj_info[["path_db_heavy"]][i],
-                                header=T, sep="\t", stringsAsFactors=F)
+            db = distToNearest(db, 
+                               sequenceColumn=opt$colSeq,
+                               vCallColumn=opt$colV,
+                               jCallColumn=opt$colJ,
+                               cross=opt$colSubj,
+                               subsample=opt$subsampleBetween,
+                               model="ham", normalize="len", 
+                               first=F, VJthenLen=F, keepVJLgroup=T,
+                               nproc=opt$nproc, progress=T)
         }
         
-        stopifnot(all(cols_keep %in% colnames(db_tmp)))
-        db_tmp = db_tmp[, cols_keep]
-        db_tmp[[opt$colSubj]] = subj_info[["subj"]][i]
+        save(db, file=fn)
         
-        if (i==1) {
-            # initiate db
-            db = db_tmp
-        } else {
-            # append new rows to db
-            db = rbind(db, db_tmp)
-        }
+        rm(db, fn)
         
-        rm(db_tmp)
-    }
-    
-    cat("\nBreakdown by subject:\n")
-    print(table(db[[opt$colSubj]]))
-    
-    cat("\nCalculating between-subject distToNearest... \n")
-
-    fn = paste0("dtn_btwSubj", out_suffix,
-                ifelse(is.null(opt$subsampleBetween), "", 
-                       paste0("_subsample-", opt$subsampleBetween)),
-                ".RData")
-    
-    #* v1.0.2 stable release requires a bug fix from commit 47bffe0
-    #* this bug fix is packed into julianqz/wu_cimm:main_0.1.1
-    #* but if not using that docker image, v1.0.2 will fail next block
-    if (opt$heavyLight) {
-        # heavy and light
-        db = distToNearest(db, 
-                           sequenceColumn=opt$colSeq,
-                           vCallColumn=opt$colV,
-                           jCallColumn=opt$colJ,
-                           cellIdColumn=opt$colCell,
-                           locusColumn=opt$colLocus,
-                           onlyHeavy=F,
-                           cross=opt$colSubj,
-                           subsample=opt$subsampleBetween,
-                           model="ham", normalize="len", 
-                           first=F, VJthenLen=F, keepVJLgroup=T,
-                           nproc=opt$nproc, progress=T)
-        
-        # sanity check
-        # heavy and light chains from the same cell should have the same partition
-        stopifnot(all( sapply(unique(db[[opt$colCell]]), 
-                              function(s){
-                                  # wrt db
-                                  s_idx = which(db[[opt$colCell]]==s)
-                                  s_bool = length(unique(db[["vjl_group"]][s_idx]))==1
-                                  return(s_bool)
-                              }, USE.NAMES=F) ))
     } else {
-        # heavy only
-        db = distToNearest(db, 
-                           sequenceColumn=opt$colSeq,
-                           vCallColumn=opt$colV,
-                           jCallColumn=opt$colJ,
-                           cross=opt$colSubj,
-                           subsample=opt$subsampleBetween,
-                           model="ham", normalize="len", 
-                           first=F, VJthenLen=F, keepVJLgroup=T,
-                           nproc=opt$nproc, progress=T)
+        cat("\nOnly 1 subject found. Skipping between-subject.\n")
     }
     
-    save(db, file=fn)
-    
-    rm(db, fn)
 }
 
