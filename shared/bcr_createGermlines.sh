@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # Create clonal consensus germlines after inferring B cell clones
 #
 # Author: Julian Q Zhou
@@ -6,8 +7,10 @@
 #
 # Prereqs:  
 #
-# 1) A CSV at ${PATH_CSV} containing two columns (NO HEADER)
-#    1st col: subject ID; 2nd col: path to input tab file
+# 1) A CSV at ${PATH_CSV} containing 2 or 3 columns (NO HEADER)
+#    1st col: subject ID
+#    2nd col: path to input tab file (heavy chain)
+#    3rd col: path to input tab file (light chain) -- if `-M true`
 # 
 # 2) Input tab files should have a clone ID columns (`--cloned` flag is on)
 # 
@@ -30,13 +33,14 @@ usage () {
     echo -e "  -J  Column name of J call."
     echo -e "  -K  Column name of clone ID."
     echo -e "  -L  Output foramt. Either 'airr' or 'changeo'."
+    echo -e "  -M  Whether to run for both heavy and light. Either 'true' or 'false'."
     echo -e "  -h  This message."
 }
 
 PATH_REF_N_SET=false
 
 # Get commandline arguments
-while getopts "A:B:C:D:E:F:G:H:I:J:K:L:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:h" OPT; do
     case "$OPT" in
     A)  PATH_CSV=$(realpath "${OPTARG}")
         ;;
@@ -63,6 +67,8 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:h" OPT; do
         ;;
     L)  CG_FORMAT="${OPTARG}"
         ;;
+    M)  HEAVY_LIGHT="${OPTARG}"
+        ;;
     h)  usage
         exit
         ;;
@@ -80,6 +86,7 @@ done
 PATH_LOG="${PATH_WORK}/log_bcr_createGermlines_$(date '+%m%d%Y_%H%M%S').log"
 
 CreateGermlines.py --version &> "${PATH_LOG}"
+echo "HEAVY_LIGHT: ${HEAVY_LIGHT}" &>> "${PATH_LOG}"
 echo "Input csv: ${PATH_CSV}" &>> "${PATH_LOG}"
 echo "Reference, V: ${PATH_REF_V}" &>> "${PATH_LOG}"
 echo "Reference, D: ${PATH_REF_D}" &>> "${PATH_LOG}"
@@ -90,6 +97,13 @@ else
     echo "Reference, N: not supplied" &>> "${PATH_LOG}"
 fi
 echo "--vf: ${COL_V}" &>> "${PATH_LOG}"
+
+
+if $HEAVY_LIGHT; then
+    RUN_MODE=(heavy light)
+else
+    RUN_MODE=(heavy)
+fi
 
 
 N_LINES=$(wc -l < "${PATH_CSV}")
@@ -114,61 +128,73 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 	# ID
 	CUR_ID=${strarr[0]}
 
-    # sample-specific path to input db
-    PATH_INPUT=${strarr[1]}
-
     echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
 
-    #! important: if novel alleles were inferred and found by tigger, 
-    #  add novel alleles to germline .fasta before running CreateGermlines
+    # loop thru heavy (and light)
 
-    # if you have run the clonal assignment task prior to invoking CreateGermlines, 
-    # then adding the --cloned argument is recommended, as this will generate a 
-    # single germline of consensus length for each clone
+    for CHAIN in "${RUN_MODE[@]}"; do
 
-    # no nproc
+        # sample-specific path to input db
+        if [[ ${CHAIN} == "heavy" ]]; then
+            PATH_INPUT=${strarr[1]}
+        else
+            PATH_INPUT=${strarr[2]}
+        fi
 
-    # [outname]_germ-pass/fail.tsv
+        echo " - ${CHAIN}: ${PATH_INPUT}" &>> "${PATH_LOG}"
 
-    if ! $PATH_REF_N_SET; then
+        #! important: if novel alleles were inferred and found by tigger, 
+        #  add novel alleles to germline .fasta before running CreateGermlines
 
-        CreateGermlines.py \
-            -d "${PATH_INPUT}" \
-            -r "${PATH_REF_V}" "${PATH_REF_D}" "${PATH_REF_J}" \
-            -g full dmask vonly regions \
-            --sf "${COL_SEQ}" \
-            --vf "${COL_V}" \
-            --df "${COL_D}" \
-            --jf "${COL_J}" \
-            --cf "${COL_CLONE}" \
-            --cloned \
-            --format "${CG_FORMAT}" \
-            --failed \
-            --outname "${CUR_ID}" \
-            --outdir "${PATH_WORK}" \
-            --log "${PATH_WORK}/log_bcr_createGermlines_${CUR_ID}.log" \
-            &>> "${PATH_LOG}"
+        # if you have run the clonal assignment task prior to invoking CreateGermlines, 
+        # then adding the --cloned argument is recommended, as this will generate a 
+        # single germline of consensus length for each clone
 
-    else
+        # no nproc
 
-        CreateGermlines.py \
-            -d "${PATH_INPUT}" \
-            -r "${PATH_REF_V}" "${PATH_REF_D}" "${PATH_REF_J}" "${PATH_REF_N}" \
-            -g full dmask vonly regions \
-            --sf "${COL_SEQ}" \
-            --vf "${COL_V}" \
-            --df "${COL_D}" \
-            --jf "${COL_J}" \
-            --cf "${COL_CLONE}" \
-            --cloned \
-            --format "${CG_FORMAT}" \
-            --failed \
-            --outname "${CUR_ID}" \
-            --outdir "${PATH_WORK}" \
-            --log "${PATH_WORK}/log_bcr_createGermlines_${CUR_ID}.log" \
-            &>> "${PATH_LOG}"
+        # [outname]_germ-pass/fail.tsv
 
-    fi
+        if ! $PATH_REF_N_SET; then
+
+            CreateGermlines.py \
+                -d "${PATH_INPUT}" \
+                -r "${PATH_REF_V}" "${PATH_REF_D}" "${PATH_REF_J}" \
+                -g full dmask vonly regions \
+                --sf "${COL_SEQ}" \
+                --vf "${COL_V}" \
+                --df "${COL_D}" \
+                --jf "${COL_J}" \
+                --cf "${COL_CLONE}" \
+                --cloned \
+                --format "${CG_FORMAT}" \
+                --failed \
+                --outname "${CUR_ID}_${CHAIN}" \
+                --outdir "${PATH_WORK}" \
+                --log "${PATH_WORK}/log_bcr_createGermlines_${CUR_ID}_${CHAIN}.log" \
+                &>> "${PATH_LOG}"
+
+        else
+
+            CreateGermlines.py \
+                -d "${PATH_INPUT}" \
+                -r "${PATH_REF_V}" "${PATH_REF_D}" "${PATH_REF_J}" "${PATH_REF_N}" \
+                -g full dmask vonly regions \
+                --sf "${COL_SEQ}" \
+                --vf "${COL_V}" \
+                --df "${COL_D}" \
+                --jf "${COL_J}" \
+                --cf "${COL_CLONE}" \
+                --cloned \
+                --format "${CG_FORMAT}" \
+                --failed \
+                --outname "${CUR_ID}_${CHAIN}" \
+                --outdir "${PATH_WORK}" \
+                --log "${PATH_WORK}/log_bcr_createGermlines_${CUR_ID}_${CHAIN}.log" \
+                &>> "${PATH_LOG}"
+
+        fi
+
+    done
 
 done
 
