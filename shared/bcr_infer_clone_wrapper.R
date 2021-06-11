@@ -19,6 +19,8 @@ option_list = list(
                 help="Path to save outputs."),
     make_option("--pathHelper", action="store", default=NA, type="character", 
                 help="Path to bcr_infer_clone.R."),
+    make_option("--pathAux", action="store", default=NA, type="character", 
+                help="Path to directory to output subj_info_createGermlines.csv."),
     make_option("--threshold", action="store", default=NA, 
                 type="character", help="Clustering threshold."),
     make_option("--colSeq", action="store", default="cdr3", 
@@ -261,3 +263,21 @@ for (i in 1:nrow(subj_info)) {
     }
     
 }
+
+# output subj_info_createGermlines.csv for CreateGermlines
+
+cur_csv = cbind(subj=DONORS,
+                path_db_heavy=paste0(opt$pathWork, 
+                                     "cluster-pass_partition-", out_suffix_2, 
+                                     "_chain-heavy_", DONORS, ".tsv"))
+if (opt$propagateToLight) {
+    cur_csv = cbind(cur_csv,
+                    path_db_light=paste0(opt$pathWork, 
+                                         "cluster-pass_partition-", out_suffix_2, 
+                                         "_chain-light_", DONORS, ".tsv"))
+}
+cur_fn = "subj_info_createGermlines.csv"
+setwd(opt$pathAux)
+# note that headers are omitted for this file (col.names=F)
+write.table(x=cur_csv, file=cur_fn, quote=F, sep=",", row.names=F, col.names=F)
+
