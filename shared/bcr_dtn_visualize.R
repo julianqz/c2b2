@@ -7,10 +7,8 @@
 # - pathCSV points to a comma-separated file with the following headers
 #   "subj", "path_dtn" where "path_dtn" contains a .RData file from findThreshold
 
-# If --pathBtw does not exist, even if --plotBetween is TRUE, 
+# If there is only 1 subject in --pathCSV, even if --plotBetween is TRUE, 
 # between-subject visualization will be skipped 
-# (such is the case when there's only 1 subject and between-subject calculation 
-# was skipped).
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -253,10 +251,7 @@ if (plot_within) {
 
 if (plot_btw) {
     
-    # path_btw won't exist if between-subject calc was not run
-    # (such is the case when there's only 1 subject)
-    
-    if (file.exists(path_btw)) {
+    if (n_subj>1) {
         
         cat("\nVisualizing within- & between-subject distToNearest... \n")
         
@@ -359,7 +354,7 @@ if (plot_btw) {
         rm(db)
         
     } else {
-        cat("\n", path_btw, "does not exist; skipped visualizing between-subject\n")
+        cat("\nOnly 1 subject found. Skipping between-subject.\n")
     }
     
 }
