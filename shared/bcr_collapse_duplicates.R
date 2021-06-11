@@ -357,7 +357,7 @@ run_collapse_duplicates = function(db, nproc=1,
     }
 
     # can't both be NULL
-    stopifnot( is.null(db_collapse) & is.null(db_preserve) )
+    stopifnot( ! (is.null(db_collapse) & is.null(db_preserve)) )
     
     # add missing col in db_preserve (added by collapseDuplicates to db_collapse)
     if (!is.null(db_preserve)) {
