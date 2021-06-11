@@ -1,11 +1,11 @@
 #!/opt/conda/bin/Rscript
 
-# wrapper to visualize dist-to-nearest using heavy chains only
+# wrapper to visualize dist-to-nearest
 
 # assumes:
 # - findThreshold was called together with distToNearest
 # - pathCSV points to a comma-separated file with the following headers
-#   "subj", "path" where "path" points to a .RData file from findThreshold
+#   "subj", "path" where "path" contains a .RData file from findThreshold
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -24,6 +24,8 @@ option_list = list(
                 help="Whether to visualize bewteen-subject dtn."),
     make_option("--colSubj", action="store", default=NA, 
                 type="character", help="Column name containing subject info."),
+    make_option("--heavyLight", action="store", default=FALSE, type="logical", 
+                help="Whether partition was based on both heavy and light chains."),
     make_option("--nPlotsPerRow", action="store", default=1, 
                 type="numeric", help="n_plots_per_row."),
     make_option("--manualThresh", action="store", type="character", 
@@ -37,6 +39,13 @@ opt = parse_args(OptionParser(option_list=option_list))
 suppressPackageStartupMessages(library(shazam))
 # plotCrossHam
 source(opt$pathHelper)
+
+# suffix for filenames
+if (opt$heavyLight) {
+    out_suffix = "_groupByHL"
+} else {
+    out_suffix = "_groupByHonly"
+}
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 n_subj = nrow(subj_info)
@@ -119,11 +128,13 @@ if (plot_within | plot_btw) {
         # - ydens: vector of density value for smoothed density estimate
         # - threshold: distance threshold
         
-        # thresh_obj
-        load(subj_info[["path"]][i])
-        
         subj = subjects[i]
         cat(subj, "\n")
+        
+        # thresh_obj
+        fn = paste0(subj_info[["path"]][i],
+                    "thresh_density", out_suffix, "_", subj, ".RData")
+        load(fn)
         
         dist_lst[[subj]] = thresh_obj@x
         xden_lst[[subj]] = thresh_obj@xdens
@@ -155,7 +166,7 @@ if (plot_within) {
         
         cat("config", config, "\n")
         
-        fn = paste0("dtn_within_config-", config, ".pdf")
+        fn = paste0("dtn_within", out_suffix, "_config-", config, ".pdf")
         pdf(fn, width=4*n_plots_per_row, height=4*n_rows)
         par(mfrow=c(n_rows, n_plots_per_row), mar=c(5,5,2,2)) # BLTR
         
@@ -257,7 +268,7 @@ if (plot_btw) {
         
         cat("config", config, "\n")
         
-        fn = paste0("dtn_btw_config-", config, ".pdf")
+        fn = paste0("dtn_btw", out_suffix, "_config-", config, ".pdf")
         pdf(fn, width=5*n_plots_per_row, height=5*n_rows)
         par(mfrow=c(n_rows, n_plots_per_row), mar=c(5,5,2,2)) # BLTR
         
