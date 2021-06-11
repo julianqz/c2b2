@@ -275,15 +275,17 @@ for (i in 1:nrow(subj_info)) {
 
 # output subj_info_createGermlines.csv for CreateGermlines
 
-cur_csv = cbind(subj=DONORS,
+all_subj = subj_info[["subj"]]
+
+cur_csv = cbind(subj=all_subj,
                 path_db_heavy=paste0(opt$pathWork, 
                                      "cluster-pass_partition-", out_suffix_2, 
-                                     "_chain-heavy_", DONORS, ".tsv"))
+                                     "_chain-heavy_", all_subj, ".tsv"))
 if (opt$propagateToLight) {
     cur_csv = cbind(cur_csv,
                     path_db_light=paste0(opt$pathWork, 
                                          "cluster-pass_partition-", out_suffix_2, 
-                                         "_chain-light_", DONORS, ".tsv"))
+                                         "_chain-light_", all_subj, ".tsv"))
 }
 cur_fn = "subj_info_createGermlines.csv"
 setwd(opt$pathAux)
