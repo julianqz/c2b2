@@ -177,14 +177,16 @@ run_collapse_duplicates = function(db, nproc=1,
         mtx_bool_val = do.call(cbind, lst_bool_val)
         # OR across bool_val
         bool_preserve = rowSums(mtx_bool_val)>=1
-        # error if nothing left to collapse (i.e. all preserved)
-        if (all(bool_preserve)) {
-            stop("Every seq is preserved. Nothing to collapse. Halted.\n")
-        }
         
-        db_to_collapse = db[!bool_preserve, ]
         db_preserve = do.call(rbind, lst_db_val)
         
+        # ok if all preserved with no more seq left to collapse
+        # if so, nrow(db_to_collapse) will be 0 and handled subsequently
+        db_to_collapse = db[!bool_preserve, ]
+        if (all(bool_preserve)) {
+            stopifnot( nrow(db_to_collapse)==0 )
+        }
+
         rm(mtx_bool_val, lst_bool_val, lst_db_val, bool_preserve)
         
     } else {
