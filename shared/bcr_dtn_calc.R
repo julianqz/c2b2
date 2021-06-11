@@ -142,6 +142,9 @@ if (opt$calcWithin) {
                                       s_bool = length(unique(db[["vjl_group"]][s_idx]))==1
                                       return(s_bool)
                                   }, USE.NAMES=F) ))
+            # all counts of vjl_group should be even (heavy:light paired)
+            stopifnot(all( table(db[["vjl_group"]]) %% 2 == 0 ))
+            
         } else {
             # heavy only
             db = distToNearest(db, 
