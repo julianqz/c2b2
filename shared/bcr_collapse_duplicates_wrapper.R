@@ -9,7 +9,13 @@
 
 # assumes:
 # - pathCSV points to a comma-separated file with the following headers
-#   "subj", "path_db" where "path_db" points to a .tsv file
+#   "subj", "path_db_heavy/light" where "path_db_*" points to a .tsv file
+
+# Known issue:
+# If data is unpaird bulk light, previous steps in current pipeline does not 
+# add clone assignment to the light chains. However, --colClone is required 
+# by this function. As a hack-around, manually add a dummy --colClone to the
+# light db with all light chain seqs assigned to a single clone
 
 suppressPackageStartupMessages(require(optparse))
 
@@ -22,6 +28,9 @@ option_list = list(
                 help="path_work."),
     make_option("--nproc", action="store", default=1, type="numeric", 
                 help="nproc."),
+    make_option("--heavyLight", action="store", default=FALSE, 
+                type="logical", 
+                help="Whether to run separately for both heavy and light chains. Default is heavy only."),
     make_option("--colClone", action="store", default="clone_id", 
                 type="character", help="col_clone."),
     make_option("--colSeq", action="store", default="sequence_alignment", 
@@ -60,6 +69,16 @@ suppressPackageStartupMessages(require(alakazam))
 source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
+
+if (opt$heavyLight) {
+    run_mode = c("heavy", "light")
+} else {
+    run_mode = c("heavy")
+}
+
+# check presence of necessary columns
+stopifnot( all( paste0("path_db_", run_mode) %in% colnames(subj_info) ) )
+
 
 # parse
 # \s is space
@@ -100,6 +119,7 @@ setwd(opt$pathWork)
 sinkName = paste0("computingEnv_collapse_duplicates_", Sys.Date(), "-", 
                   format(Sys.time(), "%H%M%S"), '.txt')
 sink(sinkName)
+cat("run_mode:", run_mode, "\n")
 # if NULL, will appear as "...: " (i.e. blank)
 cat("col_seq:", opt$colSeq, "\n")
 cat("col_id:", opt$colID, "\n")
@@ -117,42 +137,49 @@ sink()
 for (i in 1:nrow(subj_info)) {
     
     subj = subj_info[["subj"]][i]
-    cat("\n", subj, "\n")
     
-    #### collapse ####
-    
-    # load data
-    db = read.table(subj_info[["path_db"]][i], 
-                    sep="\t", header=T, stringsAsFactors=F)
-    
-    # collapse
-    db = run_collapse_duplicates(db, nproc=opt$nproc, 
-                                 col_clone=opt$colClone,
-                                 col_seq=opt$colSeq,
-                                 col_id=opt$colID,
-                                 col_text_fields=col_text_fields,
-                                 col_num_fields=col_num_fields,
-                                 col_seq_fields=col_seq_fields,
-                                 col_preserve=opt$colPreserve,
-                                 val_preserve_vec=val_preserve_vec,
-                                 col_distinct_vec=col_distinct_vec)
-    
-    # export
-    fn = paste0("collapse_dups_", subj, ".RData")
-    save(db, file=fn)
-    
-    #### verify ####
-    
-    if (opt$verify) {
+    for (cur_run_mode in run_mode) {
         
-        verify_collapse_duplicates(db=db, N=opt$verifyN,
-                                   col_clone=opt$colClone,
-                                   col_seq=opt$colSeq,
-                                   col_preserve=opt$colPreserve,
-                                   val_preserve_vec=val_preserve_vec,
-                                   col_distinct_vec=col_distinct_vec)
+        cat("\n", subj, ";", cur_run_mode, "\n")
+        
+        #### collapse ####
+        
+        # load data
+        cur_col_db = paste0("path_db_", cur_run_mode)
+        cur_fn_db = subj_info[[cur_col_db]][i]
+        cat(" - loading", cur_fn_db, "\n")
+        db = read.table(cur_fn_db, 
+                        sep="\t", header=T, stringsAsFactors=F)
+        
+        # collapse
+        db = run_collapse_duplicates(db, nproc=opt$nproc, 
+                                     col_clone=opt$colClone,
+                                     col_seq=opt$colSeq,
+                                     col_id=opt$colID,
+                                     col_text_fields=col_text_fields,
+                                     col_num_fields=col_num_fields,
+                                     col_seq_fields=col_seq_fields,
+                                     col_preserve=opt$colPreserve,
+                                     val_preserve_vec=val_preserve_vec,
+                                     col_distinct_vec=col_distinct_vec)
+        
+        # export
+        fn = paste0("collapse_dups_", cur_run_mode, "_", subj, ".RData")
+        save(db, file=fn)
+        
+        #### verify ####
+        
+        if (opt$verify) {
+            
+            verify_collapse_duplicates(db=db, N=opt$verifyN,
+                                       col_clone=opt$colClone,
+                                       col_seq=opt$colSeq,
+                                       col_preserve=opt$colPreserve,
+                                       val_preserve_vec=val_preserve_vec,
+                                       col_distinct_vec=col_distinct_vec)
+        }
+        
+        rm(db)
     }
-    
-    rm(db)
 }
 
