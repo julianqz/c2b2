@@ -632,7 +632,22 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
                 bool_keep_seq = rep(T, nrow(db))
                 
                 # cells with >1 heavy, or {either >1 heavy or >1 light}
-                cells_min1 = rownames(chain_count_mtx)[rowSums(chain_count_mtx>1)==1]
+                
+                chain_count_mtx_2 = chain_count_mtx[bool_num_HL, ]
+                # sanity check: every cell in this table should have at least 1H
+                # and/or at least 1L
+                stopifnot(all( rowSums(chain_count_mtx_2>=1)==2 ))
+                
+                if (logic_num_HL=="1H_min1L") {
+                    cells_min1 = rownames(chain_count_mtx_2)[chain_count_mtx_2[, "light"]>1]
+                } else {
+                    # in each cell, how many chains have count >1?
+                    chain_count_mtx_2_rowsum = rowSums(chain_count_mtx_2>1)
+                    # expect at most 1 chain has count >1
+                    stopifnot(all(chain_count_mtx_2_rowsum<=1))
+                    # cells with chain with count >1
+                    cells_min1 = rownames(chain_count_mtx_2)[chain_count_mtx_2_rowsum==1]
+                }
                 
                 # For each cell, set the boolean in bool_kep_seq for the non-majority
                 # heavy/light (depending on which chain has >1) to F
