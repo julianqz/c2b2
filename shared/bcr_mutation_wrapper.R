@@ -17,6 +17,9 @@ option_list = list(
                 help="Path to working directory where outputs will be saved."),
     make_option("--nproc", action="store", default=1, type="numeric", 
                 help="nproc for foreach."),
+    make_option("--saveAsTSV", action="store", default=FALSE, 
+                type="logical", 
+                help="Whether to also save as TSV. Default is to only save as RData."),
     make_option("--heavyLight", action="store", default=FALSE, 
                 type="logical", 
                 help="Whether to run separately for both heavy and light chains. Default is heavy only."),
@@ -277,6 +280,12 @@ for (i in 1:nrow(subj_info)) {
         # save
         fn = paste0("mu_freq_", cur_run_mode, "_", subj, ".RData")
         save(db, file=fn)
+        
+        if (opt$saveAsTSV) {
+            fn = paste0("mu_freq_", cur_run_mode, "_", subj, ".tsv")
+            write.table(x=db, file=fn, quote=F, sep="\t", 
+                        row.names=F, col.names=T)
+        }
         
         rm(db, fn, lst_add)
         
