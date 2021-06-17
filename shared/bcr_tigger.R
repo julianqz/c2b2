@@ -13,13 +13,18 @@
 #' @param   p_fraction_to_explain  Parameter passed to `inferGenotype`.
 #' @param   p_gene_cutoff          Parameter passed to `inferGenotype`.
 #' @param   p_find_unmutated       Parameter passed to `inferGenotype`.
-#' @param   p_text_size            Parameter passed to `plotGenotype`. 
+#' @param   p_text_size            Parameter passed to `plotGenotype`.
+#' @param   p_keep_gene            Parameter passed to `reassignAlleles`. 
 #' 
 #' @return  Various tigger objects in as .RData. Genotype plot.
 #'          Updated db with `v_call_genotyped` column in .tsv and .RData formats.
 #'          
 #' @details Pay close attention to the genotype inferred and adjust 
 #'          `p_find_unmutated` as necessary.
+#'          
+#'          May need to adjust `p_fraction_to_explain` and/or `p_keep_gene` if
+#'          `v_call_genotyped` outputted from `reassignAlleles` ends up 
+#'          containing empty strings.
 #'          
 #'          Chain type (heavy or light) is automatically identified and noted in
 #'          the output filenames. Assumes that input `db` contains either all 
@@ -34,7 +39,8 @@ run_tigger = function(path_imgt, path_helper, path_work,
                       p_fraction_to_explain=0.875,
                       p_gene_cutoff=1e-04,
                       p_find_unmutated=T,
-                      p_text_size=12) {
+                      p_text_size=12,
+                      p_keep_gene="gene") {
     
     # compatible with v1.0.0
     suppressPackageStartupMessages(require(tigger))
@@ -131,10 +137,15 @@ run_tigger = function(path_imgt, path_helper, path_work,
         cat("\nreassignAlleles()\n")
         db = reassignAlleles(data=db, genotype_db=genoSeqs, 
                              v_call=col_v, seq=col_seq, 
-                             method="hamming", keep_gene="gene")
+                             method="hamming", keep_gene=p_keep_gene)
         
         fn = paste0("db_reassign_", subj, "_", chain_type, ".RData")
         save(db, file=fn)
+        
+        ## sanity check
+        # there should be no empty string or NA in $v_call_genotyped
+        stopifnot( all( db[["v_call_genotype"]]!="" ) )
+        stopifnot( all( !is.na(db[["v_call_genotype"]]) ) )
         
         ### split & export
         

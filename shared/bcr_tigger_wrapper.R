@@ -34,7 +34,9 @@ option_list = list(
     make_option("--findUnmutated", action="store", default=TRUE, 
                 type="logical", help="p_find_unmutated."),
     make_option("--textSize", action="store", default=12, 
-                type="numeric", help="p_text_size.")
+                type="numeric", help="p_text_size."),
+    make_option("--keepGene", action="store", default="gene", 
+                type="character", help="p_keep_gene.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -56,6 +58,8 @@ sinkName = paste0("computingEnv_tigger_", Sys.Date(), "-",
                   format(Sys.time(), "%H%M%S"), '.txt')
 sink(sinkName)
 cat("run_mode:", run_mode, "\n")
+cat("find_unmutated:", opt$findUnmutated, "\n")
+cat("keep_gene:", opt$keepGene, "\n")
 sessionInfo()
 sink()
 
@@ -88,7 +92,8 @@ for (i in 1:nrow(subj_info)) {
                    col_prod=opt$colProd, 
                    col_cdr3_len=opt$colCDR3Len,
                    p_find_unmutated=opt$findUnmutated,
-                   p_text_size=opt$textSize)
+                   p_text_size=opt$textSize,
+                   p_keep_gene=opt$keepGene)
     }
 }
 
