@@ -56,10 +56,56 @@ summarize_clone = function(db, col_clone, col_vec,
         }
     }
     
-    # no overlap amongst unique values from col_vec
+    # check if there's overlap amongst unique values from col_vec
+    # e.g. 
+    # $sorting: GC, NS
+    # $anno_gex_b: GC, PB, ...
+    # Both columns have GC, which, without further action, would translate into
+    # there being two columns called GC in clone_info
+    # Want: each clone_info column to have a unique name
+    
     val_uniq_lst = sapply(col_vec, function(col){ sort(unique(db[[col]])) }, 
                           USE.NAMES=T, simplify=F)
     val_uniq_vec = unlist(val_uniq_lst)
+    
+    if (length(unique(val_uniq_vec)) != length(val_uniq_vec)) {
+        
+        # only one scenario possible
+        stopifnot( length(unique(val_uniq_vec)) < length(val_uniq_vec) )
+        
+        # duplicate value(s)
+        # unique() necessary because val_uniq_vec[duplicated(val_uniq_vec)]
+        # could contain duplicates if any value appears >2 times
+        val_dup_vec = unique( val_uniq_vec[duplicated(val_uniq_vec)] )
+        
+        # de-duplicate by attaching column name
+        # loop thru each duplicate value
+        for (v in val_dup_vec) {
+            
+            # which column in val_uniq_lst contains v?
+            idx_col = which(sapply(val_uniq_lst, function(x){v %in% x}))
+            stopifnot(length(idx_col)>=2)
+            
+            # append column names before v
+            # use @ as special reserved character to connect
+            # can't use "_" b/c won't be tell apart from "_na"
+            new_v_vec = paste0(col_vec[idx_col], "@", v)
+            
+            # replace existing values
+            for (i_idx_col in 1:length(idx_col)) {
+                # where is existing value within the val_uniq_lst entry
+                idx_val = which( val_uniq_lst[[ idx_col[i_idx_col] ]] == v )
+                # replace that value with the new value with the corresponding 
+                # colname attached
+                val_uniq_lst[[ idx_col[i_idx_col] ]][idx_val] = new_v_vec[i_idx_col]
+            }
+        
+        }
+        
+        # recompute
+        val_uniq_vec = unlist(val_uniq_lst)
+    }
+    # double-check
     stopifnot( length(unique(val_uniq_vec)) == length(val_uniq_vec) )
     
     # initiate clone_info
@@ -91,7 +137,16 @@ summarize_clone = function(db, col_clone, col_vec,
         
         for (col in col_vec) {
             for (val in val_uniq_lst[[col]]) {
-                clone_info[[val]][i_cl] = sum( db[[col]][idx]==val )
+                
+                # if there's @ (reserved char), that means colname had been appended
+                # need to parse to get pre-modified value to be used for checking
+                if (grepl(pattern="@", x=val)) { 
+                    val_ck = strsplit(val, "@")[[1]][2] 
+                } else {
+                    val_ck = val
+                }
+                
+                clone_info[[val]][i_cl] = sum( db[[col]][idx]==val_ck )
             }
         }
     }
@@ -119,6 +174,16 @@ summarize_clone = function(db, col_clone, col_vec,
         clone_info = clone_info[order(clone_info[[col_size]], decreasing=F), ]
     } else if (order_by_size=="decreasing") {
         clone_info = clone_info[order(clone_info[[col_size]], decreasing=T), ]
+    }
+    
+    # convert @ to _
+    # do this after sanity check because conversion causes mismatch btw
+    # val_uniq_lst and colnames, which the check relies on
+    idx_at = grep(pattern="@", x=colnames(clone_info))
+    if (length(idx_at)>0) {
+        vec_pre = colnames(clone_info)[idx_at]
+        vec_post = gsub(pattern="@", replacement="_", x=vec_pre)
+        colnames(clone_info)[idx_at] = vec_post
     }
     
     return(clone_info)
