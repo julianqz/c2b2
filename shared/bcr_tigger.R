@@ -22,9 +22,12 @@
 #' @details Pay close attention to the genotype inferred and adjust 
 #'          `p_find_unmutated` as necessary.
 #'          
-#'          May need to adjust `p_fraction_to_explain` and/or `p_keep_gene` if
-#'          `v_call_genotyped` outputted from `reassignAlleles` ends up 
-#'          containing empty strings.
+#'          Depending on the data, and settings of `p_fraction_to_explain` 
+#'          and/or `p_keep_gene`, `v_call_genotyped` outputted by 
+#'          `reassignAlleles` may or may not end up containing empty strings.
+#'          When `p_keep_gene="gene"` and this happens, those `v_call_genotyped`
+#'          values are padded with the corresponding `col_v` values and a message
+#'          is printed.
 #'          
 #'          Chain type (heavy or light) is automatically identified and noted in
 #'          the output filenames. Assumes that input `db` contains either all 
@@ -142,10 +145,30 @@ run_tigger = function(path_imgt, path_helper, path_work,
         fn = paste0("db_reassign_", subj, "_", chain_type, ".RData")
         save(db, file=fn)
         
+        
         ## sanity check
         # there should be no empty string or NA in $v_call_genotyped
-        stopifnot( all( db[["v_call_genotype"]]!="" ) )
-        stopifnot( all( !is.na(db[["v_call_genotype"]]) ) )
+        col_new_v = "v_call_genotyped"
+        
+        bool_ck = db[[col_new_v]]!="" & !is.na(db[[col_new_v]]) 
+        
+        if (p_keep_gene=="gene" & !all(bool_ck)) {
+            # pad
+            idx_pad = which(!bool_ck)
+            
+            for (i_idx_pad in idx_pad) {
+                cat("padding", col_new_v, "of row", i_idx_pad,
+                    "with", col_v, ":", db[[col_v]][i_idx_pad], "\n")
+            }
+            
+            db[[col_new_v]][idx_pad] = db[[col_v]][idx_pad]
+            
+            # recompute
+            bool_ck = db[[col_new_v]]!="" & !is.na(db[[col_new_v]]) 
+        }
+        
+        stopifnot(all(bool_ck))
+        
         
         ### split & export
         
