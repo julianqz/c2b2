@@ -157,7 +157,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
             idx_pad = which(!bool_ck)
             
             for (i_idx_pad in idx_pad) {
-                cat("padding", col_new_v, "of row", i_idx_pad,
+                cat("\npadding", col_new_v, "of row", i_idx_pad,
                     "with", col_v, ":", db[[col_v]][i_idx_pad], "\n")
             }
             
