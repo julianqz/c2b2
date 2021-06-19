@@ -178,7 +178,7 @@ remove_duplicate_fasta = function(filename) {
 #' @param    germ  IMGT-gapped germline sequence.
 #' @param    obsv  IMGT-gapped observed sequence(s); optional.
 #' 
-#' @return   A list containing `germ_no_gaps` and `obsv_no_gaps`.
+#' @return   A vector containing `germ_no_gaps` and `obsv_no_gaps`.
 #' 
 #' @details  IMGT gaps are removed from germline. 
 #'           Corresponding gap positions in observed are also removed.
@@ -216,6 +216,99 @@ remove_imgt_gaps = function(germ, obsv=NULL) {
         obsv_no_gaps = obsv
     }
     
-    return(list(germ_no_gaps=germ_no_gaps, obsv_no_gaps=obsv_no_gaps))
+    return(c(germ_no_gaps=germ_no_gaps, obsv_no_gaps=obsv_no_gaps))
+}
+
+#' Clean an observed sequence in preparation for expression 
+#' 
+#' @param   obsv   IMGT-gapped observed sequence.
+#' @param   germ   IMGT-gapped germline sequence.
+#' @param   trim   Boolean. Whether to trim output nt length to a multiple of 3.
+#' 
+#' @return  A vector containing `germ_clean` and `obsv_clean`.
+#' 
+#' @details `obsv` undergoes the following cleaning steps:
+#'          1) IMGT gaps are removed.
+#'          2) If there's any non-ATGC position, patch those positions with
+#'             the corresponding germline positions, provided that the 
+#'             germline positions are non-ATGC.
+#'          3) If `trim=TRUE`, trim nt length to a multiple of 3.
+#' 
+clean_obsv = function(obsv, germ, trim) {
+    require(seqinr)
+    
+    stopifnot(nchar(obsv)==nchar(germ))
+    
+    # remove IMGT gaps
+    vec_no_gaps = remove_imgt_gaps(obsv=obsv, germ=germ)
+    obsv_no_gaps = vec_no_gaps["obsv_no_gaps"]
+    germ_no_gaps = vec_no_gaps["germ_no_gaps"]
+    
+    # if there's any non-ATGC in obsv, 
+    # patch with corresponding positions from germ
+    vec_atgc = c("A","T","G","C","a","t","g","c")
+    if (grepl(pattern="[^ATGCatgc]", x=obsv_no_gaps)) {
+        # convert to vector of single characters
+        obsv_no_gaps_c = s2c(obsv_no_gaps)
+        germ_no_gaps_c = s2c(germ_no_gaps)
+        
+        # which positions in obsv is non-ATGC
+        idx_obsv_nonATGC = which(!obsv_no_gaps_c %in% vec_atgc)
+        stopifnot(length(idx_obsv_nonATGC)>0)
+        
+        # are the corresponding positions ATGC in germ?
+        bool_germ = germ_no_gaps_c[idx_obsv_nonATGC] %in% vec_atgc
+        
+        if (any(bool_germ)) {
+            # at least one position can be patched by germline
+            
+            if (any(!bool_germ)) {
+                # one or more of the corresponding positions in germ is non-ATGC
+                cat("germline positions (", idx_obsv_nonATGC[!bool_germ], 
+                    ") non-ATGC (", germ_no_gaps_c[idx_obsv_nonATGC[!bool_germ]],
+                    "); patching skipped for these positions\n")
+            }
+            
+            # exclude any non-ATGC germline positions for patching
+            idx_obsv_nonATGC_patch = idx_obsv_nonATGC[bool_germ]
+            
+            # patch
+            cat("patching performed for (", obsv_no_gaps_c[idx_obsv_nonATGC_patch],
+                ") at positions (", idx_obsv_nonATGC_patch, 
+                ") in obsv with germline (",
+                germ_no_gaps_c[idx_obsv_nonATGC_patch], ")\n")
+            obsv_no_gaps_c[idx_obsv_nonATGC_patch] = germ_no_gaps_c[idx_obsv_nonATGC_patch]
+            
+        } else {
+            # none of the corresponding positions in germ is ATGC
+            cat("all germline positions of concern (", idx_obsv_nonATGC, 
+                ") non-ATGC (", germ_no_gaps_c[idx_obsv_nonATGC],
+                "); patching skipped entirely\n")
+        }
+        
+        # sanity check
+        # the number of non-ATGC position left in obsv after patching, if any, 
+        # should match the number of non-ATGC in germline
+        stopifnot( sum(!obsv_no_gaps_c %in% vec_atgc) == sum(!bool_germ) )
+        
+        # convert back to string
+        obsv_no_gaps = c2s(obsv_no_gaps_c)
+    }
+    
+    # if trim=TRUE, trim length to multiple of 3
+    if (trim) {
+        stopifnot(nchar(obsv_no_gaps)==nchar(germ_no_gaps))
+        len_obsv_no_gaps = nchar(obsv_no_gaps)
+        if (len_obsv_no_gaps %% 3 != 0) {
+            new_len = len_obsv_no_gaps - len_obsv_no_gaps%%3
+            stopifnot(new_len %% 3 == 0)
+            obsv_no_gaps = substr(obsv_no_gaps, 1, new_len)
+            germ_no_gaps = substr(germ_no_gaps, 1, new_len)
+        }
+    }
+    
+    vec_return = c(obsv_no_gaps, germ_no_gaps)
+    names(vec_return) = c("obsv_clean", "germ_clean")
+    return(vec_return)
 }
 
