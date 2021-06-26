@@ -91,24 +91,44 @@ if (opt$calcWithin) {
     
     for (i in 1:nrow(subj_info)) {
         
+        subj = subj_info[["subj"]][i]
+        
         if (opt$heavyLight) {
             # heavy and light
             db_h = read.table(subj_info[["path_db_heavy"]][i],
                               header=T, sep="\t", stringsAsFactors=F)
             db_l = read.table(subj_info[["path_db_light"]][i],
                               header=T, sep="\t", stringsAsFactors=F)
+            
+            # columns should match
             stopifnot(all.equal(colnames(db_h), colnames(db_l)))
+            
+            stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db_h) ))
+            
+            # each cell should have 1 HC and 1 LC each
+            cells_common = base::intersect(db_h[[opt$colCell]],
+                                           db_l[[opt$colCell]])
+            bool_common_h = db_h[[opt$colCell]] %in% cells_common
+            bool_common_l = db_l[[opt$colCell]] %in% cells_common
+            if (any(!bool_common_h)) {
+                cat("\n", subj, "- excluded", sum(!bool_common_h), 
+                    "heavy chain seqs for lacking light chain counterparts\n")
+                db_h = db_h[bool_common_h, ]
+            }
+            if (any(!bool_common_l)) {
+                cat("\n", subj, "- excluded", sum(!bool_common_l), 
+                    "light chain seqs for lacking heavy chain counterparts\n")
+                db_l = db_l[bool_common_l, ]
+            }
+            stopifnot(nrow(db_h)==nrow(db_l))
             
             db = rbind(db_h, db_l)
             
-            stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db) ))
         } else {
             # heavy only
             db = read.table(subj_info[["path_db_heavy"]][i],
                             header=T, sep="\t", stringsAsFactors=F)
         }
-        
-        subj = subj_info[["subj"]][i]
         
         nrow_bf = nrow(db)
         cat("\n", subj, "; nrow(db):", nrow_bf, "\n")
@@ -211,17 +231,38 @@ if (opt$calcBetween) {
         
         for (i in 1:nrow(subj_info)) {
             
+            subj = subj_info[["subj"]][i]
+            
             if (opt$heavyLight) {
                 # heavy and light
                 db_tmp_h = read.table(subj_info[["path_db_heavy"]][i],
                                       header=T, sep="\t", stringsAsFactors=F)
                 db_tmp_l = read.table(subj_info[["path_db_light"]][i],
                                       header=T, sep="\t", stringsAsFactors=F)
+                
                 stopifnot(all.equal(colnames(db_tmp_h), colnames(db_tmp_l)))
                 
-                db_tmp = rbind(db_tmp_h, db_tmp_l)
+                stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db_tmp_h) ))
                 
-                stopifnot(all( c(opt$colCell, opt$colLocus) %in% colnames(db_tmp) ))
+                # each cell should have 1 HC and 1 LC each
+                cells_common = base::intersect(db_tmp_h[[opt$colCell]],
+                                               db_tmp_l[[opt$colCell]])
+                bool_common_h = db_tmp_h[[opt$colCell]] %in% cells_common
+                bool_common_l = db_tmp_l[[opt$colCell]] %in% cells_common
+                if (any(!bool_common_h)) {
+                    cat("\n", subj, "- excluded", sum(!bool_common_h), 
+                        "heavy chain seqs for lacking light chain counterparts\n")
+                    db_tmp_h = db_tmp_h[bool_common_h, ]
+                }
+                if (any(!bool_common_l)) {
+                    cat("\n", subj, "- excluded", sum(!bool_common_l), 
+                        "light chain seqs for lacking heavy chain counterparts\n")
+                    db_tmp_l = db_tmp_l[bool_common_l, ]
+                }
+                stopifnot(nrow(db_tmp_h)==nrow(db_tmp_l))
+                
+                db_tmp = rbind(db_tmp_h, db_tmp_l)
+            
             } else {
                 # heavy only
                 db_tmp = read.table(subj_info[["path_db_heavy"]][i],
