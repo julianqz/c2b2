@@ -173,6 +173,14 @@ for (i in 1:nrow(subj_info)) {
         # check columns exist
         stopifnot(all( c(col_locus, col_cell) %in% colnames(db_light) ))
         
+        # remove cell with no heavy chain counterpart
+        cells_db = db[[col_cell]]
+        stopifnot( all(cells_db %in% db_light[[col_cell]]) )
+        bool_cell = db_light[[col_cell]] %in% cells_db
+        if (any(!bool_cell)) {
+            db_light = db_light[bool_cell, ]
+        }
+        
         # add columns
         # dist_nearest, vjl_group (pass & fail)
         # opt$colClone (pass only)
@@ -187,6 +195,7 @@ for (i in 1:nrow(subj_info)) {
             
             # wrt db (not db_heavy_clust/fail)
             idx_cell_wrt_db = match(db_light[[col_cell]], db[[col_cell]])
+            stopifnot(!any(is.na(idx_cell_wrt_db)))
             stopifnot(all.equal( db_light[[col_cell]], 
                                  db[[col_cell]][idx_cell_wrt_db] ))
             
