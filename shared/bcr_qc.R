@@ -21,6 +21,8 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
                                      loci=c("IG", "TR"), 
                                      separator=",",
                                      verbose=F){
+    require(stringi)
+    
     # check value for `loci` is valid 
     stopifnot(loci %in% c("IG", "TR"))
     
@@ -37,11 +39,21 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
     # NA and empty annotations ignored
     chains = chains[bool_ok]
     
+    # assumed format:
+    # IG[HKL]*
+    # TR[ABGD]*
+    
     # unpack multiple annotations (if any)
     # first split by ","
-    # then extract first 3 chars
+    # then get IG/TR*
+    # then extract first 3 chars (IG[HKL], TR[ABGD])
     chains_unpacked = sapply(chains, function(s){
-        return( substr( strsplit(s, split=separator)[[1]], 1, 3) )
+        s_split = strsplit(s, split=separator)[[1]]
+        s_split_extr = sapply(s_split, function(ss) {
+            stri_extract_first(str=ss,
+                               regex="[IT][GR][HKLABGD][[:alnum:]]?")
+        }, USE.NAMES=F)
+        return( substr(s_split_extr, 1, 3) )
     }, simplify=F)
     
     # unique chain types present
