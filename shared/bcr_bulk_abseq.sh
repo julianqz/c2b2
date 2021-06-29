@@ -5,10 +5,11 @@
 # Date:   2021-04-20
 #
 # Prereqs:  
-# 1) raw fastq files from all samples should be in ${PROJ_ID}/data/raw/
-# 2) raw fastq files named as follows: [sample_id]_R[12].fastq
-# 3) sample_list_${PROJ_ID}.txt in ${PROJ_ID}/aux/
-# 4) ${PROJ_ID}.yaml in ${PROJ_ID}/aux/
+# 1) sample_list_${PROJ_ID}.csv in ${PROJ_ID}/aux/
+#    - 4 comma-separated columns
+#    - [sample id],[directory],[R1 filename],[R2 filename]
+#      Eg: b1,/home/raw,R1.fastq.gz,R2.fastq.gz
+# 2) ${PROJ_ID}.yaml in ${PROJ_ID}/aux/
 
 
 # Print usage
@@ -87,9 +88,6 @@ PATH_PROJ="${PATH_ROOT}/${PROJ_ID}"
 # no error if existing
 mkdir -p "${PATH_PROJ}"
 
-# raw fastqs
-PATH_RAW="${PATH_PROJ}/data/raw/"
-mkdir -p "${PATH_RAW}"
 
 # csv, txt, logs
 PATH_AUX="${PATH_PROJ}/aux/"
@@ -106,7 +104,7 @@ mkdir -p "${PATH_OUTPUT_PA}"
 # overall log for looping thru sample list
 PATH_LOG="${PATH_AUX}log_bcr_bulk_abseq_$(date '+%m%d%Y_%H%M%S').log"
 
-NAME_LIST="sample_list_${PROJ_ID}.txt"
+NAME_LIST="sample_list_${PROJ_ID}.csv"
 PATH_LIST="${PATH_AUX}${NAME_LIST}" 
 
 NAME_YAML="${PROJ_ID}.yaml"
@@ -128,17 +126,37 @@ echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
 
 for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
-	# read sample ID from file
-	CUR_ID=$(sed "${IDX}q;d" "${PATH_LIST}") 
+    # readline from csv file
+    CUR_LINE=$(sed "${IDX}q;d" "${PATH_LIST}")
+
+    # split strings in unix
+    # https://linuxhint.com/bash_split_examples/ 
+    # following example 2
+
+    # $IFS: internal field separator (default is white space)
+    # -r: read backslash (\) as a character rather than escape character
+    # -a: store split words into an array variable
+    IFS=","
+    read -a strarr <<< "${CUR_LINE}"
+
+	# sample ID
+	CUR_ID=${strarr[0]}
+
+    # path containing input fasta files
+    PATH_RAW=${strarr[1]}
+
+    # sample input fastq files
+    FN_1=${strarr[2]}
+    FN_2=${strarr[3]}
+    RAW_1="${PATH_RAW}/${FN_1}"
+    RAW_2="${PATH_RAW}/${FN_2}"
+
 
 	echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
+    echo " - R1: ${RAW_1}" &>> "${PATH_LOG}"
+    echo " - R2: ${RAW_2}" &>> "${PATH_LOG}"
 
-	
-    #* sample input fastq files
-    RAW_1="${PATH_RAW}/${CUR_ID}_R1.fastq"
-    RAW_2="${PATH_RAW}/${CUR_ID}_R2.fastq"
 
-    
     # phix removal
     if $BOOL_PR; then
 
