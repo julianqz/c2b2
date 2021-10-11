@@ -76,7 +76,7 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
     }, simplify=F)
     bool_types_mtx = do.call(cbind, bool_types_lst)
     bool_overlap = rowSums(bool_types_mtx)==length(vec_overlap_types) 
-    vec_clones_overlap = df_clone_info[[col_clone_id]][bool_overlap]
+    vec_overlap_clones = df_clone_info[[col_clone_id]][bool_overlap]
     
     # sequences for each sector
     lst = vector(mode="list", length=length(vec_sectors))
@@ -94,12 +94,12 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
             cols_sectors = c(list(col_cur_sector), col_other_sectors_of_interest)
             names(cols_sectors)[1] = s
             
-            # for each clone, whether it has seq in eacn sector of interest
+            # for each clone, whether it has seq in each sector of interest
             bools_sectors = lapply(cols_sectors, function(cols){
                 if (length(cols)==1) {
-                    df_clone_info[[cols]]>0
+                    return(df_clone_info[[cols]]>0)
                 } else {
-                    rowSums(df_clone_info[, cols])>0
+                    return(rowSums(df_clone_info[, cols])>0)
                 }
             })
             bools_sectors = do.call(cbind, bools_sectors)
@@ -113,17 +113,29 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
             }
             
             if (any(bools_sectors)) {
+                # initialize temporary $overlap column
+                # do this before splitting data.frame in case cur_db_one_sector_only has 0 row
+                # use "A" for TRUE, "B" for FALSE
+                # order(c(TRUE, FALSE)) would put FALSE ahead of TRUE; want TRUE ahead of FALSE
+                cur_db[["overlap"]] = "B"
+                
                 clones_multi_sectors = df_clone_info[[col_clone_id]][bools_sectors]
                 
                 cur_db_one_sector_only = cur_db[!cur_db[[col_clone_id]] %in% clones_multi_sectors, ]
+                
                 cur_db_multi_sectors = cur_db[cur_db[[col_clone_id]] %in% clones_multi_sectors, ]
-                cur_db_multi_sectors_order = cur_db_multi_sectors[order(cur_db_multi_sectors[[col_clone_id]]), ]
+                
+                cur_db_multi_sectors[["overlap"]] = ifelse(cur_db_multi_sectors[[col_clone_id]] %in% vec_overlap_clones,
+                                                           "A", "B")
+                
+                # if multi-sector, order first by whether there's clonal overlap, then by clone id
+                cur_db_multi_sectors_order = cur_db_multi_sectors[order(cur_db_multi_sectors[["overlap"]], 
+                                                                        cur_db_multi_sectors[[col_clone_id]]), ]
                 
                 cur_db_order = rbind(cur_db_one_sector_only, cur_db_multi_sectors_order)
             } else {
                 cur_db_order = cur_db[order(cur_db[[col_clone_id]]), ]
             }
-            
             
             lst[[s]] = cur_db_order
         }
@@ -184,7 +196,7 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
                     
                     for (cl in cur_clones) {
                         
-                        if (cl %in% vec_clones_overlap) {
+                        if (cl %in% vec_overlap_clones) {
                             color_link = color_overlap
                         } else {
                             color_link = color_no_overlap
