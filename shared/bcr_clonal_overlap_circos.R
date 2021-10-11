@@ -4,6 +4,8 @@
 #                   used to determine whether there's clonal overlap.
 # vec_sectors_color: the color of each arc
 # vec_gaps: the amount of space between arcs
+# vec_overlap_types: at least 2 unique types from `vec_sectors_type` that define 
+#                    clonal overlap
 # col_sector: column name in `df_seq_data` that specifies `vec_sectors`
 # col_clone_id: column name in `df_seq_data` and `df_clone_info` that specifies
 #               clone ID
@@ -31,7 +33,8 @@
 # clonal overlap (btw compartments) in the presence of an additional variable, timepoint.
 
 circos_clonal_overlap = function(vec_sectors, vec_sectors_type, 
-                                 vec_sectors_color, vec_gaps,  
+                                 vec_sectors_color, vec_gaps, 
+                                 vec_overlap_types,
                                  col_sector, col_clone_id, 
                                  df_seq_data, df_clone_info, 
                                  color_overlap, color_no_overlap) {
@@ -43,12 +46,16 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
     stopifnot(length(vec_sectors) == length(vec_sectors_color))
     stopifnot(length(vec_gaps) == length(vec_sectors))
     
+    stopifnot(length(vec_overlap_types) <= length(vec_sectors))
+    stopifnot(!any(duplicated(vec_overlap_types)))
+    
     stopifnot( col_sector %in% colnames(df_seq_data) )
     stopifnot( col_clone_id %in% colnames(df_seq_data) )
     
     stopifnot( col_clone_id %in% colnames(df_clone_info) )
     stopifnot(all( vec_sectors_type %in% colnames(df_clone_info) ))
     stopifnot(all( vec_sectors %in% colnames(df_clone_info) ))
+    stopifnot(all( vec_overlap_types %in% vec_sectors_type ))
     
     # every clone in df_seq_data should have an entry in df_clone_info 
     stopifnot( nrow(df_clone_info) == length(unique(df_seq_data[[col_clone_id]])) )
@@ -58,10 +65,18 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
     stopifnot(length(unique(vec_sectors_type))==2)
     
     # overlap
-    bool_sector_type_1 = df_clone_info[[vec_sectors_type[1]]]>0
-    bool_sector_type_2 = df_clone_info[[vec_sectors_type[2]]]>0
-    bool_sector_type_1_2_overlap = bool_sector_type_1 & bool_sector_type_2
-    vec_clones_overlap = df_clone_info[[col_clone_id]][bool_sector_type_1_2_overlap]
+    
+    bool_types_lst = sapply(vec_overlap_types, function(cur_type){
+        cur_sectors = vec_sectors[vec_sectors_type==cur_type]
+        if (length(cur_sectors)==1) {
+            return(df_clone_info[[cur_sectors]]>0)
+        } else {
+            return(rowSums(df_clone_info[, cur_sectors])>0)
+        }
+    }, simplify=F)
+    bool_types_mtx = do.call(cbind, bool_types_lst)
+    bool_overlap = rowSums(bool_types_mtx)==length(vec_overlap_types) 
+    vec_clones_overlap = df_clone_info[[col_clone_id]][bool_overlap]
     
     # sequences for each sector
     lst = vector(mode="list", length=length(vec_sectors))
