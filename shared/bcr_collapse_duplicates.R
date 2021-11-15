@@ -265,9 +265,9 @@ run_collapse_duplicates = function(db, nproc=1,
         ## set up cluster
         
         # Create cluster of nproc size and export namespaces
-        # If user wants to parallellize this function and specifies nproc > 1, then
+        # If user wants to parallelize this function and specifies nproc > 1, then
         # initialize and register slave R processes/clusters & 
-        # export all necesseary environment variables, functions and packages.
+        # export all necessary environment variables, functions and packages.
         if (nproc==1) {
             # If needed to run on a single core/cpu then, registerDoSEQ
             # Without doing this, foreach will give warning (though will still run)
