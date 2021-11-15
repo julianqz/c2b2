@@ -40,7 +40,11 @@ option_list = list(
     make_option("--colLocus", action="store", default="locus", type="character", 
                 help="locusColumn. Ignored if --heavyLight FALSE."),
     make_option("--colCell", action="store", default="cell_id", type="character", 
-                help="cellCColumn. Ignored if --heavyLight FALSE.")
+                help="cellCColumn. Ignored if --heavyLight FALSE."),
+    make_option("--parallel", action="store", default=FALSE, type="logical", 
+                help="Whether to use foreach loop instead of regular for loop."),
+    make_option("--nproc", action="store", default=1, 
+                type="numeric", help="nproc.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -133,7 +137,9 @@ for (i in 1:nrow(subj_info)) {
                               threshold=thresh,
                               maxmiss=opt$maxmiss,
                               linkage=opt$linkage, 
-                              verbose=T)
+                              verbose=T,
+                              parallel=opt$parallel,
+                              nproc=opt$nproc)
     
     db_heavy_clust = infer_lst[["db_clust"]]
     db_heavy_fail = infer_lst[["db_fail"]]
