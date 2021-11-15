@@ -159,6 +159,10 @@ defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group",
                          cloneColumn="clone_id", 
                          threshold, maxmiss=0, linkage="single", verbose=T,
                          parallel=F, nproc=1) {
+    
+    # if vjl group size >= this, print a message
+    big_grp_thresh = 10000
+    
     # checks
     stopifnot(is.numeric(threshold) && (threshold>=0 & threshold<=1))
     
@@ -190,6 +194,12 @@ defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group",
             # wrt db
             grp_idx = which(db[[VJLgroupColumn]]==grp)
             stopifnot(length(grp_idx)>0)
+            
+            if (verbose) {
+                if (length(grp_idx)>=big_grp_thresh) {
+                    cat("big group -", i_grp, "(", length(grp_idx), ")\n")
+                }
+            }
             
             # hierarchical clustering
             # returns a list with $CLUSTERED and $EXCLUDED
@@ -240,7 +250,8 @@ defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group",
                                      "cloneColumn",
                                      "maxmiss",
                                      "linkage",
-                                     "threshold"
+                                     "threshold",
+                                     "big_grp_thresh"
                                      )
             parallel::clusterExport(cluster, export_functions, envir=environment())
         }
@@ -249,6 +260,9 @@ defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group",
         
         lstClust = foreach(i_grp=1:length(uniqGrps)) %dopar% {
             
+            # testing only
+            cat(i_grp, "\n")
+            
             if (verbose) { if (i_grp%%1000==0) { cat(i_grp, "\n") } }
             
             grp = uniqGrps[i_grp]
@@ -256,6 +270,12 @@ defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group",
             # wrt db
             grp_idx = which(db[[VJLgroupColumn]]==grp)
             stopifnot(length(grp_idx)>0)
+            
+            if (verbose) {
+                if (length(grp_idx)>=big_grp_thresh) {
+                    cat("big group -", i_grp, "(", length(grp_idx), ")\n")
+                }
+            }
             
             # hierarchical clustering
             # returns a list with $CLUSTERED and $EXCLUDED
