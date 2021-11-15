@@ -66,6 +66,7 @@ defineClonePerPartition = function(db, sequenceColumn="cdr3", VJLgroupColumn="vj
     
     suppressPackageStartupMessages(require(stringi))
     suppressPackageStartupMessages(require(alakazam))
+    suppressPackageStartupMessages(require(fastcluster))
     
     # all rows must be in same partition
     curGrp = unique(db[[VJLgroupColumn]])
@@ -156,7 +157,8 @@ defineClonePerPartition = function(db, sequenceColumn="cdr3", VJLgroupColumn="vj
 
 defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group", 
                          cloneColumn="clone_id", 
-                         threshold, maxmiss=0, linkage="single", verbose=T) {
+                         threshold, maxmiss=0, linkage="single", verbose=T,
+                         parallel=F, nproc=1) {
     # checks
     stopifnot(is.numeric(threshold) && (threshold>=0 & threshold<=1))
     
@@ -169,42 +171,115 @@ defineCloneDb = function(db, sequenceColumn="cdr3", VJLgroupColumn="vjl_group",
     
     uniqGrps = unique(db[[VJLgroupColumn]])
     
-    clustPassLst = vector(mode="list", length=length(uniqGrps))
-    names(clustPassLst) = uniqGrps
-    
-    clustFailLst = vector(mode="list", length=length(uniqGrps))
-    names(clustFailLst) = uniqGrps
-    
-    for (i_grp in 1:length(uniqGrps)) {
+    if (!parallel) {
         
-        if (verbose) { if (i_grp%%1000==0) { cat(i_grp, "\n") } }
+        ## regular for loop
         
-        grp = uniqGrps[i_grp]
+        clustPassLst = vector(mode="list", length=length(uniqGrps))
+        names(clustPassLst) = uniqGrps
         
-        # wrt db
-        grp_idx = which(db[[VJLgroupColumn]]==grp)
-        stopifnot(length(grp_idx)>0)
+        clustFailLst = vector(mode="list", length=length(uniqGrps))
+        names(clustFailLst) = uniqGrps
         
-        # hierarchical clustering
-        # returns a list with $CLUSTERED and $EXCLUDED
-        curClust = defineClonePerPartition(db=db[grp_idx, ], 
-                                           sequenceColumn=sequenceColumn, 
-                                           VJLgroupColumn=VJLgroupColumn, 
-                                           cloneColumn=cloneColumn, 
-                                           maxmiss=maxmiss, linkage=linkage,
-                                           threshold=threshold,
-                                           verbose=F)
-        
-        if (!is.null(curClust[["CLUSTERED"]])) {
-            clustPassLst[[grp]] = curClust[["CLUSTERED"]]
+        for (i_grp in 1:length(uniqGrps)) {
+            
+            if (verbose) { if (i_grp%%1000==0) { cat(i_grp, "\n") } }
+            
+            grp = uniqGrps[i_grp]
+            
+            # wrt db
+            grp_idx = which(db[[VJLgroupColumn]]==grp)
+            stopifnot(length(grp_idx)>0)
+            
+            # hierarchical clustering
+            # returns a list with $CLUSTERED and $EXCLUDED
+            curClust = defineClonePerPartition(db=db[grp_idx, ], 
+                                               sequenceColumn=sequenceColumn, 
+                                               VJLgroupColumn=VJLgroupColumn, 
+                                               cloneColumn=cloneColumn, 
+                                               maxmiss=maxmiss, linkage=linkage,
+                                               threshold=threshold,
+                                               verbose=F)
+            
+            if (!is.null(curClust[["CLUSTERED"]])) {
+                clustPassLst[[grp]] = curClust[["CLUSTERED"]]
+            }
+            if (!is.null(curClust[["EXCLUDED"]])) {
+                clustFailLst[[grp]] = curClust[["EXCLUDED"]]
+            }
+            
+            rm(curClust, grp, grp_idx)
         }
-        if (!is.null(curClust[["EXCLUDED"]])) {
-            clustFailLst[[grp]] = curClust[["EXCLUDED"]]
+        
+    } else {
+        
+        suppressPackageStartupMessages(require(doParallel))
+        suppressPackageStartupMessages(require(foreach))
+        
+        stopifnot(nproc>=1)
+        
+        # Create cluster of nproc size and export namespaces
+        # If user wants to parallelize this function and specifies nproc > 1, then
+        # initialize and register slave R processes/clusters & 
+        # export all necessary environment variables, functions and packages.
+        if (nproc==1) {
+            # If needed to run on a single core/cpu then, registerDoSEQ
+            # Without doing this, foreach will give warning (though will still run)
+            registerDoSEQ()
+        } else if (nproc>1) {
+            cluster = parallel::makeCluster(nproc, type="PSOCK")
+            registerDoParallel(cluster)
+            
+            # export to cluster
+            export_functions <- list("uniqGrps",
+                                     "verbose",
+                                     "db",
+                                     "VJLgroupColumn",
+                                     "defineClonePerPartition",
+                                     "sequenceColumn",
+                                     "cloneColumn",
+                                     "maxmiss",
+                                     "linkage",
+                                     "threshold"
+                                     )
+            parallel::clusterExport(cluster, export_functions, envir=environment())
         }
         
-        rm(curClust, grp, grp_idx)
+        ## foreach loop
+        
+        lstClust = foreach(i_grp=1:length(uniqGrps)) %dopar% {
+            
+            if (verbose) { if (i_grp%%1000==0) { cat(i_grp, "\n") } }
+            
+            grp = uniqGrps[i_grp]
+            
+            # wrt db
+            grp_idx = which(db[[VJLgroupColumn]]==grp)
+            stopifnot(length(grp_idx)>0)
+            
+            # hierarchical clustering
+            # returns a list with $CLUSTERED and $EXCLUDED
+            curClust = defineClonePerPartition(db=db[grp_idx, ], 
+                                               sequenceColumn=sequenceColumn, 
+                                               VJLgroupColumn=VJLgroupColumn, 
+                                               cloneColumn=cloneColumn, 
+                                               maxmiss=maxmiss, linkage=linkage,
+                                               threshold=threshold,
+                                               verbose=F)
+            rm(grp, grp_idx)
+            return(curClust)
+        }
+        
+        ## stop the cluster
+        if (nproc>1) { parallel::stopCluster(cluster) }
+        
+        clustPassLst = lapply(lstClust, function(l){l[["CLUSTERED"]]})
+        clustFailLst = lapply(lstClust, function(l){l[["EXCLUDED"]]})
+        names(clustPassLst) = uniqGrps
+        names(clustFailLst) = uniqGrps
     }
     
+
     # if all seqs passed, clustFailLst will contain all NULL's
     # in which case db_fail will also be NULL
     db_fail = do.call(rbind, clustFailLst)
