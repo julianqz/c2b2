@@ -146,6 +146,7 @@ vioplotLst = function(vecLst, vioYmax=NULL, vioYmin=0, xLas=2, yLas=3,
                       yHoriz=NULL, yHorizCol="firebrick2",
                       vioBkgCol=NA, vioMedCol="hotpink", vioRecCol="darkgoldenrod2",
                       vioMedPch=18, vioMedStyle="point", vioBoxWidth=0.2, vioWhiskerCol="black",
+                      boxBkgCol=NULL, boxLwd=1,
                       useBoxplot=F, showPoints=F, 
                       pointsPch, pointsCol, pointsCex=0.3, 
                       pointsJitterAmount=0.4, pointsJitterBool=TRUE) {
@@ -211,6 +212,12 @@ vioplotLst = function(vecLst, vioYmax=NULL, vioYmin=0, xLas=2, yLas=3,
             # boxplot
             # do not attemp,t to plot if NULL or if not NULL but of length 0
             if (!is.null(vecLst[[i]]) && length(vecLst[[i]])>0) {
+                
+                if (!is.null(boxBkgCol)) {
+                    curBoxBkgCol = boxBkgCol[i]
+                } else {
+                    curBoxBkgCol = NA
+                }
 
                 if (is.null(xNames)) {
                     xName_i = ""
@@ -234,7 +241,7 @@ vioplotLst = function(vecLst, vioYmax=NULL, vioYmin=0, xLas=2, yLas=3,
                 # add boxplot after points so that it doesn't get obscured by points
                 # do not plot outliers if showPoints is T
                 # otherwise will end up double-plotting
-                boxplot(vecLst[[i]], add=T, at=i, col=vioBkgCol, yaxt="n",
+                boxplot(vecLst[[i]], add=T, at=i, col=curBoxBkgCol, lwd=boxLwd, yaxt="n",
                         names=xName_i, outline=!showPoints)  
                 
                 text(x=i, y=vioYmax, labels=length(vecLst[[i]]), cex=countCex)
