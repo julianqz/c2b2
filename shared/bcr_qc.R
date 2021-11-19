@@ -43,6 +43,9 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
     # IG[HKL]*
     # TR[ABGD]*
     
+    # convert all to uppercase
+    chains = toupper(chains)
+    
     # unpack multiple annotations (if any)
     # first split by ","
     # then get IG/TR*
