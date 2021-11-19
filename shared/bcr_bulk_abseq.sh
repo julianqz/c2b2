@@ -251,6 +251,10 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             "${PATH_OUTPUT_PA_ID}${CUR_ID}-final_collapse-unique_atleast-2.fastq" \
             &>> "${PATH_LOG_PA_ID}"
 
+        "${PATH_SCRIPT_Q2A}" \
+            "${PATH_OUTPUT_PA_ID}${CUR_ID}-final_collapse-unique.fastq" \
+            &>> "${PATH_LOG_PA_ID}"
+
     fi
 
 done
