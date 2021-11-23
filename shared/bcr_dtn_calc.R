@@ -289,7 +289,7 @@ if (opt$calcBetween) {
         
         cat("\nCalculating between-subject distToNearest... \n")
         
-        fn = paste0("dtn_", out_suffix, "_btwSubj",
+        fn = paste0("dtn", out_suffix, "_btwSubj",
                     ifelse(is.null(opt$subsampleBetween), "", 
                            paste0("_subsample-", opt$subsampleBetween)),
                     ".RData")
