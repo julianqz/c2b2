@@ -64,8 +64,19 @@ summarize_clone = function(db, col_clone, col_vec,
     # there being two columns called GC in clone_info
     # Want: each clone_info column to have a unique name
     
-    val_uniq_lst = sapply(col_vec, function(col){ sort(unique(db[[col]])) }, 
-                          USE.NAMES=T, simplify=F)
+    val_uniq_lst = sapply(col_vec, function(col){ 
+        col_uniq_vals = sort(unique(db[[col]])) 
+        
+        # if logical (TRUE/FALSE), append column name using reserved char @
+        # necessary because using just TRUE or FALSE to reference data.frame 
+        # colnames will fail when trying to fill clone_info later
+        if (is.logical(col_uniq_vals)){
+            col_uniq_vals = paste0(col, "@", col_uniq_vals)
+        }
+        return(col_uniq_vals)
+        
+    }, USE.NAMES=T, simplify=F)
+    
     val_uniq_vec = unlist(val_uniq_lst)
     
     if (length(unique(val_uniq_vec)) != length(val_uniq_vec)) {
