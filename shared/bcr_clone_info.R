@@ -67,12 +67,19 @@ summarize_clone = function(db, col_clone, col_vec,
     val_uniq_lst = sapply(col_vec, function(col){ 
         col_uniq_vals = sort(unique(db[[col]])) 
         
-        # if logical (TRUE/FALSE), append column name using reserved char @
+        # if logical (TRUE/FALSE), or if "TRUE"/"FALSE"
+        #   append column name using reserved char @
         # necessary because using just TRUE or FALSE to reference data.frame 
-        # colnames will fail when trying to fill clone_info later
-        if (is.logical(col_uniq_vals)){
+        #   colnames will fail when trying to fill clone_info later
+        
+        bool_char_check = col_uniq_vals %in% c("FALSE", "TRUE")
+        
+        if ( is.logical(col_uniq_vals) ){
             col_uniq_vals = paste0(col, "@", col_uniq_vals)
+        } else if ( any(bool_char_check) ) {
+            col_uniq_vals[bool_char_check] = paste0(col, "@", col_uniq_vals[bool_char_check])
         }
+
         return(col_uniq_vals)
         
     }, USE.NAMES=T, simplify=F)
