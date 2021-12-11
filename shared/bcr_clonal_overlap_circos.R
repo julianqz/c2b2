@@ -138,6 +138,17 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
             }
             
             lst[[s]] = cur_db_order
+            
+            # print out stat about overlap
+            cur_db_uniq_clones = unique(cur_db_order[[col_clone_id]])
+            cur_db_uniq_clones_bool_overlap = cur_db_uniq_clones %in% vec_overlap_clones
+            cat(s, ": total # clones =", 
+                length(cur_db_uniq_clones), 
+                "; # clones w/ overlap =", 
+                sum(cur_db_uniq_clones_bool_overlap),
+                "(",  
+                round(mean(cur_db_uniq_clones_bool_overlap)*100, 3),
+                "%)", "\n")
         }
     }
     
