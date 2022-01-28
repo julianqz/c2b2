@@ -178,7 +178,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
         db = tmp[tmp[[col_prod]], ]
         cat("\n", chain_type, "productive, genotyped - nrow:",nrow(db), "\n")
         if (nrow(db)>0) {
-            writeChangeoDb(data=db, file=paste0(subj, "_", chain_type, "_pr_genotyped.tsv"))
+            #writeChangeoDb(data=db, file=paste0(subj, "_", chain_type, "_pr_genotyped.tsv"))
             save(db, file=paste0(subj, "_", chain_type, "_pr_genotyped.RData"))
         }
         rm(db)
@@ -187,7 +187,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
         db = tmp[!tmp[[col_prod]], ]
         cat("\n", chain_type, "non-productive, genotyped - nrow:",nrow(db), "\n")
         if (nrow(db)>0) {
-            writeChangeoDb(data=db, file=paste0(subj, "_", chain_type, "_npr_genotyped.tsv"))
+            #writeChangeoDb(data=db, file=paste0(subj, "_", chain_type, "_npr_genotyped.tsv"))
             save(db, file=paste0(subj, "_", chain_type, "_npr_genotyped.RData"))
         }
         rm(db)
