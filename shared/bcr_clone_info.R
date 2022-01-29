@@ -11,9 +11,9 @@
 #' @details Columns in the returned `data.frame` include `col_clone`, `clone_size`,
 #'          and one column each for each unique value in each column in `col_vec`.
 #'          
-#'          Values in `col_vec` must not start with non-alphabet characters as 
+#'          Values in `col_vec` must not start with non-alphabetic characters as 
 #'          these values would become colnames of the returned `data.frame`, 
-#'          which would not allow non-alphabet characters as the first character.
+#'          which would not allow non-alphabetic characters as the first character.
 #'          
 #'          If any `col_vec` has values of `""` (empty) or `NA`, these values
 #'          will be converted to `"[col_vec]_na"` and recorded as such in the 
@@ -140,7 +140,7 @@ summarize_clone = function(db, col_clone, col_vec,
     # if any val_uniq_vec starts with non-alphabet character, would cause
     # discrepency in colnames(clone_info) and val_uniq_vec
     if (any(!grepl(pattern="^[[:alpha:]]+", x=val_uniq_vec))) {
-        stop("All values in col_vec must start with an alphebtic character.")
+        stop("All values in col_vec must start with an alphabetic character.")
     }
     
     # fill in clone_info
