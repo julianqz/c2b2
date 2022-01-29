@@ -95,10 +95,18 @@ if (opt$calcWithin) {
         
         if (opt$heavyLight) {
             # heavy and light
-            db_h = read.table(subj_info[["path_db_heavy"]][i],
-                              header=T, sep="\t", stringsAsFactors=F)
-            db_l = read.table(subj_info[["path_db_light"]][i],
-                              header=T, sep="\t", stringsAsFactors=F)
+            
+            # .tsv
+            #db_h = read.table(subj_info[["path_db_heavy"]][i],
+            #                  header=T, sep="\t", stringsAsFactors=F)
+            #db_l = read.table(subj_info[["path_db_light"]][i],
+            #                  header=T, sep="\t", stringsAsFactors=F)
+            
+            # .RData
+            load(subj_info[["path_db_heavy"]][i])
+            db_h = db; rm(db)
+            load(subj_info[["path_db_light"]][i])
+            db_l = db; rm(db)
             
             # columns should match
             stopifnot(all.equal(colnames(db_h), colnames(db_l)))
@@ -126,8 +134,14 @@ if (opt$calcWithin) {
             
         } else {
             # heavy only
-            db = read.table(subj_info[["path_db_heavy"]][i],
-                            header=T, sep="\t", stringsAsFactors=F)
+            
+            # .tsv
+            #db = read.table(subj_info[["path_db_heavy"]][i],
+            #                header=T, sep="\t", stringsAsFactors=F)
+            
+            # .RData
+            load(subj_info[["path_db_heavy"]][i])
+            
         }
         
         nrow_bf = nrow(db)
