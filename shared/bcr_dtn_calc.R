@@ -301,16 +301,21 @@ if (opt$calcBetween) {
             db_tmp = db_tmp[, cols_keep]
             db_tmp[[opt$colSubj]] = subj_info[["subj"]][i]
             
+            # can't name the combined data.frame `db` within this for loop
+            # because of `rm(db)` when loading .RData files
             if (i==1) {
-                # initiate db
-                db = db_tmp
+                # initiate db_all
+                db_all = db_tmp
             } else {
-                # append new rows to db
-                db = rbind(db, db_tmp)
+                # append new rows to db_all
+                db_all = rbind(db_all, db_tmp)
             }
             
             rm(db_tmp)
         }
+        
+        # rename
+        db = db_all; rm(db_all)
         
         cat("\nBreakdown by subject:\n")
         print(table(db[[opt$colSubj]]))
