@@ -249,10 +249,18 @@ if (opt$calcBetween) {
             
             if (opt$heavyLight) {
                 # heavy and light
-                db_tmp_h = read.table(subj_info[["path_db_heavy"]][i],
-                                      header=T, sep="\t", stringsAsFactors=F)
-                db_tmp_l = read.table(subj_info[["path_db_light"]][i],
-                                      header=T, sep="\t", stringsAsFactors=F)
+                
+                # .tsv
+                #db_tmp_h = read.table(subj_info[["path_db_heavy"]][i],
+                #                      header=T, sep="\t", stringsAsFactors=F)
+                #db_tmp_l = read.table(subj_info[["path_db_light"]][i],
+                #                      header=T, sep="\t", stringsAsFactors=F)
+                
+                # .RData
+                load(subj_info[["path_db_heavy"]][i])
+                db_tmp_h = db; rm(db)
+                load(subj_info[["path_db_light"]][i])
+                db_tmp_l = db; rm(db)
                 
                 stopifnot(all.equal(colnames(db_tmp_h), colnames(db_tmp_l)))
                 
@@ -279,8 +287,14 @@ if (opt$calcBetween) {
             
             } else {
                 # heavy only
-                db_tmp = read.table(subj_info[["path_db_heavy"]][i],
-                                    header=T, sep="\t", stringsAsFactors=F)
+                
+                # .tsv
+                #db_tmp = read.table(subj_info[["path_db_heavy"]][i],
+                #                    header=T, sep="\t", stringsAsFactors=F)
+                
+                # .RData
+                load(subj_info[["path_db_heavy"]][i])
+                db_tmp = db; rm(db)
             }
             
             stopifnot(all(cols_keep %in% colnames(db_tmp)))
