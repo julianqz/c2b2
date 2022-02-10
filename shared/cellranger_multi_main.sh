@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Run `cellranger multi` for a list of samples
-#
-# Author: Julian Q Zhou
+
+# Author: Julian Q. Zhou
+# https://github.com/julianqz
 # Date:   2021-04-15
 #
+# Run `cellranger multi` for a list of samples
+# 
 # Prereqs:  
 # The following must be in ${PROJ_ID}/aux/
 # - a sample list: "cr_list_multi_${PROJ_ID}.txt"

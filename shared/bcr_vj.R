@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 #' Tabulate V-J gene usage
 #' 
 #' @param   vec_v          Character vector containing V gene/allele annotations.

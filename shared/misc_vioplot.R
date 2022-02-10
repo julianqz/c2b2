@@ -1,3 +1,7 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
+# Enhanced violin plots
 # adapted from vioplot::vioplot
 
 # medStyle: whether to draw median as point or line

@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 #' Read in a multi-line fasta file
 #' 
 #' Given a fasta file in which each entry is represented by a fasta header that

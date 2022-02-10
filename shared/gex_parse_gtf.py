@@ -3,6 +3,9 @@
 Parse (GenCode v32) Gene Tranfer Format (GTF) file
 """
 
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # (GenCode v32) gtf format
 # https://www.gencodegenes.org/pages/data_format.html
 

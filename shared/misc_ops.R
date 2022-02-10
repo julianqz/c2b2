@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # miscellaneous operational tasks
 
 #' Compute full-range table

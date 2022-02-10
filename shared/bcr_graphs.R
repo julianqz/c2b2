@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 #' Create BCR network for B cell clones using igraph
 #' 
 #' @param  db         A `data.frame` containing BCR data.

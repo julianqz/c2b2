@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 #' Calculate AA replacement mutation for a single nucleotide sequence
 #' 
 #' @param  germ  Germline nucleotide sequence.

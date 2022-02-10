@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # functions to perform QC on BCRs
 
 #' Check chain consistency of V, D, J, C gene annotations of a sequence

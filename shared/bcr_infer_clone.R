@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # infer B cell clones 
 
 #' Define clones via hierarchical clustering

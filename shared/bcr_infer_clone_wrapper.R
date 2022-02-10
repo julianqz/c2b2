@@ -1,5 +1,8 @@
 #!/opt/conda/bin/Rscript
 
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # wrapper to infer B cell clones for a list of individuals
 
 # assumes:

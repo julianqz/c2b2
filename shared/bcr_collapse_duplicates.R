@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # Functions to perform the task of collapsing duplicate IMGT-aligned sequences
 
 # notes to self on how collapseDuplicates behave

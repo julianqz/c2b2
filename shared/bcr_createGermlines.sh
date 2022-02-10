@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-# Create clonal consensus germlines after inferring B cell clones
-#
-# Author: Julian Q Zhou
+# Author: Julian Q. Zhou
+# https://github.com/julianqz
 # Date:   2021-05-09
+#
+# Create clonal consensus germlines after inferring B cell clones
 #
 # Prereqs:  
 #

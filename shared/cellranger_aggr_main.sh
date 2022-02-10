@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Run `cellranger aggr`
-#
-# Author: Julian Q Zhou
+
+# Author: Julian Q. Zhou
+# https://github.com/julianqz
 # Date:   2021-04-16
 #
+# Run `cellranger aggr`
+# 
 # Prereqs:  
 # The following must be in ${PROJ_ID}/aux/
 # - a project-specific config csv: "cr_[count/multi]_aggr_${PROJ_ID}.csv"

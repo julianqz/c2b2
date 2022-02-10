@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 #' Run tigger to infer genotype for an individual (without inferring novel alleles)
 #'
 #' @param   path_imgt              Path to fasta file containing IMGT germline reference.

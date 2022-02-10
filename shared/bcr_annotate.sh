@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Perform (initial) V(D)J gene annotation & parse IgBLAST results
-#
-# Author: Julian Q Zhou
+
+# Author: Julian Q. Zhou
+# https://github.com/julianqz
 # Date:   2021-04-22
+#
+# Perform (initial) V(D)J gene annotation & parse IgBLAST results
 #
 # Prereqs:  
 #

@@ -1,3 +1,5 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
 
 #' Enhanced barplot
 #' 

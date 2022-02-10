@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Run `cellranger vdj` for a list of BCR or TCR samples
-#
-# Author: Julian Q Zhou
+
+# Author: Julian Q. Zhou
+# https://github.com/julianqz
 # Date:   2021-05-28
+#
+# Run `cellranger vdj` for a list of BCR or TCR samples
 #
 # Prereqs:  
 # 1) The following must be in ${PROJ_ID}/aux/

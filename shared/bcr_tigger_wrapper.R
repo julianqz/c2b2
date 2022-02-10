@@ -1,5 +1,8 @@
 #!/opt/conda/bin/Rscript
 
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # wrapper to call run_tigger for a list of individuals from command line via Rscript
 
 # assumes:

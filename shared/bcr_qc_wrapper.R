@@ -1,5 +1,8 @@
 #!/opt/conda/bin/Rscript
 
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # helpful: http://www.cureffi.org/2014/01/15/running-r-batch-mode-linux/
 
 # wrapper to call perform_qc and split_db from command line via Rscript

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Preprocess bulk NEB AbSeq data (phix removal and presto-abseq pipeline)
-#
-# Author: Julian Q Zhou
+
+# Author: Julian Q. Zhou
+# https://github.com/julianqz
 # Date:   2021-04-20
+#
+# Preprocess bulk NEB AbSeq data (phix removal and presto-abseq pipeline)
 #
 # Prereqs:  
 # 1) sample_list_${PROJ_ID}.csv in ${PROJ_ID}/aux/

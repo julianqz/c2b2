@@ -1,3 +1,8 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
+# histograms of within- and between-subject distances to nearest neighbors
+
 # overview of plot
 # upper section:
 # - histogram of within-group DTN 

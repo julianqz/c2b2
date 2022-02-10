@@ -1,5 +1,8 @@
 #!/opt/conda/bin/Rscript
 
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 # wrapper to calculate dist-to-nearest for heavy chains after partitioning
 # - either based on heavy chains only
 # - or based on both heavy and light chains

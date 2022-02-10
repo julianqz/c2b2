@@ -1,3 +1,6 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
+
 #' Summarize clonal compositions
 #' 
 #' @param   db             A `data.frame`.
