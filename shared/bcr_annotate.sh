@@ -317,6 +317,9 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             OUTFMT="19"
         fi
 
+        echo "IG_FORMAT: ${IG_FORMAT}" &>> "${PATH_LOG_ID}"
+        echo "-outfmt: ${OUTFMT}" &>> "${PATH_LOG_ID}"
+
         # output: [outname]_igblast.fmt7
 
         if $BOOL_ALIGN_C; then
