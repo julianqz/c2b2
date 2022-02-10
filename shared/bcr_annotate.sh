@@ -321,6 +321,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         echo "-outfmt: ${OUTFMT}" &>> "${PATH_LOG_ID}"
 
         export IGDATA="${PATH_IGDATA}"
+        export BLASTDB="${PATH_IGDATA}/database"
 
         # output: [outname]_igblast.fmt7
 
