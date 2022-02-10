@@ -1,12 +1,22 @@
-vec_v = db[["germline_v_call"]]
-vec_j = db[["germline_j_call"]]
-vec_subj = db[["donor"]]
-anno_separator=","
+RUN=F
+if (RUN) {
+    vec_v = db[["germline_v_call"]]
+    vec_j = db[["germline_j_call"]]
+    vec_subj = db[["donor"]]
+    anno_separator=","
+    
+    tmp = tabulate_vj(db[["germline_v_call"]], db[["germline_j_call"]],
+                      db[["donor"]], ",")
+    
+    str(tmp[["common"]])
+    str(tmp[["subj_specific"]])
+    
+}
 
 # tip: if data for different subjects are stored in separate
 #      data.frames, concat to create the required input vectors
 
-tablute_vj = function(vec_v, vec_j, vec_subj, 
+tabulate_vj = function(vec_v, vec_j, vec_subj, 
                       anno_separator=",") {
     
     # getGene
@@ -18,7 +28,7 @@ tablute_vj = function(vec_v, vec_j, vec_subj,
     vec_subj_uniq = unique(vec_subj)
     
     # extract v/j gene for unique entries
-    # note that vec_[vj]_uniq_gene could still contain duplicates
+    # note that vec_[vj]_uniq_getGene could still contain duplicates
     vec_v_uniq_getGene = getGene(segment_call=vec_v_uniq,
                               first=F, collapse=T, strip_d=F, omit_nl=F, 
                               sep=anno_separator)
@@ -50,6 +60,7 @@ tablute_vj = function(vec_v, vec_j, vec_subj,
     # list containing df common to all subjects
     lst_df_common = vector(mode="list", length=length(vec_subj_uniq))
     names(lst_df_common) = vec_subj_uniq
+    
     # list containing df unique to each subject
     lst_df_subj = vector(mode="list", length=length(vec_subj_uniq))
     names(lst_df_subj) = vec_subj_uniq
