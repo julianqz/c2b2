@@ -1,5 +1,53 @@
 # miscellaneous operational tasks
 
+#' Compute full-range table
+#' 
+#' @param   tab          A `table` returned by `table()` (or a named numeric 
+#'                       vector with integers as names).
+#' @param   range_lower  An integer specifying the lower bound of the full range.
+#'                       Default is `NULL`.
+#' @param   range_upper  An integer specifying the upper bound of the full range.
+#'                       Default is `NULL`.
+#' @param   range_by     An integer specifying the interval between values in the
+#'                       full range. Default is `1`.
+#' @param   NA_for_zero  Whether to set a value in the full range for which the 
+#'                       the count is 0 to `NA`. Default is `TRUE`.
+#' 
+#' @return  A named numeric vector with integers as names. The names cover the
+#'          specified full range.
+#' 
+#' @details If left as `NULL`, `range_lower` is set to the lower bound of `tab`,
+#'          and `range_upper` is set to the upper bound of `tab`.
+
+get_full_range_table = function(tab, range_lower=NULL, range_upper=NULL, 
+                                range_by=1, NA_for_zero=TRUE) {
+    
+    tab_range = range(as.numeric(names(tab)), na.rm=T)
+    if (is.null(range_lower)) { range_lower=tab_range[1] }
+    if (is.null(range_upper)) { range_upper=tab_range[2] }
+    stopifnot(range_lower<=tab_range[1])
+    stopifnot(range_upper>=tab_range[2])
+    
+    tab_full_range = seq(from=range_lower, to=range_upper, by=range_by)
+    
+    # initialize
+    if (NA_for_zero) {
+        tab_full = rep(NA, length(tab_full_range))
+    } else {
+        tab_full = rep(0, length(tab_full_range))
+    }
+    names(tab_full) = as.character(tab_full_range)
+    
+    idx = match(names(tab), names(tab_full))
+    stopifnot(!any(is.na(idx)))
+    stopifnot(all.equal( names(tab_full)[idx], names(tab) ))
+    
+    tab_full[idx] = tab
+    
+    return(tab_full)
+}
+
+
 #' Convert to numeric values to a specified scale
 #' 
 #' @param vec_orig    A numeric vector of original values.
