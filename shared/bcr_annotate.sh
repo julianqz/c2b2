@@ -53,12 +53,14 @@ usage () {
     echo -e "  -J  [IG] Path to IGDATA."
     echo -e "  -K  [IG] Path to igblastn."
     echo -e "  -L  [IG] Path to IMGT germline reference fastas."
-    echo -e "  -M  [IG] Organism. {human, mouse, etc.}"
-    echo -e "  -N  [IG] Loci. One of {ig, tr}."
-    echo -e "  -O  [IG] --vdb. Name of custom V reference in IgBLAST database/."
-    echo -e "  -P  [IG] --ddb. Name of custom D reference in IgBLAST database/."
-    echo -e "  -Q  [IG] --jdb. Name of custom J reference in IgBLAST database/."
-    echo -e "  -R  [IG] --format. One of {blast, airr}."
+    echo -e "  -M  [IG] -organism. {human, mouse, etc.}"
+    echo -e "  -N  [IG] -ig_seqtype. One of {Ig, TCR}."
+    echo -e "  -O  [IG] -germline_db_V. Name of custom V reference in IgBLAST database/."
+    echo -e "  -P  [IG] -germline_db_D. Name of custom D reference in IgBLAST database/."
+    echo -e "  -Q  [IG] -germline_db_J. Name of custom J reference in IgBLAST database/."
+    echo -e "  -r  [IG] Whether to annotate C region. One of {true, false}."
+    echo -e "  -s  [IG] -c_region_db. Name of custom C reference in IgBLAST database/."
+    echo -e "  -R  [IG] Determines -outfmt. One of {blast, airr}."
     echo -e "  -T  [MK] Whether to set the --10x flag. Boolean.\n" \
             "           If true, path to sample-specific 10x annotation csv/tsv is parsed (see prereqs)."
     echo -e "  -U  [MK] If annotator is 'imgt', path to IMGT/HighV-QUEST files."
@@ -100,7 +102,7 @@ usage () {
 }
 
 # Get commandline arguments
-while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:q:h" OPT; do
+while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:r:s:R:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:q:h" OPT; do
     case "$OPT" in
     A)  PROJ_ID="${OPTARG}"
         ;;
@@ -128,7 +130,7 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7
         ;;
     M)  IG_ORGANISM="${OPTARG}"
 		;;
-	N)  IG_LOCI="${OPTARG}"
+	N)  IG_SEQTYPE="${OPTARG}"
  		;;
  	O)  IG_VDB="${OPTARG}"
  		;;
@@ -136,6 +138,10 @@ while getopts "A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7
  		;;
  	Q)  IG_JDB="${OPTARG}"
  		;;
+    r)  BOOL_ALIGN_C="${OPTARG}"
+        ;;
+    s)  IG_CDB="${OPTARG}"
+        ;;
  	R)  IG_FORMAT="${OPTARG}"
  		;;
  	T)  MK_10X="${OPTARG}"
@@ -241,6 +247,7 @@ echo "NPROC=${NPROC}" &>> "${PATH_LOG}"
 echo "Input csv: ${NAME_CSV}" &>> "${PATH_LOG}"
 echo "ANNOTATOR: ${ANNOTATOR}" &>> "${PATH_LOG}"
 echo "BOOL_IG: ${BOOL_IG}" &>> "${PATH_LOG}"
+echo "BOOL_ALIGN_C: ${BOOL_ALIGN_C}" &>> "${PATH_LOG}"
 echo "BOOL_MK: ${BOOL_MK}" &>> "${PATH_LOG}"
 echo "BOOL_QC: ${BOOL_QC}" &>> "${PATH_LOG}"
 echo "BOOL_SP: ${BOOL_SP}" &>> "${PATH_LOG}"
@@ -303,22 +310,65 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     	
     	echo "- running IgBLAST" &>> "${PATH_LOG}"
 
-    	# output: [outname]_igblast.fmt7
 
-    	AssignGenes.py igblast \
-    		--outdir "${PATH_OUTPUT_ID}" \
-    		--outname "${CUR_ID}" \
-    		--nproc "${NPROC}" \
-    		-s "${PATH_INPUT_IG}" \
-    		-b "${PATH_IGDATA}" \
-    		--exec "${PATH_IGBLASTN}" \
-    		--organism "${IG_ORGANISM}" \
-    		--loci "${IG_LOCI}" \
-    		--vdb "${IG_VDB}" \
-    		--ddb "${IG_DDB}" \
-    		--jdb "${IG_JDB}" \
-    		--format "${IG_FORMAT}" \
-    		&>> "${PATH_LOG_ID}"
+        if [[ ${IG_FORMAT} == "blast" ]]; then
+            OUTFMT="7 std qseq sseq btop"
+        elif [[ ${IG_FORMAT} == "airr" ]]; then
+            OUTFMT="19"
+        fi
+
+        # output: [outname]_igblast.fmt7
+
+        if $BOOL_ALIGN_C; then
+
+            "${PATH_IGBLASTN}" \
+                -query "${PATH_INPUT_IG}" \
+                -out "${PATH_OUTPUT_ID}${CUR_ID}_igblast.fmt7" \
+                -num_threads "${NPROC}" \
+                -ig_seqtype "${IG_SEQTYPE}" \
+                -organism "${IG_ORGANISM}" \
+                -auxiliary_data "${PATH_IGDATA}" \
+                -germline_db_V "${IG_VDB}" \
+                -germline_db_D "${IG_DDB}" \
+                -germline_db_J "${IG_JDB}" \
+                -c_region_db "${IG_CDB}" \
+                -outfmt "${OUTFMT}" \
+                -domain_system "imgt" \
+                &>> "${PATH_LOG_ID}"
+
+        else
+
+            "${PATH_IGBLASTN}" \
+                -query "${PATH_INPUT_IG}" \
+                -out "${PATH_OUTPUT_ID}${CUR_ID}_igblast.fmt7" \
+                -num_threads "${NPROC}" \
+                -ig_seqtype "${IG_SEQTYPE}" \
+                -organism "${IG_ORGANISM}" \
+                -auxiliary_data "${PATH_IGDATA}" \
+                -germline_db_V "${IG_VDB}" \
+                -germline_db_D "${IG_DDB}" \
+                -germline_db_J "${IG_JDB}" \
+                -outfmt "${OUTFMT}" \
+                -domain_system "imgt" \
+                &>> "${PATH_LOG_ID}"
+
+        fi
+
+
+    	#AssignGenes.py igblast \
+    	#	--outdir "${PATH_OUTPUT_ID}" \
+    	#	--outname "${CUR_ID}" \
+    	#	--nproc "${NPROC}" \
+    	#	-s "${PATH_INPUT_IG}" \
+    	#	-b "${PATH_IGDATA}" \
+    	#	--exec "${PATH_IGBLASTN}" \
+    	#	--organism "${IG_ORGANISM}" \
+    	#	--loci "${IG_LOCI}" \
+    	#	--vdb "${IG_VDB}" \
+    	#	--ddb "${IG_DDB}" \
+    	#	--jdb "${IG_JDB}" \
+    	#	--format "${IG_FORMAT}" \
+    	#	&>> "${PATH_LOG_ID}"
 
     fi
 
