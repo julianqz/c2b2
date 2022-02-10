@@ -321,7 +321,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         echo "-outfmt: ${OUTFMT}" &>> "${PATH_LOG_ID}"
 
         export IGDATA="${PATH_IGDATA}"
-        export BLASTDB="${PATH_IGDATA}/database"
+        #export BLASTDB="${PATH_IGDATA}/database"
 
         # output: [outname]_igblast.fmt7
 
@@ -350,10 +350,10 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
                 -num_threads "${NPROC}" \
                 -ig_seqtype "${IG_SEQTYPE}" \
                 -organism "${IG_ORGANISM}" \
-                -auxiliary_data "${PATH_IGDATA}" \
-                -germline_db_V "${IG_VDB}" \
-                -germline_db_D "${IG_DDB}" \
-                -germline_db_J "${IG_JDB}" \
+                -auxiliary_data "${PATH_IGDATA}/optional_file/${IG_ORGANISM}_gl.aux" \
+                -germline_db_V "${PATH_IGDATA}/database/${IG_VDB}" \
+                -germline_db_D "${PATH_IGDATA}/database/${IG_DDB}" \
+                -germline_db_J "${PATH_IGDATA}/database/${IG_JDB}" \
                 -outfmt "${OUTFMT}" \
                 -domain_system "imgt" \
                 &>> "${PATH_LOG_ID}"
