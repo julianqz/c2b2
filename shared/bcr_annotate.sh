@@ -320,6 +320,8 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         echo "IG_FORMAT: ${IG_FORMAT}" &>> "${PATH_LOG_ID}"
         echo "-outfmt: ${OUTFMT}" &>> "${PATH_LOG_ID}"
 
+        export IGDATA="${PATH_IGDATA}"
+
         # output: [outname]_igblast.fmt7
 
         if $BOOL_ALIGN_C; then
