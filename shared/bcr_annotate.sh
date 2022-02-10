@@ -320,7 +320,10 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         echo "IG_FORMAT: ${IG_FORMAT}" &>> "${PATH_LOG_ID}"
         echo "-outfmt: ${OUTFMT}" &>> "${PATH_LOG_ID}"
 
-        #export IGDATA="${PATH_IGDATA}"
+        # must export IGDATA as environment variable; if not, will get
+        # "BLAST query/options error: Germline annotation database human/human_V could not be found in [internal_data] directory" 
+        
+        export IGDATA="${PATH_IGDATA}"
         
 
         # output: [outname]_igblast.fmt7
@@ -359,22 +362,6 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
                 &>> "${PATH_LOG_ID}"
 
         fi
-
-
-    	#AssignGenes.py igblast \
-    	#	--outdir "${PATH_OUTPUT_ID}" \
-    	#	--outname "${CUR_ID}" \
-    	#	--nproc "${NPROC}" \
-    	#	-s "${PATH_INPUT_IG}" \
-    	#	-b "${PATH_IGDATA}" \
-    	#	--exec "${PATH_IGBLASTN}" \
-    	#	--organism "${IG_ORGANISM}" \
-    	#	--loci "${IG_LOCI}" \
-    	#	--vdb "${IG_VDB}" \
-    	#	--ddb "${IG_DDB}" \
-    	#	--jdb "${IG_JDB}" \
-    	#	--format "${IG_FORMAT}" \
-    	#	&>> "${PATH_LOG_ID}"
 
     fi
 
