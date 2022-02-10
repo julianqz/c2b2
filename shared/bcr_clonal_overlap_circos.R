@@ -1,37 +1,41 @@
+# Julian Q. Zhou
+# https://github.com/julianqz
 
-# vec_sectors: a vector specifying what each arc of the circos plot represents
-# vec_sectors_type: a vector specifying the "type" of the arc. This "type" is
-#                   used to determine whether there's clonal overlap.
-# vec_sectors_color: the color of each arc
-# vec_gaps: the amount of space between arcs
-# vec_overlap_types: at least 2 unique types from `vec_sectors_type` that define 
-#                    clonal overlap
-# col_sector: column name in `df_seq_data` that specifies `vec_sectors`
-# col_clone_id: column name in `df_seq_data` and `df_clone_info` that specifies
-#               clone ID
-# df_seq_data: data.frame containing sequence data
-# df_clone_info: data.frame containing summary info on clones
-# color_overlap: color for chords where there's clonal overlap between "types"
-# color_no_overlap: color for chords where there's no clonal overlap between "types"
-#
-# The lengths of `vec_sectors`, `vec_sectors_type`, `vec_sectors_color`, and
-# `vec_gaps` must match.
-#
-# `df_seq_data` and `df_clone_info` must contain the same set of clones. Only
-# clones that should be included in the overlap analysis and for visualization 
-# should be included.
-#
-# For each entry in `vec_sectors` and `vec_sectors_type`, there must be a column
-# of the same name in `df_clone_info`.
-#
-# It is assumed that there are 2 "types" of arcs/sectors. 
-# Clonal overlap is deemed to exist if there is connection between two arcs of 
-# different "types". 
-# In practice, "type" often corresponds to compartment. When sectors/arcs 
-# correspond to compartment-timepoint combinations, knowing the "types" of each
-# sector/arc makes it easy (internally for the function) to determine if there's 
-# clonal overlap (btw compartments) in the presence of an additional variable, timepoint.
-
+#' Circos plot for visualizating B cell clonal overlap
+#'
+#' @params vec_sectors        A vector specifying what each arc of the circos plot represents.
+#' @params vec_sectors_type   A vector specifying the "type" of the arc. This "type" is
+#'                           used to determine whether there's clonal overlap.
+#' @params vec_sectors_color  The color of each arc.
+#' @params vec_gaps           The amount of space between arcs.
+#' @params vec_overlap_types  At least 2 unique types from `vec_sectors_type` that define 
+#'                           clonal overlap.
+#' @params col_sector         Column name in `df_seq_data` that specifies `vec_sectors`.
+#' @params col_clone_id       Column name in `df_seq_data` and `df_clone_info` that specifies
+#'                           clone ID.
+#' @params df_seq_data        Data.frame containing sequence data.
+#' @params df_clone_info      Data.frame containing summary info on clones.
+#' @params color_overlap      Color for chords where there's clonal overlap between "types".
+#' @params color_no_overlap   Color for chords where there's no clonal overlap between "types".
+#'
+#' @details  The lengths of `vec_sectors`, `vec_sectors_type`, `vec_sectors_color`, and
+#'           `vec_gaps` must match.
+#'
+#'           `df_seq_data` and `df_clone_info` must contain the same set of clones. Only
+#'            clones that should be included in the overlap analysis and for visualization 
+#'            should be included.
+#'
+#'            For each entry in `vec_sectors` and `vec_sectors_type`, there must be a column
+#'            of the same name in `df_clone_info`.
+#'
+#'            It is assumed that there are 2 "types" of arcs/sectors. 
+#'            Clonal overlap is deemed to exist if there is connection between two arcs of 
+#'            different "types". 
+#'            In practice, "type" often corresponds to compartment. When sectors/arcs 
+#'            correspond to compartment-timepoint combinations, knowing the "types" of each
+#'            sector/arc makes it easy (internally for the function) to determine if there's 
+#'            clonal overlap (btw compartments) in the presence of an additional variable, timepoint.
+#'
 circos_clonal_overlap = function(vec_sectors, vec_sectors_type, 
                                  vec_sectors_color, vec_gaps, 
                                  vec_overlap_types,
