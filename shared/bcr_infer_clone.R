@@ -141,7 +141,6 @@ defineClonePerPartition = function(db, sequenceColumn="cdr3", VJLgroupColumn="vj
     return(returnLst)
 }
 
-#TODO: add parallelization
 
 #' Wrapper to infer B cell clones for an individual
 #' 
