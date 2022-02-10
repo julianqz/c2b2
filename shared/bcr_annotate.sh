@@ -333,7 +333,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
                 -num_threads "${NPROC}" \
                 -ig_seqtype "${IG_SEQTYPE}" \
                 -organism "${IG_ORGANISM}" \
-                -auxiliary_data "${PATH_IGDATA}" \
+                -auxiliary_data "${PATH_IGDATA}/optional_file/${IG_ORGANISM}_gl.aux" \
                 -germline_db_V "${IG_VDB}" \
                 -germline_db_D "${IG_DDB}" \
                 -germline_db_J "${IG_JDB}" \
