@@ -325,6 +325,13 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         
         export IGDATA="${PATH_IGDATA}"
         
+        PATH_IG_OUT="${PATH_OUTPUT_ID}${CUR_ID}_igblast.fmt7"
+        PATH_IG_AUX="${PATH_IGDATA}/optional_file/${IG_ORGANISM}_gl.aux"
+        PATH_IG_DB_V="${PATH_IGDATA}/database/${IG_VDB}"
+        PATH_IG_DB_D="${PATH_IGDATA}/database/${IG_DDB}"
+        PATH_IG_DB_J="${PATH_IGDATA}/database/${IG_JDB}"
+        PATH_IG_DB_C="${PATH_IGDATA}/database/${IG_CDB}"
+
 
         # output: [outname]_igblast.fmt7
 
@@ -332,15 +339,15 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
             "${PATH_IGBLASTN}" \
                 -query "${PATH_INPUT_IG}" \
-                -out "${PATH_OUTPUT_ID}${CUR_ID}_igblast.fmt7" \
+                -out "${PATH_IG_OUT}" \
                 -num_threads "${NPROC}" \
                 -ig_seqtype "${IG_SEQTYPE}" \
                 -organism "${IG_ORGANISM}" \
-                -auxiliary_data "${PATH_IGDATA}/optional_file/${IG_ORGANISM}_gl.aux" \
-                -germline_db_V "${PATH_IGDATA}/database/${IG_VDB}" \
-                -germline_db_D "${PATH_IGDATA}/database/${IG_DDB}" \
-                -germline_db_J "${PATH_IGDATA}/database/${IG_JDB}" \
-                -c_region_db "${PATH_IGDATA}/database/${IG_CDB}" \
+                -auxiliary_data "${PATH_IG_AUX}" \
+                -germline_db_V "${PATH_IG_DB_V}" \
+                -germline_db_D "${PATH_IG_DB_D}" \
+                -germline_db_J "${PATH_IG_DB_J}" \
+                -c_region_db "${PATH_IG_DB_C}" \
                 -outfmt "${OUTFMT}" \
                 -domain_system "imgt" \
                 &>> "${PATH_LOG_ID}"
@@ -349,14 +356,14 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
             "${PATH_IGBLASTN}" \
                 -query "${PATH_INPUT_IG}" \
-                -out "${PATH_OUTPUT_ID}${CUR_ID}_igblast.fmt7" \
+                -out "${PATH_IG_OUT}" \
                 -num_threads "${NPROC}" \
                 -ig_seqtype "${IG_SEQTYPE}" \
                 -organism "${IG_ORGANISM}" \
-                -auxiliary_data "${PATH_IGDATA}/optional_file/${IG_ORGANISM}_gl.aux" \
-                -germline_db_V "${PATH_IGDATA}/database/${IG_VDB}" \
-                -germline_db_D "${PATH_IGDATA}/database/${IG_DDB}" \
-                -germline_db_J "${PATH_IGDATA}/database/${IG_JDB}" \
+                -auxiliary_data "${PATH_IG_AUX}" \
+                -germline_db_V "${PATH_IG_DB_V}" \
+                -germline_db_D "${PATH_IG_DB_D}" \
+                -germline_db_J "${PATH_IG_DB_J}" \
                 -outfmt "${OUTFMT}" \
                 -domain_system "imgt" \
                 &>> "${PATH_LOG_ID}"
