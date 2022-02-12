@@ -10,10 +10,12 @@
 #'                     Optional. Default is `NULL`.
 #'                     To specify, supply a character vector whose length matches 
 #'                     the length (if 1-D vector) or nrow (if 2-D matrix) of `tab`.
+#' @param  cex.text    Size of text labels. Passed on to `cex` in `text`.
+#'                     Default is `1`. Ignored if `vec_labels` is `NULL`.                     
 #' @param  las         Orientation of labels. Passed on to `barplot`.
 #'                     Default is `2`.
 #' @param  ylab        Y-axis label. Passed on to `barplot`. Default is `""`.
-#' @param  cex.lab     Size of labels. Passed on to `barplot`. Default is `1.25`.
+#' @param  cex.lab     Size of axis labels. Passed on to `barplot`. Default is `1.25`.
 #' @param  col_bar     Color of bars. Passed on to `barplot`.
 #'                     If `tab` is a 1-D vector, entries in `col_bar` should match
 #'                     entries in `tab`. If `tab` is a 2-D matrix, entries in 
@@ -38,7 +40,7 @@
 #'          rownames(tab) = c("donor_1", "donor_2")
 #'          barplot_2(tab, vec_ylim=c(0,105), las=1, col_bar=1:5, ylab="%")
 #'          
-barplot_2 = function(tab, vec_ylim, vec_labels=NULL, 
+barplot_2 = function(tab, vec_ylim, vec_labels=NULL, cex.text=1,
                      las=2, ylab="", cex.lab=1.25, 
                      col_bar, col_border=NA) {
     
@@ -70,6 +72,6 @@ barplot_2 = function(tab, vec_ylim, vec_labels=NULL,
     barplot(t(tab), width=bar_widths, space=bar_spaces, 
             ylim=vec_ylim, col=col_bar, border=col_border, 
             las=las, ylab=ylab, cex.lab=cex.lab)
-    text(x=bar_se_x, y=vec_ylim[2]*0.98, labels=vec_labels)
+    text(x=bar_se_x, y=vec_ylim[2]*0.98, labels=vec_labels, cex=cex.text)
 }
 
