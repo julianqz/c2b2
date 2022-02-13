@@ -11,7 +11,7 @@
 
 library(vioplot)
 
-vioplot.julian = function (x, ..., range = 1.5, h = NULL, ylim = NULL, names = NULL, 
+vioplot_2 = function (x, ..., range = 1.5, h = NULL, ylim = NULL, names = NULL, 
           horizontal = FALSE, col = "magenta", border = "black", lty = 1, 
           lwd = 1, rectCol = "black", colMed = "white", pchMed = 19, 
           at, add = FALSE, wex = 1, drawRect = TRUE,
@@ -196,7 +196,7 @@ vioplotLst = function(vecLst, vioYmax=NULL, vioYmin=0, xLas=2, yLas=3,
                         xName_i = xNames[i]
                     }
                     
-                    vioplot.julian(vecLst[[i]], names=xName_i, add=T, at=i,
+                    vioplot_2(vecLst[[i]], names=xName_i, add=T, at=i,
                                    col=vioBkgCol, rectCol=vioRecCol, whiskerCol=vioWhiskerCol,
                                    colMed=vioMedCol, pchMed=vioMedPch, medStyle=vioMedStyle, cexMed=1.5, 
                                    drawRect=T, boxWidth=vioBoxWidth)
