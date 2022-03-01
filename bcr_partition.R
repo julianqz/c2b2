@@ -135,7 +135,8 @@ if (opt$calcWithin) {
         nrow_bf = nrow(db)
         cat("\n", subj, "; nrow(db):", nrow_bf, "\n")
         
-        fn = paste0("partition", out_suffix, "_", subj, 
+        # use `dtn` in filename because `bcr_infer_clone_wrapper.R` expects so
+        fn = paste0("dtn", out_suffix, "_", subj, 
                     ".RData")
         
         # temporary column
@@ -301,7 +302,8 @@ if (opt$calcBetween) {
         
         cat("\nPerforming between-subject partitioning... \n")
         
-        fn = paste0("partition", out_suffix, "_btwSubj",
+        # use `dtn` in filename because `bcr_infer_clone_wrapper.R` expects so
+        fn = paste0("dtn", out_suffix, "_btwSubj",
                     ".RData")
         
         # temporary column
