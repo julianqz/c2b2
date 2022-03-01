@@ -47,7 +47,9 @@ option_list = list(
     make_option("--parallel", action="store", default=FALSE, type="logical", 
                 help="Whether to use foreach loop instead of regular for loop."),
     make_option("--nproc", action="store", default=1, 
-                type="numeric", help="nproc.")
+                type="numeric", help="nproc."),
+    make_option("--createGermlinesCSV", action="store", default=TRUE, type="logical",
+                help="Whether to output auxiliary CSV for running CreateGermlines wrapper.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -293,20 +295,24 @@ for (i in 1:nrow(subj_info)) {
 
 # output subj_info_createGermlines.csv for CreateGermlines
 
-all_subj = subj_info[["subj"]]
-
-cur_csv = cbind(subj=all_subj,
-                path_db_heavy=paste0(opt$pathWork, 
-                                     "cluster-pass_partition-", out_suffix_2, 
-                                     "_chain-heavy_", all_subj, ".tsv"))
-if (opt$propagateToLight) {
-    cur_csv = cbind(cur_csv,
-                    path_db_light=paste0(opt$pathWork, 
+if (opt$createGermlinesCSV) {
+    
+    all_subj = subj_info[["subj"]]
+    
+    cur_csv = cbind(subj=all_subj,
+                    path_db_heavy=paste0(opt$pathWork, 
                                          "cluster-pass_partition-", out_suffix_2, 
-                                         "_chain-light_", all_subj, ".tsv"))
+                                         "_chain-heavy_", all_subj, ".tsv"))
+    if (opt$propagateToLight) {
+        cur_csv = cbind(cur_csv,
+                        path_db_light=paste0(opt$pathWork, 
+                                             "cluster-pass_partition-", out_suffix_2, 
+                                             "_chain-light_", all_subj, ".tsv"))
+    }
+    cur_fn = "subj_info_createGermlines.csv"
+    setwd(opt$pathAux)
+    # note that headers are omitted for this file (col.names=F)
+    write.table(x=cur_csv, file=cur_fn, quote=F, sep=",", row.names=F, col.names=F)
+    
 }
-cur_fn = "subj_info_createGermlines.csv"
-setwd(opt$pathAux)
-# note that headers are omitted for this file (col.names=F)
-write.table(x=cur_csv, file=cur_fn, quote=F, sep=",", row.names=F, col.names=F)
 
