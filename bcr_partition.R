@@ -23,8 +23,6 @@ option_list = list(
                 type="character", help="Path to CSV containing subject list and paths to input files."),
     make_option("--pathWork", action="store", default=NA, type="character", 
                 help="path_work."),
-    make_option("--nproc", action="store", default=1, type="numeric", 
-                help="nproc."),
     make_option("--calcWithin", action="store", default=FALSE, type="logical", 
                 help="Whether to calculate within-subject dtn."),
     make_option("--calcBetween", action="store", default=FALSE, type="logical", 
