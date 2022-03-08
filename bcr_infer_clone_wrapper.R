@@ -120,22 +120,23 @@ for (i in 1:nrow(subj_info)) {
     fn_in = paste0(subj_info[["path_dtn"]][i],
                    "dtn", out_suffix, "_", subj, ".RData")
     load(fn_in)
+    db_heavy = db; rm(db)
     
     # if partition was based on both heavy and light
     if (opt$heavyLight) {
         # check columns
-        stopifnot(all( c(col_locus, col_cell) %in% colnames(db) ))
+        stopifnot(all( c(col_locus, col_cell) %in% colnames(db_heavy) ))
         # expect db to contain both heavy and light
-        stopifnot( sum(c("IGH","IGL","IGK") %in% db[[col_locus]])>=2 )
+        stopifnot( sum(c("IGH","IGL","IGK") %in% db_heavy[[col_locus]])>=2 )
         # subset to heavy 
         # (defineCloneDb expects heavy only)
-        db = db[db[[col_locus]]=="IGH", ]
+        db_heavy = db_heavy[db_heavy[[col_locus]]=="IGH", ]
     }
     
     # infer clones
     # Within each partition (based on either heavy only, or both heavy & light),
     # cluster using heavy chain CDR3
-    infer_lst = defineCloneDb(db, 
+    infer_lst = defineCloneDb(db_heavy, 
                               sequenceColumn=opt$colSeq,
                               VJLgroupColumn=opt$colVJLgroup,
                               cloneColumn=opt$colClone,
@@ -148,7 +149,7 @@ for (i in 1:nrow(subj_info)) {
     
     db_heavy_clust = infer_lst[["db_clust"]]
     db_heavy_fail = infer_lst[["db_fail"]]
-    # don't remove db yet (needed for propagating to light)
+    # don't remove db_heavy yet (needed for propagating to light)
     rm(infer_lst)
     
     # export heavy
@@ -178,14 +179,15 @@ for (i in 1:nrow(subj_info)) {
     if (opt$propagateToLight) {
         
         # load light
-        db_light = read.table(subj_info[["path_db_light"]][i],
-                              sep="\t", header=T, stringsAsFactors=F)
+        # `db`
+        load(subj_info[["path_db_light"]][i])
+        db_light=db; rm(db)
         
         # check columns exist
         stopifnot(all( c(col_locus, col_cell) %in% colnames(db_light) ))
         
         # remove cell with no heavy chain counterpart
-        cells_db = db[[col_cell]]
+        cells_db = db_heavy[[col_cell]]
         stopifnot( all(cells_db %in% db_light[[col_cell]]) )
         bool_cell = db_light[[col_cell]] %in% cells_db
         if (any(!bool_cell)) {
@@ -205,12 +207,12 @@ for (i in 1:nrow(subj_info)) {
             # makes sense to propagate to light
             
             # wrt db (not db_heavy_clust/fail)
-            idx_cell_wrt_db = match(db_light[[col_cell]], db[[col_cell]])
+            idx_cell_wrt_db = match(db_light[[col_cell]], db_heavy[[col_cell]])
             stopifnot(!any(is.na(idx_cell_wrt_db)))
             stopifnot(all.equal( db_light[[col_cell]], 
-                                 db[[col_cell]][idx_cell_wrt_db] ))
+                                 db_heavy[[col_cell]][idx_cell_wrt_db] ))
             
-            db_light[["vjl_group"]] = db[["vjl_group"]][idx_cell_wrt_db] 
+            db_light[["vjl_group"]] = db_heavy[["vjl_group"]][idx_cell_wrt_db] 
         } else {
             # partitioning was based on heavy only
             # doesn't make sense to propagate to light
