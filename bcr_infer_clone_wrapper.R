@@ -166,8 +166,8 @@ for (i in 1:nrow(subj_info)) {
     if (!is.null(db_heavy_fail)) {
         fn_out_fail_base = paste0("cluster-fail_partition-", out_suffix_2, 
                                   "_chain-heavy_", subj)
-        fn_out_fail_tsv = paste0(fn_out_pass_base, ".tsv")
-        fn_out_fail_r = paste0(fn_out_pass_base, ".RData")
+        fn_out_fail_tsv = paste0(fn_out_fail_base, ".tsv")
+        fn_out_fail_r = paste0(fn_out_fail_base, ".RData")
         write.table(x=db_heavy_fail, file=fn_out_fail_tsv, quote=F, sep="\t",
                     row.names=F, col.names=T)
         save(db_heavy_fail, file=fn_out_fail_r)
@@ -285,8 +285,8 @@ for (i in 1:nrow(subj_info)) {
             # export
             fn_out_fail_base = paste0("cluster-fail_partition-", out_suffix_2, 
                                       "_chain-light_", subj)
-            fn_out_fail_tsv = paste0(fn_out_pass_base, ".tsv")
-            fn_out_fail_r = paste0(fn_out_pass_base, ".RData")
+            fn_out_fail_tsv = paste0(fn_out_fail_base, ".tsv")
+            fn_out_fail_r = paste0(fn_out_fail_base, ".RData")
             write.table(x=db_light_fail, file=fn_out_fail_tsv, quote=F, sep="\t",
                         row.names=F, col.names=T)
             save(db_light_fail, file=fn_out_fail_r)
