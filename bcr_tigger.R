@@ -9,6 +9,9 @@
 #' @param   path_work              Path to save tigger outputs.
 #' @param   subj                   Name of individual. Used in output filenames.
 #' @param   db                     Input `data.frame`.
+#' @param   no_split_version       If `TRUE`, export a no-split version combining
+#'                                 productive and non-productive, in addition to
+#'                                 the split version. Defaults to `FALSE`.
 #' @param   col_seq                Column name of sequence column.
 #' @param   col_v                  Column name of V call.
 #' @param   col_prod               Column name of productive vs. non-productive.
@@ -37,7 +40,7 @@
 #'          heavy chains or all light chains, but not a mix of heavy and light.
 #'          
 run_tigger = function(path_imgt, path_helper, path_work, 
-                      subj, db, 
+                      subj, db, no_split_version=F,
                       col_seq="sequence_alignment", 
                       col_v="v_call", 
                       col_prod="productive", 
@@ -174,6 +177,15 @@ run_tigger = function(path_imgt, path_helper, path_work,
         
         
         ### split & export
+        
+        # no-split version too?
+        if (no_split_version) {
+            cat("\n", chain_type, "productive + non-productive, genotyped - nrow:", nrow(db), "\n")
+            if (nrow(db)>0) {
+                #writeChangeoDb(data=db, file=paste0(subj, "_", chain_type, "_genotyped.tsv"))
+                save(db, file=paste0(subj, "_", chain_type, "_genotyped.RData"))
+            }
+        }
         
         tmp = db; rm(db)
         
