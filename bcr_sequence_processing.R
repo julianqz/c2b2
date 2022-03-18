@@ -581,8 +581,8 @@ if (RUN) {
 #'           junction.
 #'           
 #'           If part of the 3' spacer lies outside the VDJ, that part is extracted
-#'           and returned. If the length of `full_seq` outside the VDJ is not s
-#'           ufficient, a note is added to `review` with the format 
+#'           and returned. If the length of `full_seq` outside the VDJ is not 
+#'           sufficient, a note is added to `review` with the format 
 #'           `spacer_3_outside_vdj_length=[actual len]/[expected len]`. 
 #'           A message is also printed.
 #'           
