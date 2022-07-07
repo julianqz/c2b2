@@ -106,15 +106,26 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
                     return(rowSums(df_clone_info[, cols])>0)
                 }
             })
+            # row: clone
+            # col: sector
             bools_sectors = do.call(cbind, bools_sectors)
             # for each clone, whether it has seq in current sector, 
             # AND seq in any of the other sectors of interest
             # first col always corresponds to current sector
-            if (ncol(bools_sectors)==2) {
-                bools_sectors = bools_sectors[, 1] & bools_sectors[, 2]
+            if (nrow(bools_sectors)==1) {
+                if (ncol(bools_sectors)==2) {
+                    bools_sectors = bools_sectors[1] & bools_sectors[2]
+                } else {
+                    bools_sectors = bools_sectors[1] & any(bools_sectors[-1])
+                }
             } else {
-                bools_sectors = bools_sectors[, 1] & apply(bools_sectors[, -1], 1, any)
+                if (ncol(bools_sectors)==2) {
+                    bools_sectors = bools_sectors[, 1] & bools_sectors[, 2]
+                } else {
+                    bools_sectors = bools_sectors[, 1] & apply(bools_sectors[, -1], 1, any)
+                }
             }
+            
             
             if (any(bools_sectors)) {
                 # initialize temporary $overlap column
