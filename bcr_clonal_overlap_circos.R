@@ -28,9 +28,9 @@
 #'            For each entry in `vec_sectors` and `vec_sectors_type`, there must be a column
 #'            of the same name in `df_clone_info`.
 #'
-#'            It is assumed that there are 2 "types" of arcs/sectors. 
-#'            Clonal overlap is deemed to exist if there is connection between two arcs of 
-#'            different "types". 
+#'            It is assumed that there are at least 2 "types" of arcs/sectors. 
+#'            Clonal overlap is deemed to exist if there is connection between arcs of 
+#'            exactly 2 different "types". 
 #'            In practice, "type" often corresponds to compartment. When sectors/arcs 
 #'            correspond to compartment-timepoint combinations, knowing the "types" of each
 #'            sector/arc makes it easy (internally for the function) to determine if there's 
@@ -65,11 +65,15 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
     stopifnot( nrow(df_clone_info) == length(unique(df_seq_data[[col_clone_id]])) )
     stopifnot( all( unique(df_seq_data[[col_clone_id]]) %in% df_clone_info[[col_clone_id]] ) )
     
-    # expect 2 types of sectors (for determining whether there's overlap)
-    stopifnot(length(unique(vec_sectors_type))==2)
+    # expect at least 2 types of sectors
+    stopifnot(length(unique(vec_sectors_type))>=2)
+    # expect exactly 2 types of sectors for determining whether there's overlap
+    stopifnot(length(unique(vec_overlap_types))==2)
     
     # overlap
     
+    # each list item corresponds to a sector type in vec_overlap_types
+    # each list item contains a vector; each vector item corresponds to a clone
     bool_types_lst = sapply(vec_overlap_types, function(cur_type){
         cur_sectors = vec_sectors[vec_sectors_type==cur_type]
         if (length(cur_sectors)==1) {
@@ -78,7 +82,9 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
             return(rowSums(df_clone_info[, cur_sectors])>0)
         }
     }, simplify=F)
+    # row: clone; col: sector type
     bool_types_mtx = do.call(cbind, bool_types_lst)
+    # whether there's overlap (whether a clone contains both sector types)
     bool_overlap = rowSums(bool_types_mtx)==length(vec_overlap_types) 
     vec_overlap_clones = df_clone_info[[col_clone_id]][bool_overlap]
     
