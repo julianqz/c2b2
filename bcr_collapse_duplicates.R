@@ -225,7 +225,7 @@ run_collapse_duplicates = function(db, nproc=1,
             names(lst_encoded) = col_distinct_vec
             
             for (col_d in col_distinct_vec) {
-                # unique values
+                # unique values, incl NA
                 col_d_uniq_vals = sort(unique(db_to_collapse[[col_d]]))
                 # only support <=25 unique values
                 # N is excluded from LETTERS because it is part of `ignore`
@@ -238,8 +238,17 @@ run_collapse_duplicates = function(db, nproc=1,
                 col_d_code = CODES[1:length(col_d_uniq_vals)]
                 names(col_d_code) = as.character(col_d_uniq_vals)
                 # encode
-                lst_encoded[[col_d]] = col_d_code[db_to_collapse[[col_d]]]
+                # IMPORTANT to use `as.character`
+                # Otherwise, when uniq values are 0 and 1 (numeric), using 
+                #   numeric values as index (in particular, 0) creates omission
+                lst_encoded[[col_d]] = col_d_code[as.character(db_to_collapse[[col_d]])]
             }
+            
+            # sanity check
+            # Lengths of entries in lst_encoded should all be the same
+            # This check prevents a warning when running `do.call(cbind, lst_encoded)` 
+            # that says "number of rows of result is not a multiple of vector length (arg 2)"
+            stopifnot(length(unique( unlist(lapply(lst_encoded, length)) ))==1)
             
             # each row is a sequence
             # cols: sequence, col_distinct_vec in encoded form
