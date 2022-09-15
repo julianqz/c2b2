@@ -36,6 +36,8 @@ option_list = list(
                 help="Within-subject subsampling. Do not specify via command line if NULL."),
     make_option("--subsampleBetween", action="store", default=NULL, type="numeric", 
                 help="Between-subject subsampling. Do not specify via command line if NULL."),
+    make_option("--calcThreshold", action="store", default=TRUE, type="logical", 
+                help="Whether to run findThreshold."),
     make_option("--colSubj", action="store", default=NA, 
                 type="character", help="Column name containing subject info."),
     make_option("--colSeqID", action="store", default="sequence_id", 
@@ -202,31 +204,37 @@ if (opt$calcWithin) {
         
         save(db, file=fn)
         
-        # density estimate for threshold
-        # if already subsampled in previous step, that will carry over 
-        # (no need to re-subsample)
-        thresh_obj = findThreshold(distances=db[["dist_nearest"]],
-                                   method="density", progress=T)
-        
-        fn = paste0("thresh_density", out_suffix, "_", subj, ".RData")
-        save(thresh_obj, file=fn)
-        
-        # print threshold
-        if (i==1) {
-            # initiate
-            sink(file=sink_name, append=F)
-            cat(subj, sep="", "\n")
-            cat(thresh_obj@threshold, sep="", "\n")
-            sink()
-        } else {
-            # append
-            sink(file=sink_name, append=T)
-            cat(subj, sep="", "\n")
-            cat(thresh_obj@threshold, sep="", "\n")
-            sink()
+        if (opt$calcThreshold) {
+            
+            # density estimate for threshold
+            # if already subsampled in previous step, that will carry over 
+            # (no need to re-subsample)
+            thresh_obj = findThreshold(distances=db[["dist_nearest"]],
+                                       method="density", progress=T)
+            
+            fn = paste0("thresh_density", out_suffix, "_", subj, ".RData")
+            save(thresh_obj, file=fn)
+            
+            # print threshold
+            if (i==1) {
+                # initiate
+                sink(file=sink_name, append=F)
+                cat(subj, sep="", "\n")
+                cat(thresh_obj@threshold, sep="", "\n")
+                sink()
+            } else {
+                # append
+                sink(file=sink_name, append=T)
+                cat(subj, sep="", "\n")
+                cat(thresh_obj@threshold, sep="", "\n")
+                sink()
+            }
+            
+            rm(thresh_obj)
         }
         
-        rm(db, thresh_obj)
+        rm(db)
+        
     }
 }
 
