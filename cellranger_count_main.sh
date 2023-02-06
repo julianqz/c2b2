@@ -54,6 +54,7 @@ while getopts "J:T:F:R:Y:Z:h" OPT; do
         ;;
     K)  BOOL_DEL_BAM=$OPTARG
         BOOL_DEL_BAM_SET=true
+        ;;
     h)  usage
         exit
         ;;
