@@ -22,7 +22,8 @@ usage () {
     echo -e "  -F  Path to the centralized fastq dir." 
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
-    echo -e "  -Z  Amount of memory for cellranger."   
+    echo -e "  -Z  Amount of memory for cellranger."
+    echo -e "  -K  Delete .bam* files. Default is true."   
     echo -e "  -h  This message."
 }
 
@@ -30,6 +31,7 @@ PROJ_ID_SET=false
 PATH_ROOT_SET=false
 PATH_FASTQ_SET=false
 PATH_REF_SET=false
+BOOL_DEL_BAM_SET=false
 
 # Get commandline arguments
 while getopts "J:T:F:R:Y:Z:h" OPT; do
@@ -50,6 +52,8 @@ while getopts "J:T:F:R:Y:Z:h" OPT; do
         ;;
     Z)  CR_M=$OPTARG
         ;;
+    K)  BOOL_DEL_BAM=$OPTARG
+        BOOL_DEL_BAM_SET=true
     h)  usage
         exit
         ;;
@@ -86,6 +90,10 @@ if ! $PATH_REF_SET; then
     exit 1
 fi
 
+# Set BOOL_DEL_BAM to true if no -K specified
+if ! $BOOL_DEL_BAM_SET; then
+    BOOL_DEL_BAM=true
+fi
 
 # paths
 
@@ -151,7 +159,11 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 		&> "${PATH_LOG_ID}"
 
     # remove .bam, .bambi, etc.
-    rm "${PATH_OUTPUT}${CUR_ID}"/outs/*.bam*
+    
+    if $BOOL_DEL_BAM; then
+        rm "${PATH_OUTPUT}${CUR_ID}"/outs/*.bam*
+    fi
+
     rm "${PATH_OUTPUT}${CUR_ID}"/_*
     rm -r "${PATH_OUTPUT}${CUR_ID}/SC_RNA_COUNTER_CS"
     rm "${PATH_OUTPUT}${CUR_ID}/${CUR_ID}.mri.tgz"
