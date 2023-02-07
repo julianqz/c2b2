@@ -23,7 +23,7 @@ usage () {
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
     echo -e "  -Z  Amount of memory for cellranger."
-    echo -e "  -K  Delete .bam* files. Default is true."   
+    echo -e "  -W  Delete .bam* files. Default is true."   
     echo -e "  -h  This message."
 }
 
@@ -52,7 +52,7 @@ while getopts "J:T:F:R:Y:Z:h" OPT; do
         ;;
     Z)  CR_M=$OPTARG
         ;;
-    K)  BOOL_DEL_BAM=$OPTARG
+    W)  BOOL_DEL_BAM=$OPTARG
         BOOL_DEL_BAM_SET=true
         ;;
     h)  usage
@@ -91,7 +91,7 @@ if ! $PATH_REF_SET; then
     exit 1
 fi
 
-# Set BOOL_DEL_BAM to true if no -K specified
+# Set BOOL_DEL_BAM to true if no -W specified
 if ! $BOOL_DEL_BAM_SET; then
     BOOL_DEL_BAM=true
 fi
