@@ -34,7 +34,7 @@ PATH_REF_SET=false
 BOOL_DEL_BAM_SET=false
 
 # Get commandline arguments
-while getopts "J:T:F:R:Y:Z:h" OPT; do
+while getopts "J:T:F:R:Y:Z:W:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID=$OPTARG
         PROJ_ID_SET=true
