@@ -214,6 +214,9 @@ run_tigger = function(path_imgt, path_helper, path_work,
         
         cat("\nFinished for", subj, chain_type, "\n")
         
+        cat("\nwarnings():\n")
+        print(warnings())
+        
     } else {
         cat("\nNo sequence in db; skipped\n")
     }
