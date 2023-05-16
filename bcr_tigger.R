@@ -209,7 +209,7 @@ run_tigger = function(path_imgt, path_helper, path_work,
         
         rm(tmp)
         
-        # prints blank if none
+        # prints NULL if none
         cat("\nwarnings():\n")
         print(warnings())
         

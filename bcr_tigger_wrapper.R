@@ -103,3 +103,7 @@ for (i in 1:nrow(subj_info)) {
     }
 }
 
+# prints NULL if none
+cat("\nwarnings():\n")
+print(warnings())
+
