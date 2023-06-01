@@ -677,3 +677,262 @@ extract_3_prime_spacer = function(vdj_obsv, vdj_obsv_end, full_seq,
     return(return_vec)
 }
 
+
+
+#' Prepare 3' spacer for mm lambda light chain for Ab expression
+#' 
+#' @param  vdj_obsv      "Cleaned" observed VDJ sequence. The expectation is that 
+#'                       this was returned as `obsv_clean` by `clean_obsv`.
+#' @param  full_seq      Input sequence. The `sequence` column in AIRR format.
+#' @param  cdr3          Nt sequence of CDR3 (note: NOT IMGT-defined junction).
+#' 
+#' @return  A vector containing
+#'          - cdr3_end_vdj_obsv: ending nt position of `cdr3` wrt `vdj_obsv`.
+#'          - cdr3_end_full_seq: ending nt position of `cdr3` wrt `full_seq`.
+#'          - junc_anchor_3_prime_nt: 3' junction anchor in nt.
+#'          - junc_anchor_3_prime_aa: 3' junction anchor in aa.
+#'          - bits_after_spacer_pt_1_actual_nt: bits of sequence in nt immediately
+#'                                              after `spacer_pt_1` in `full_seq`.  
+#'          - bits_after_spacer_pt_1_actual_aa: bits of sequence in aa immediately
+#'                                              after `spacer_pt_1` in `full_seq`.
+#'          - spacer_pt_1_vdj_obsv: the part of 3' spacer extracted from `vdj_obsv` 
+#'                                  (immeidately after `cdr3` ).
+#'          - spacer_pt_1_full_seq: 3' spacer extracted from `full_seq`.
+#'          - vdj_obsv_up_to_cdr3_end: `vdj_obsv` up to and including the end of `cdr3`.
+#'          - review: notes where manual review may be required.
+#' 
+#' @details  Only for mm lambda light chains. 
+#'           Designed to prepare the following construct:
+#'           
+#'           CDR3 + 3' junction anchor + spacer of a fixed length + human IGLC2 CDS + XhoI
+#' 
+#'           in which,
+#'           - CDR3 is the same as `cdr3`;
+#'           - 3' junction anchor is captured by `junc_anchor_3_prime_nt`; and
+#'           - spacer of a fixed length has an expected length specified by `spacer_pt_1_len_expected`
+#'             and is captured by `spacer_pt_1_vdj_obsv` and `spacer_pt_1_full_seq`.
+#'             
+#'           (human IGLC2 CDS and XhoI are handled outside the scope of this function)
+#'           
+#'           Note: When deriving `bits_after_spacer_pt_1_actual_nt` and `bits_after_spacer_pt_1_actual_aa`,
+#'           the full-length of `spacer_pt_1` as specified by `spacer_pt_1_len_expected` is used, 
+#'           disregarding the actual lengths of `spacer_pt_1_vdj_obsv` and `spacer_pt_1_full_seq`.
+#'           
+#'           If the 3' junction anchor is not Phe (TTT/TTC) or Trp (TGG), 
+#'           a review note is added.
+#'           
+#'           If there're not enough positions in `vdj_obsv` for `spacer_pt_1_vdj_obsv`, 
+#'           a review note is added. 
+#'           If `spacer_pt_1_vdj_obsv` has nt length that is not a multiple of 3, 
+#'           a review note is added.
+#'           
+#'           If there're not enough positions in `full_seq` for `spacer_pt_1_full_seq`, 
+#'           a review note is added. 
+#'           If `spacer_pt_1_full_seq` has nt length that is not a multiple of 3, 
+#'           a review note is added.
+#'           
+#'           If the bits immediately after `spacer_pt_1` in `full_seq` do not match 
+#'           `bits_after_spacer_pt_1_expected_aa`, a review note is added. 
+#'           If there're not enough positions in `full_seq` for such bits, 
+#'           a review note is added.
+#'   
+prep_3_prime_spacer_mm_lambda = function(vdj_obsv, full_seq, cdr3) {
+    
+    require(stringi)
+    require(alakazam)
+    
+    #* expected 3' anchor of junction
+    #  TTT/TTC = Phe = F; TGG = Trp = W
+    junc_anchor_3_prime_nt_expected = c("TTT", "TTC", "TGG")
+
+    #* nt length of part of spacer to be derived from obsv
+    #  9 aa
+    spacer_pt_1_len_expected = 9*3
+    
+    #* expected bits immediately after spacer_pt_1
+    #  3 aa
+    bits_len_nt = 3*3
+    bits_after_spacer_pt_1_expected_aa = "GQP"
+    
+    review = ""
+    
+    ### locate cdr3
+    # returns a matrix
+    # no match:
+    #      start end
+    # [1,]    NA  NA
+    # match:
+    #      start end
+    # [1,]   289 330
+    
+    ## wrt vdj_obsv
+    
+    loc_cdr3_vdj_obsv = stri_locate(str=vdj_obsv, fixed=cdr3)
+    # expect match
+    stopifnot(!any(is.na(loc_cdr3_vdj_obsv)))
+    # expect exactly 1 match
+    stopifnot(nrow(loc_cdr3_vdj_obsv)==1)
+    
+    cdr3_end_vdj_obsv = loc_cdr3_vdj_obsv[1, 2]
+    vdj_obsv_up_to_cdr3_end = substr(vdj_obsv, 1, cdr3_end_vdj_obsv)
+    
+    ## wrt full_seq
+    
+    loc_cdr3_full_seq = stri_locate(str=full_seq, fixed=cdr3)
+    # expect match
+    stopifnot(!any(is.na(loc_cdr3_full_seq)))
+    # expect exactly 1 match
+    stopifnot(nrow(loc_cdr3_full_seq)==1)
+    
+    cdr3_end_full_seq = loc_cdr3_full_seq[1, 2]
+    
+    
+    ### 3' anchor
+    
+    junc_anchor_3_prime_nt = substr(vdj_obsv, 
+                                    cdr3_end_vdj_obsv+1, 
+                                    cdr3_end_vdj_obsv+3)
+    stopifnot(nchar(junc_anchor_3_prime_nt)==3)
+    junc_anchor_3_prime_aa = translateDNA(junc_anchor_3_prime_nt, trim=F)
+    
+    if (!junc_anchor_3_prime_nt %in% junc_anchor_3_prime_nt_expected) {
+        
+        cat("junc_anchor_3_prime_nt =", junc_anchor_3_prime_nt, 
+            " (unexpected)", "\n")
+        
+        review = paste(review, 
+                       paste0("junc_anchor_3_prime_nt=", junc_anchor_3_prime_nt,
+                              "!=", 
+                              paste(junc_anchor_3_prime_nt_expected, collapse="/")),
+                       sep=ifelse(review=="", "", ";"))
+        
+    }
+    
+    ### part of spacer from within vdj
+    # derive from vdj_obsv
+    
+    # between 3' anchor AA of junction and start of human IGLC2 CDS
+    # length determined by spacer_pt_1_len_expected
+    # +4 to skip anchor AA (downstream of junction)
+    spacer_start_vdj_obsv = loc_cdr3_vdj_obsv[1, 2]+4
+    
+    spacer_pt_1_vdj_obsv = substr(vdj_obsv, spacer_start_vdj_obsv, 
+                                  spacer_start_vdj_obsv+spacer_pt_1_len_expected-1)
+    spacer_pt_1_vdj_obsv_len_actual = nchar(spacer_pt_1_vdj_obsv)
+    stopifnot(spacer_pt_1_vdj_obsv_len_actual<=spacer_pt_1_len_expected)
+    
+    if (spacer_pt_1_vdj_obsv_len_actual < spacer_pt_1_len_expected) {
+        
+        cat("nchar(spacer_pt_1_vdj_obsv) =", spacer_pt_1_vdj_obsv_len_actual, 
+            "; expected", spacer_pt_1_len_expected, "\n")
+        
+        review = paste(review, 
+                       paste0("spacer_pt_1_vdj_obsv_length=", spacer_pt_1_vdj_obsv_len_actual,
+                              "/", spacer_pt_1_len_expected),
+                       sep=ifelse(review=="", "", ";"))
+    }
+    if (spacer_pt_1_vdj_obsv_len_actual%%3!=0) {
+        
+        cat("nchar(spacer_pt_1_vdj_obsv) =", spacer_pt_1_vdj_obsv_len_actual, 
+            "%%3!=0", "\n")
+        
+        review = paste(review, 
+                       paste0("spacer_pt_1_vdj_obsv_length=", spacer_pt_1_vdj_obsv_len_actual,
+                              "%%3!=0"),
+                       sep=ifelse(review=="", "", ";"))
+    }
+    
+    ### part of spacer from within vdj
+    # derive from full_seq
+    # This could come in handy in case there's trimming in vdj_obsv (as part of 
+    # clean_obsv() due to the germline seq), which could lead to there being not
+    # enough positions in vdj_obsv for extracting the full-length spacer; whereas 
+    # at the same time if one were to extract from full_seq for the full-length spacer,
+    # the bits immediately after spacer are still of expected aa identifies
+    # E.g. 
+    # spacer derived from vdj_obsv has 21 nt; that from full_seq has 27 nt;
+    # bits in full_seq immediately after the 27-nt spacer are GQP
+    
+    spacer_start_full_seq = loc_cdr3_full_seq[1, 2]+4
+    
+    spacer_pt_1_full_seq = substr(full_seq, spacer_start_full_seq, 
+                                  spacer_start_full_seq+spacer_pt_1_len_expected-1)
+    spacer_pt_1_full_seq_len_actual = nchar(spacer_pt_1_full_seq)
+    stopifnot(spacer_pt_1_full_seq_len_actual<=spacer_pt_1_len_expected)
+    
+    if (spacer_pt_1_full_seq_len_actual < spacer_pt_1_len_expected) {
+        
+        cat("nchar(spacer_pt_1_full_seq) =", spacer_pt_1_full_seq_len_actual, 
+            "; expected", spacer_pt_1_len_expected, "\n")
+        
+        review = paste(review, 
+                       paste0("spacer_pt_1_full_seq_length=", spacer_pt_1_full_seq_len_actual,
+                              "/", spacer_pt_1_len_expected),
+                       sep=ifelse(review=="", "", ";"))
+    }
+    if (spacer_pt_1_full_seq_len_actual%%3!=0) {
+        
+        cat("nchar(spacer_pt_1_full_seq) =", spacer_pt_1_full_seq_len_actual, 
+            "%%3!=0", "\n")
+        
+        review = paste(review, 
+                       paste0("spacer_pt_1_full_seq_length=", spacer_pt_1_full_seq_len_actual,
+                              "%%3!=0"),
+                       sep=ifelse(review=="", "", ";"))
+    }
+    
+    
+    ### first 3 aa after spacer_pt_1
+    # derive from full_seq in case vdj_obsv has run out
+    
+    # important to include +3 to account for 3' junction anchor
+    bits_start = cdr3_end_full_seq+3+spacer_pt_1_len_expected+1
+    bits_end = bits_start+bits_len_nt-1
+    bits_after_spacer_pt_1_actual_nt = substr(full_seq, bits_start, bits_end)
+    # translateDNA turns "" into NA
+    bits_after_spacer_pt_1_actual_aa = translateDNA(bits_after_spacer_pt_1_actual_nt, trim=F)
+    
+    if (nchar(bits_after_spacer_pt_1_actual_nt)!=bits_len_nt) {
+        
+        cat("nchar(bits_after_spacer_pt_1_actual_nt) =", 
+            nchar(bits_after_spacer_pt_1_actual_nt), 
+            "; expected", bits_len_nt, "\n")
+        
+        review = paste(review, 
+                       paste0("bits_after_spacer_pt_1_actual_nt_length=", 
+                              nchar(bits_after_spacer_pt_1_actual_nt),
+                              "/", bits_len_nt),
+                       sep=ifelse(review=="", "", ";"))
+        
+    }
+    if (is.na(bits_after_spacer_pt_1_actual_aa) || 
+        bits_after_spacer_pt_1_actual_aa!=bits_after_spacer_pt_1_expected_aa) {
+        
+        cat("bits_after_spacer_pt_1_actual_aa =", 
+            bits_after_spacer_pt_1_actual_aa,
+            "; expected", bits_after_spacer_pt_1_expected_aa, "\n")
+        
+        review = paste(review, 
+                       paste0("bits_after_spacer_pt_1_actual_aa=", 
+                              bits_after_spacer_pt_1_actual_aa,
+                              "!=", bits_after_spacer_pt_1_expected_aa),
+                       sep=ifelse(review=="", "", ";"))
+        
+    }
+    
+    return_vec = c(cdr3_end_vdj_obsv, cdr3_end_full_seq, 
+                   junc_anchor_3_prime_nt, junc_anchor_3_prime_aa,
+                   bits_after_spacer_pt_1_actual_nt, bits_after_spacer_pt_1_actual_aa,
+                   spacer_pt_1_vdj_obsv, spacer_pt_1_full_seq,
+                   vdj_obsv_up_to_cdr3_end,
+                   review)
+    names(return_vec) = c("cdr3_end_vdj_obsv", "cdr3_end_full_seq", 
+                          "junc_anchor_3_prime_nt", "junc_anchor_3_prime_aa",
+                          "bits_after_spacer_pt_1_actual_nt", "bits_after_spacer_pt_1_actual_aa",
+                          "spacer_pt_1_vdj_obsv", "spacer_pt_1_full_seq",
+                          "vdj_obsv_up_to_cdr3_end",
+                          "review")
+    return(return_vec)
+}
+
+
