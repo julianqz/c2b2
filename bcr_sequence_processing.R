@@ -277,7 +277,7 @@ remove_imgt_gaps = function(germ, obsv=NULL) {
 #'          position in the spacer. A message is also printed.
 #'          
 #'          Prep work for extracting a 3' spacer that extends from the 3' end of
-#'          the junction (Cys anchor) onwards is also carried out. Actual 
+#'          the junction onwards is also carried out. Actual 
 #'          extraction of the 3' spacer is to be performed by a separate function,
 #'          after the results returned by this function has been reviewed. 
 #'          This is because the review could result in changes in `obsv_clean`,
@@ -595,7 +595,7 @@ if (RUN) {
 #'           format `spacer_3_outside_vdj_non-ATGC=[char]`. A message 
 #'           is also printed.
 #'           
-extract_3_primer_spacer = function(vdj_obsv, vdj_obsv_end, full_seq, 
+extract_3_prime_spacer = function(vdj_obsv, vdj_obsv_end, full_seq, 
                                    locus, cdr3) {
     require(stringi)
     
@@ -622,7 +622,7 @@ extract_3_primer_spacer = function(vdj_obsv, vdj_obsv_end, full_seq,
     stopifnot(nrow(loc_cdr3)==1)
     
     # part from within obsv
-    # +4 to skip anchor AA (downstream of junction [Cys])
+    # +4 to skip anchor AA (downstream of junction)
     spacer_start = loc_cdr3[1, 2]+4
     pt_obsv = substring(vdj_obsv, first=spacer_start)
     len_pt_obsv = nchar(pt_obsv)
@@ -676,3 +676,4 @@ extract_3_primer_spacer = function(vdj_obsv, vdj_obsv_end, full_seq,
     names(return_vec) = c("spacer_start", "pt_out", "review")
     return(return_vec)
 }
+
