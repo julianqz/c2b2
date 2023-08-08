@@ -8,6 +8,7 @@
 #'                           used to determine whether there's clonal overlap.
 #' @params vec_sectors_color  The color of each arc.
 #' @params vec_gaps           The amount of space between arcs.
+#' @params compute_overlap    Boolean specifying whether to compute clonal overlap.
 #' @params vec_overlap_types  At least 2 unique types from `vec_sectors_type` that define 
 #'                           clonal overlap.
 #' @params col_sector         Column name in `df_seq_data` that specifies `vec_sectors`.
@@ -16,6 +17,7 @@
 #' @params df_seq_data        Data.frame containing sequence data.
 #' @params df_clone_info      Data.frame containing summary info on clones.
 #' @params color_overlap      Color for chords where there's clonal overlap between "types".
+#'                            Ignored if `compute_overlap` is `FALSE`.
 #' @params color_no_overlap   Color for chords where there's no clonal overlap between "types".
 #'
 #' @details  The lengths of `vec_sectors`, `vec_sectors_type`, `vec_sectors_color`, and
@@ -35,9 +37,16 @@
 #'            correspond to compartment-timepoint combinations, knowing the "types" of each
 #'            sector/arc makes it easy (internally for the function) to determine if there's 
 #'            clonal overlap (btw compartments) in the presence of an additional variable, timepoint.
+#'            
+#'            If `compute_overlap=FALSE`, no clonal overlap will be quantified or visualized.
+#'            Accordingly, all chords will be drawn in `color_no_overlap`. The number and
+#'            percentage of clonal overlap will be reported as 0 in the print out.
+#'            `color_overlap` and `vec_overlap_types` must still be specified as an argument 
+#'            but both will be ignored.
 #'
 circos_clonal_overlap = function(vec_sectors, vec_sectors_type, 
                                  vec_sectors_color, vec_gaps, 
+                                 compute_overlap=TRUE,
                                  vec_overlap_types,
                                  col_sector, col_clone_id, 
                                  df_seq_data, df_clone_info, 
@@ -72,21 +81,28 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
     
     # overlap
     
-    # each list item corresponds to a sector type in vec_overlap_types
-    # each list item contains a vector; each vector item corresponds to a clone
-    bool_types_lst = sapply(vec_overlap_types, function(cur_type){
-        cur_sectors = vec_sectors[vec_sectors_type==cur_type]
-        if (length(cur_sectors)==1) {
-            return(df_clone_info[[cur_sectors]]>0)
-        } else {
-            return(rowSums(df_clone_info[, cur_sectors])>0)
-        }
-    }, simplify=F)
-    # row: clone; col: sector type
-    bool_types_mtx = do.call(cbind, bool_types_lst)
-    # whether there's overlap (whether a clone contains both sector types)
-    bool_overlap = rowSums(bool_types_mtx)==length(vec_overlap_types) 
-    vec_overlap_clones = df_clone_info[[col_clone_id]][bool_overlap]
+    if (compute_overlap) {
+        # each list item corresponds to a sector type in vec_overlap_types
+        # each list item contains a vector; each vector item corresponds to a clone
+        bool_types_lst = sapply(vec_overlap_types, function(cur_type){
+            cur_sectors = vec_sectors[vec_sectors_type==cur_type]
+            if (length(cur_sectors)==1) {
+                return(df_clone_info[[cur_sectors]]>0)
+            } else {
+                return(rowSums(df_clone_info[, cur_sectors])>0)
+            }
+        }, simplify=F)
+        # row: clone; col: sector type
+        bool_types_mtx = do.call(cbind, bool_types_lst)
+        # whether there's overlap (whether a clone contains both sector types)
+        bool_overlap = rowSums(bool_types_mtx)==length(vec_overlap_types) 
+        vec_overlap_clones = df_clone_info[[col_clone_id]][bool_overlap]
+        cat("\ncompute_overlap set to TRUE\n\n")
+    } else {
+        vec_overlap_clones = c()
+        cat("\ncompute_overlap set to FALSE\n\n")
+    }
+    
     
     # sequences for each sector
     lst = vector(mode="list", length=length(vec_sectors))
