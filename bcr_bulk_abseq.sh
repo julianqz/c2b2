@@ -21,6 +21,7 @@ usage () {
     echo -e "  -T  Path to the top-level working dir." 
     echo -e "  -Y  Number of cores for parallelization." 
     echo -e "  -A  Whether to run phix removal (PR). Boolean."
+    echo -e "  -P  If not running phix removal (PR), Whether phix-removed files already exist. Boolean."
     echo -e "  -B  Whether to run presto-abseq pipeline (PA). Boolean."
     echo -e "  -C  [PR] Path to script for phix removal."
     echo -e "  -D  [PA] Path to script for presto-abseq pipeline."
@@ -37,7 +38,7 @@ usage () {
 }
 
 # Get commandline arguments
-while getopts "J:T:Y:A:B:C:D:E:F:G:H:I:K:L:M:N:h" OPT; do
+while getopts "J:T:Y:A:P:B:C:D:E:F:G:H:I:K:L:M:N:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID="${OPTARG}"
         ;;
@@ -45,7 +46,9 @@ while getopts "J:T:Y:A:B:C:D:E:F:G:H:I:K:L:M:N:h" OPT; do
         ;;
     Y)  NPROC="${OPTARG}"
         ;;
-    A)  BOOL_PR="${OPTARG}"
+    A)  BOOL_PR_RUN="${OPTARG}"
+        ;;
+    P)  BOOL_PR_EXIST="${OPTARG}"
         ;;
     B)  BOOL_PA="${OPTARG}"
         ;;
@@ -160,7 +163,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
 
     # phix removal
-    if $BOOL_PR; then
+    if $BOOL_PR_RUN; then
 
         echo "- phix removal" &>> "${PATH_LOG}"
 
@@ -197,9 +200,17 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         INPUT_ABSEQ_2="${PATH_OUTPUT_PR}/${CUR_ID}_R2_nophix_selected.fastq"
 
     else
-        # input files to presto-abseq pipeline are original files
-        INPUT_ABSEQ_1="${RAW_1}"
-        INPUT_ABSEQ_2="${RAW_2}"
+
+        if $BOOL_PR_EXIST; then
+            # input files to presto-abseq pipeline are existing phix-removed files
+             INPUT_ABSEQ_1="${PATH_OUTPUT_PR}/${CUR_ID}_R1_nophix_selected.fastq"
+             INPUT_ABSEQ_2="${PATH_OUTPUT_PR}/${CUR_ID}_R2_nophix_selected.fastq"
+        else
+            # input files to presto-abseq pipeline are original files
+            INPUT_ABSEQ_1="${RAW_1}"
+            INPUT_ABSEQ_2="${RAW_2}"
+        fi
+
     fi
 
 
