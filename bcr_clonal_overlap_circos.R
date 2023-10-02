@@ -203,6 +203,7 @@ circos_clonal_overlap = function(vec_sectors, vec_sectors_type,
     print(mtx_sectors_xlim)
     
     vec_sectors = vec_sectors[lst_bool]
+    vec_sectors_type = vec_sectors_type[lst_bool]
     vec_gaps = vec_gaps[lst_bool]
     vec_sectors_color = vec_sectors_color[lst_bool]
     
