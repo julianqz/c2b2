@@ -24,7 +24,8 @@ usage () {
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
     echo -e "  -Z  Amount of memory for cellranger."
-    echo -e "  -W  Delete .bam* files. Default is true."   
+    echo -e "  -W  Delete .bam* files. Default is true."
+    echo -e "  -Q  Whether to specify --chain. Default is false."
     echo -e "  -h  This message."
 }
 
@@ -33,10 +34,11 @@ RECEPTOR_SET=false
 PATH_ROOT_SET=false
 PATH_FASTQ_SET=false
 PATH_REF_SET=false
+BOOL_SPECIFY_CHAIN_SET=false
 BOOL_DEL_BAM_SET=false
 
 # Get commandline arguments
-while getopts "J:K:T:F:R:Y:Z:W:h" OPT; do
+while getopts "J:K:T:F:R:Y:Z:W:Q:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID=$OPTARG
         PROJ_ID_SET=true
@@ -59,6 +61,9 @@ while getopts "J:K:T:F:R:Y:Z:W:h" OPT; do
         ;;
     W)  BOOL_DEL_BAM=$OPTARG
         BOOL_DEL_BAM_SET=true
+        ;;
+    Q)  BOOL_SPECIFY_CHAIN=$OPTARG
+        BOOL_SPECIFY_CHAIN_SET=true
         ;;
     h)  usage
         exit
@@ -102,9 +107,34 @@ if ! $PATH_REF_SET; then
     exit 1
 fi
 
+
 # Set BOOL_DEL_BAM to true if no -W specified
 if ! $BOOL_DEL_BAM_SET; then
     BOOL_DEL_BAM=true
+fi
+
+# Set BOOL_SPECIFY_CHAIN to false if no -Q specified
+if ! $BOOL_SPECIFY_CHAIN_SET; then
+    BOOL_SPECIFY_CHAIN=false
+fi
+
+# --chain
+
+# If -Q/BOOL_SPECIFY_CHAIN true, manually specify --chain based on $RECEPTOR
+#    bcr >>> IG
+#    tcr >>> TR
+# Else   >>> auto
+
+if $BOOL_SPECIFY_CHAIN; then
+    if [[ ${RECEPTOR} == "bcr" ]]; then
+        CHAIN="IG"
+    elif [[ ${RECEPTOR} == "tcr" ]]; then
+        CHAIN="TR"
+    else
+        echo "-K/RECEPTOR should be either bcr or tcr" >&2
+        exit 1
+else
+    CHAIN="auto"
 fi
 
 # paths
@@ -129,6 +159,7 @@ PATH_LIST="${PATH_AUX}${NAME_LIST}"
 
 cellranger --version &> "${PATH_LOG}"
 echo "--localcores=${CR_N}; --localmem=${CR_M}" &>> "${PATH_LOG}"
+echo "--chain=${CHAIN}" &>> "${PATH_LOG}"
 echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
 
 N_LINES=$(wc -l < "${PATH_LIST}")
@@ -167,6 +198,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         --reference "${PATH_REF}" \
 		--localcores "${CR_N}" \
 		--localmem "${CR_M}" \
+        --chain "${CHAIN}" \
 		&> "${PATH_LOG_ID}"
 
     # remove .bam, .bambi, etc.
