@@ -133,6 +133,7 @@ if $BOOL_SPECIFY_CHAIN; then
     else
         echo "-K/RECEPTOR should be either bcr or tcr" >&2
         exit 1
+    fi
 else
     CHAIN="auto"
 fi
