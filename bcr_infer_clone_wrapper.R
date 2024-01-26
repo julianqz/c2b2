@@ -195,12 +195,20 @@ for (i in 1:nrow(subj_info)) {
         }
         
         # add columns
-        # dist_nearest, vjl_group (pass & fail)
+        # dist_nearest or cross_dist_nearest, vjl_group (pass & fail)
         # opt$colClone (pass only)
         
-        # dist_nearest only calculated for heavy (regardless of partitioning)
+        # dist_nearest or cross_dist_nearesat only calculated for heavy 
+        # (regardless of partitioning)
         # need a placeholder column in order to perform rbind etc.
-        db_light[["dist_nearest"]] = NA
+        
+        # exactly one match: either dist_nearest or cross_dist_nearest
+        vec_cols_dtn = c("dist_nearest", "cross_dist_nearest")
+        bool_cols_dtn = vec_cols_dtn %in% colnames(db_heavy)
+        stopifnot(sum(bool_cols_dtn)==1)
+        
+        col_dtn = vec_cols_dtn[bool_cols_dtn]
+        db_light[[col_dtn]] = NA
         
         if (opt$heavyLight) {
             # partitioning was based on heavy & light
