@@ -13,6 +13,7 @@
 #      [sample];[comma-separated fastq id(s)]
 # 2) Assumes that all fastqs are in one centralized folder
 
+# NOTE: not for data involving Feature Barcode
 
 # Print usage
 usage () {
