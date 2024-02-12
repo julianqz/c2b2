@@ -4,7 +4,7 @@
 # https://github.com/julianqz
 # Date:   2021-05-01
 #
-# Run `cellranger count` for a list of samples
+# Run `cellranger count` for a list of samples involving NO Feature Barcode
 # 
 # Prereqs:  
 # 1) The following must be in ${PROJ_ID}/aux/
