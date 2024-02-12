@@ -2,25 +2,27 @@
 
 # Author: Julian Q. Zhou
 # https://github.com/julianqz
-# Date:   2021-05-01
+# Date:   2024-02-08
 #
-# Run `cellranger count` for a list of samples
-# 
+# Run `cellranger count` for a list of samples involving Feature Barcode
+# Written for cellranger 7.2.0+
+#
 # Prereqs:  
 # 1) The following must be in ${PROJ_ID}/aux/
 #    - a sample list: "cr_list_count_${PROJ_ID}.txt"
 #      each row is semi-colon-separated
-#      [sample];[comma-separated fastq id(s)]
-# 2) Assumes that all fastqs are in one centralized folder
+#      [sample];[name of --libraries csv];[name of --feature-ref csv]
+#    - all the --libraries csv's referenced in sample list
+#    - all the --feature-ref csv's referenced in sample list
 
-# NOTE: not for data involving Feature Barcode
+
+# NOTE: for data involving Feature Barcode
 
 # Print usage
 usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
     echo -e "  -J  Project ID."                        
     echo -e "  -T  Path to the top-level working dir." 
-    echo -e "  -F  Path to the centralized fastq dir." 
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
     echo -e "  -Z  Amount of memory for cellranger."
@@ -30,21 +32,17 @@ usage () {
 
 PROJ_ID_SET=false
 PATH_ROOT_SET=false
-PATH_FASTQ_SET=false
 PATH_REF_SET=false
 BOOL_DEL_BAM_SET=false
 
 # Get commandline arguments
-while getopts "J:T:F:R:Y:Z:W:h" OPT; do
+while getopts "J:T:R:Y:Z:W:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID=$OPTARG
         PROJ_ID_SET=true
         ;;
     T)  PATH_ROOT=$(realpath $OPTARG)
         PATH_ROOT_SET=true
-        ;;
-    F)  PATH_FASTQ=$(realpath $OPTARG)
-        PATH_FASTQ_SET=true
         ;;
     R)  PATH_REF=$(realpath $OPTARG)
         PATH_REF_SET=true
@@ -77,12 +75,6 @@ fi
 # Exit if no top-level working directory provided
 if ! $PATH_ROOT_SET; then
     echo "You must specify a top-level working directory that contains the project folder via the -T option" >&2
-    exit 1
-fi
-
-# Exit if no centralized fastq directory provided
-if ! $PATH_FASTQ_SET; then
-    echo "You must specify a centralized fastq directory that contains all the fastq files via the -F option" >&2
     exit 1
 fi
 
@@ -132,43 +124,64 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # read current line
     CUR_LINE=$(sed "${IDX}q;d" "${PATH_LIST}") 
 
-    # important for .txt to be semi-colon-separated
-    # this allows for multiple fastq ids to be comma-separated for the same sample, if applicable
+    # use of ; (as opposed to ,) important for version of pipeline without fbc
+    # keep using ; for consistency
     IFS=";"
     read -a strarr <<< "${CUR_LINE}"
 
 	# sample ID
 	CUR_ID=${strarr[0]}
 
-    # fastq id(s) (this is what cellranger calls `sample` -- confusing eh?)
-    CUR_FASTQ_IDS=${strarr[1]}
+    # --libraries csv
+    CUR_CSV_LIB=${strarr[1]}
+    PATH_CUR_CSV_LIB="${PATH_AUX}${CUR_CSV_LIB}"
 
+    ## --feature-ref csv
+    CUR_CSV_FR=${strarr[2]}
+    PATH_CUR_CSV_FR="${PATH_AUX}${CUR_CSV_FR}"
 
-	echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
+    echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
+    echo "    --libraries csv: ${PATH_CUR_CSV_LIB}" &>> "${PATH_LOG}"
+    echo "    --feature-ref csv: ${PATH_CUR_CSV_FR}" &>> "${PATH_LOG}"
 
 	# sample-specific log
 	PATH_LOG_ID="${PATH_AUX}log_cr_count_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
 
+    # cellranger 7.2.0 doc
+
+    # --fastqs cannot be used when performing Feature Barcode analysis; use --libraries instead.
+
+    # --libraries
+    # Path to a libraries.csv file declaring FASTQ paths and library types of input libraries. 
+    # Required for gene expression + Feature Barcode analysis. 
+    # When using --libraries, --fastqs and --sample must not be used. 
+    # This argument should not be used when performing gene expression-only analysis; use --fastqs instead.
+
+    # --feature-ref
+    # Required for Feature Barcode analysis. 
+    # Path to a Feature Reference CSV file declaring the Feature Barcode reagents used in the experiment.
+
+    # csv examples
+    # https://www.10xgenomics.com/support/software/cell-ranger/latest/analysis/running-pipelines/cr-feature-bc-analysis#libraries-csv
+
+    # --include-introns is true by default
+    # --no-bam is false by default
 
 	cellranger count \
 		--id "${CUR_ID}" \
-		--fastqs "${PATH_FASTQ}" \
-        --sample "${CUR_FASTQ_IDS}" \
+        --libraries "${PATH_CUR_CSV_LIB}" \
+        --feature-ref "${PATH_CUR_CSV_FR}" \
         --transcriptome "${PATH_REF}" \
         --nosecondary \
+        --no-bam "${BOOL_DEL_BAM}" \
 		--localcores "${CR_N}" \
 		--localmem "${CR_M}" \
 		&> "${PATH_LOG_ID}"
 
-    # remove .bam, .bambi, etc.
-    
-    if $BOOL_DEL_BAM; then
-        rm "${PATH_OUTPUT}${CUR_ID}"/outs/*.bam*
-    fi
 
     rm "${PATH_OUTPUT}${CUR_ID}"/_*
-    rm -r "${PATH_OUTPUT}${CUR_ID}/SC_RNA_COUNTER_CS"
-    rm "${PATH_OUTPUT}${CUR_ID}/${CUR_ID}.mri.tgz"
+    #rm -r "${PATH_OUTPUT}${CUR_ID}/SC_RNA_COUNTER_CS"
+    #rm "${PATH_OUTPUT}${CUR_ID}/${CUR_ID}.mri.tgz"
 
 done
 
