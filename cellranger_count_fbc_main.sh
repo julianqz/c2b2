@@ -167,16 +167,28 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # --include-introns is true by default
     # --no-bam is false by default
 
-	cellranger count \
-		--id "${CUR_ID}" \
-        --libraries "${PATH_CUR_CSV_LIB}" \
-        --feature-ref "${PATH_CUR_CSV_FR}" \
-        --transcriptome "${PATH_REF}" \
-        --nosecondary \
-        --no-bam "${BOOL_DEL_BAM}" \
-		--localcores "${CR_N}" \
-		--localmem "${CR_M}" \
-		&> "${PATH_LOG_ID}"
+    if ${BOOL_DEL_BAM}; then
+        cellranger count \
+            --id "${CUR_ID}" \
+            --libraries "${PATH_CUR_CSV_LIB}" \
+            --feature-ref "${PATH_CUR_CSV_FR}" \
+            --transcriptome "${PATH_REF}" \
+            --nosecondary \
+            --no-bam \
+            --localcores "${CR_N}" \
+            --localmem "${CR_M}" \
+            &> "${PATH_LOG_ID}"
+    else
+        cellranger count \
+            --id "${CUR_ID}" \
+            --libraries "${PATH_CUR_CSV_LIB}" \
+            --feature-ref "${PATH_CUR_CSV_FR}" \
+            --transcriptome "${PATH_REF}" \
+            --nosecondary \
+            --localcores "${CR_N}" \
+            --localmem "${CR_M}" \
+            &> "${PATH_LOG_ID}"
+    fi
 
 
     rm "${PATH_OUTPUT}${CUR_ID}"/_*
