@@ -111,6 +111,7 @@ PATH_LIST="${PATH_AUX}${NAME_LIST}"
 
 cellranger --version &> "${PATH_LOG}"
 echo "--localcores=${CR_N}; --localmem=${CR_M}" &>> "${PATH_LOG}"
+echo "Whether to remove .bam files: ${BOOL_DEL_BAM}" &>> "${PATH_LOG}"
 echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
 
 N_LINES=$(wc -l < "${PATH_LIST}")
