@@ -51,7 +51,7 @@ while getopts "J:K:T:L:F:R:Y:Z:W:Q:h" OPT; do
     T)  PATH_ROOT=$(realpath $OPTARG)
         PATH_ROOT_SET=true
         ;;
-    L)  BOOL_ONE_FASTQ_DIR=$(realpath $OPTARG)
+    L)  BOOL_ONE_FASTQ_DIR=$OPTARG
         BOOL_ONE_FASTQ_DIR_SET=true
         ;;
     F)  PATH_FASTQ=$(realpath $OPTARG)
