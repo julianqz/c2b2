@@ -193,8 +193,8 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
 
     rm "${PATH_OUTPUT}${CUR_ID}"/_*
-    #rm -r "${PATH_OUTPUT}${CUR_ID}/SC_RNA_COUNTER_CS"
-    #rm "${PATH_OUTPUT}${CUR_ID}/${CUR_ID}.mri.tgz"
+    rm -r "${PATH_OUTPUT}${CUR_ID}/SC_RNA_COUNTER_CS"
+    rm "${PATH_OUTPUT}${CUR_ID}/${CUR_ID}.mri.tgz"
 
 done
 
