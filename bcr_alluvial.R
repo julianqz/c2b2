@@ -236,9 +236,9 @@ prep_for_paired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_id,
                 
                 bool_cl = df_data[[col_df_clone_id]]==cl
                 # a val
-                cur_a_med = median(df_data[[col_df_mf]][bool_cl & db[[col_df_label]]==cur_a])
+                cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
                 # b val
-                cur_b_med = median(df_data[[col_df_mf]][bool_cl & db[[col_df_label]]==cur_b])
+                cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
                 
                 cl_df = data.frame(cbind(clone_id=rep(cl, 2), ident=cur_pair), 
                                    stringsAsFactors=F)
@@ -261,9 +261,9 @@ prep_for_paired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_id,
                 
                 bool_cl = df_data[[col_df_clone_id]]==cl
                 # a val
-                cur_a_med = median(df_data[[col_df_mf]][bool_cl & db[[col_df_label]]==cur_a])
+                cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
                 # b val
-                cur_b_med = median(df_data[[col_df_mf]][bool_cl & db[[col_df_label]]==cur_b])
+                cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
                 
                 return(c(cur_a_med, cur_b_med))
             }, simplify=F))
