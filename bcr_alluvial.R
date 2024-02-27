@@ -164,8 +164,9 @@ prep_for_alluv = function(alluv_cols, df_clone_info, col_df_clone_id,
 
 
 
-#' generate a data.frame for plotting median clonal mutation of labels
-#'
+#' Generate a data.frame for plotting median clonal mutation of PAIRED labels
+#' For clones containing BOTH a_ident and b_ident
+#' 
 #' @params  lst_pairs         A list containing vector(s) of length 2.
 #'                            Eg: `list(c("PB_d28, "GC_d28"), c("PB_d28", "GC_d35"))`
 #' @params  alluv_cols        A vector of sequence labels. 
@@ -305,7 +306,19 @@ prep_for_paired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_id,
 }
 
 
-# TODO: add doc
+
+#' Generate a data.frame for plotting median clonal mutation of UNPAIRED labels
+#' For clones containing only ONE of a_ident and b_ident, but not both
+#' 
+#' Same input arguments and output formats as `prep_for_paired_mf`.
+#' 
+#' The differences in output are that
+#' - In the wide format data.frame, for each clone, one of {a_ident, b_ident}
+#'   is `NA` (since the clone only contains one of them, not both)
+#' - The long format data.frame has the same number of rows (as opposed to double)
+#'   as the wide format data.frame (since each clone only contains one of the two
+#'   idents in lst_pairs, not both)
+#' 
 prep_for_nonpaired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_id,
                                  df_data, col_df_clone_id, col_df_mf, col_df_label) {
     
@@ -346,7 +359,7 @@ prep_for_nonpaired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_i
                 # clone id
                 cur_clones = unlist(alluv_lst_cl_id[cur_row_idx])
                 
-                # long format
+                ### long format
                 cur_dfs_long = do.call(rbind, sapply(cur_clones, function(cl) {
                     
                     bool_cl = df_data[[col_df_clone_id]]==cl
@@ -372,7 +385,7 @@ prep_for_nonpaired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_i
                 cur_lst_long[[cur_ident]] = cur_dfs_long
                 
                 
-                # wide format
+                ### wide format
                 cur_dfs_wide_val = do.call(rbind, sapply(cur_clones, function(cl) {
                     
                     bool_cl = df_data[[col_df_clone_id]]==cl
