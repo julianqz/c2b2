@@ -243,7 +243,8 @@ for (i in 1:nrow(subj_info)) {
             db_light_clust[[opt$colClone]] = db_heavy_clust[[opt$colClone]][idx_cell_wrt_db_heavy_clust] 
             
             # check same columns exist in light as in heavy
-            stopifnot(all.equal( colnames(db_light_clust), colnames(db_heavy_clust) ))
+            stopifnot(all.equal( sort(colnames(db_light_clust)), 
+                                 sort(colnames(db_heavy_clust)) ))
             
             # match order of cells in heavy
             # wrt db_light_clust
@@ -276,7 +277,8 @@ for (i in 1:nrow(subj_info)) {
             db_light_fail = db_light[!bool_pass, ]
             
             # check same columns exist in light as in heavy
-            stopifnot(all.equal( colnames(db_light_fail), colnames(db_heavy_fail) ))
+            stopifnot(all.equal( sort(colnames(db_light_fail)), 
+                                 sort(colnames(db_heavy_fail)) ))
             
             # match order of cells in heavy
             # wrt db_light_fail
