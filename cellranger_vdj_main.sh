@@ -2,7 +2,7 @@
 
 # Author: Julian Q. Zhou
 # https://github.com/julianqz
-# Date:   2021-05-28
+# Date:   2024-02-28
 #
 # Run `cellranger vdj` for a list of BCR or TCR samples
 #
@@ -10,8 +10,12 @@
 # 1) The following must be in ${PROJ_ID}/aux/
 #    - a sample list: "cr_list_${RECEPTOR}_${PROJ_ID}.txt"
 #      each row is semi-colon-separated
-#      [sample];[comma-separated fastq id(s)]
-# 2) Assumes that all fastqs are in one centralized folder
+#
+#      EITHER (if using a centralized fastq dir for all samples)
+#             [sample];[comma-separated fastq id(s)]
+# 
+#      OR     (if using a different fastq dir for each sample)
+#             [sample];[comma-separated fastq id(s)]
 
 
 # Print usage
