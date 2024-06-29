@@ -150,7 +150,7 @@ if (opt$calcWithin) {
         }
         
         nrow_bf = nrow(db)
-        cat("\n", subj, "; nrow(db):", nrow_bf, "\n")
+        cat("\n", subj, "; nrow(db), before:", nrow_bf, "\n")
         
         fn = paste0("dtn", out_suffix, "_", subj, 
                     ifelse(is.null(opt$subsampleWithin), "", 
@@ -198,6 +198,8 @@ if (opt$calcWithin) {
         }
         
         nrow_af = nrow(db)
+        cat("\n", subj, "; nrow(db), after:", nrow_af, "\n")
+        
         # sanity check
         # number of rows should remain the same
         stopifnot( nrow_bf == nrow_af )
