@@ -232,59 +232,66 @@ prep_for_paired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_id,
             # clone id
             cur_clones = unlist(alluv_lst_cl_id[cur_row_idx])
             
-            # long format
-            cur_dfs_long = do.call(rbind, sapply(cur_clones, function(cl) {
+            cur_n_clones = length(cur_clones)
+            stopifnot(cur_n_clones==alluv_df[["count"]][cur_row_idx])
+            
+            if (cur_n_clones>0) {
+                # long format
+                cur_dfs_long = do.call(rbind, sapply(cur_clones, function(cl) {
+                    
+                    bool_cl = df_data[[col_df_clone_id]]==cl
+                    # a val
+                    cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
+                    # b val
+                    cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
+                    
+                    cl_df = data.frame(cbind(clone_id=rep(cl, 2), ident=cur_pair), 
+                                       stringsAsFactors=F)
+                    cl_df = cbind(cl_df, val=c(cur_a_med, cur_b_med))
+                    
+                    return(cl_df)
+                    
+                }, simplify=F))
                 
-                bool_cl = df_data[[col_df_clone_id]]==cl
-                # a val
-                cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
-                # b val
-                cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
+                cur_dfs_long = cbind(facet=cur_facet, cur_dfs_long, stringsAsFactors=F)
+                rownames(cur_dfs_long) = NULL
                 
-                cl_df = data.frame(cbind(clone_id=rep(cl, 2), ident=cur_pair), 
-                                   stringsAsFactors=F)
-                cl_df = cbind(cl_df, val=c(cur_a_med, cur_b_med))
+                # won't hold if db manually restricted to 10x or bulk only
+                stopifnot(!is.na(cur_dfs_long))
                 
-                return(cl_df)
+                lst_pairs_df_long[[i]] = cur_dfs_long
                 
-            }, simplify=F))
-            
-            cur_dfs_long = cbind(facet=cur_facet, cur_dfs_long, stringsAsFactors=F)
-            rownames(cur_dfs_long) = NULL
-            
-            # won't hold if db manually restricted to 10x or bulk only
-            stopifnot(!is.na(cur_dfs_long))
-            
-            lst_pairs_df_long[[i]] = cur_dfs_long
-            
-            # wide format
-            cur_dfs_wide_val = do.call(rbind, sapply(cur_clones, function(cl) {
+                # wide format
+                cur_dfs_wide_val = do.call(rbind, sapply(cur_clones, function(cl) {
+                    
+                    bool_cl = df_data[[col_df_clone_id]]==cl
+                    # a val
+                    cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
+                    # b val
+                    cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
+                    
+                    return(c(cur_a_med, cur_b_med))
+                }, simplify=F))
                 
-                bool_cl = df_data[[col_df_clone_id]]==cl
-                # a val
-                cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
-                # b val
-                cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
+                cur_dfs_wide_cols = c("facet", "clone_id", "a_ident", "b_ident", "a_val", "b_val")
+                cur_dfs_wide = data.frame(matrix(NA, nrow=length(cur_clones),
+                                                 ncol=length(cur_dfs_wide_cols)))
+                colnames(cur_dfs_wide) = cur_dfs_wide_cols
+                cur_dfs_wide[["facet"]] = cur_facet
+                cur_dfs_wide[["clone_id"]] = cur_clones
+                cur_dfs_wide[["a_ident"]] = cur_a
+                cur_dfs_wide[["b_ident"]] = cur_b
+                cur_dfs_wide[["a_val"]] = cur_dfs_wide_val[, 1]
+                cur_dfs_wide[["b_val"]] = cur_dfs_wide_val[, 2]
+                rownames(cur_dfs_wide) = NULL
                 
-                return(c(cur_a_med, cur_b_med))
-            }, simplify=F))
-            
-            cur_dfs_wide_cols = c("facet", "clone_id", "a_ident", "b_ident", "a_val", "b_val")
-            cur_dfs_wide = data.frame(matrix(NA, nrow=length(cur_clones),
-                                             ncol=length(cur_dfs_wide_cols)))
-            colnames(cur_dfs_wide) = cur_dfs_wide_cols
-            cur_dfs_wide[["facet"]] = cur_facet
-            cur_dfs_wide[["clone_id"]] = cur_clones
-            cur_dfs_wide[["a_ident"]] = cur_a
-            cur_dfs_wide[["b_ident"]] = cur_b
-            cur_dfs_wide[["a_val"]] = cur_dfs_wide_val[, 1]
-            cur_dfs_wide[["b_val"]] = cur_dfs_wide_val[, 2]
-            rownames(cur_dfs_wide) = NULL
-            
-            lst_pairs_df_wide[[i]] = cur_dfs_wide
-            
+                lst_pairs_df_wide[[i]] = cur_dfs_wide
+            } else {
+                cat("no clone containing both", cur_a, "and", cur_b, "; skipped.\n")
+            }
+
         } else {
-            cat("no clone containing both", cur_a, "and", cur_b, "; skipped.\n")
+            stop("Unexpected error.")
         }
     }
     
@@ -359,82 +366,90 @@ prep_for_nonpaired_mf = function(lst_pairs, alluv_cols, alluv_df, alluv_lst_cl_i
                 # clone id
                 cur_clones = unlist(alluv_lst_cl_id[cur_row_idx])
                 
-                ### long format
-                cur_dfs_long = do.call(rbind, sapply(cur_clones, function(cl) {
-                    
-                    bool_cl = df_data[[col_df_clone_id]]==cl
-                    # val
-                    cur_ident_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_ident])
-                    
-                    cl_df = data.frame(cbind(clone_id=cl, ident=cur_ident), 
-                                       stringsAsFactors=F)
-                    cl_df = cbind(cl_df, val=cur_ident_med)
-                    
-                    return(cl_df)
-                    
-                }, simplify=F))
+                cur_n_clones = length(cur_clones)
+                stopifnot(cur_n_clones==alluv_df[["count"]][cur_row_idx])
                 
-                stopifnot(nrow(cur_dfs_long)==length(cur_clones))
-                
-                cur_dfs_long = cbind(facet=cur_facet, cur_dfs_long, stringsAsFactors=F)
-                rownames(cur_dfs_long) = NULL
-                
-                # won't hold if db manually restricted to 10x or bulk only
-                stopifnot(!is.na(cur_dfs_long))
-                
-                cur_lst_long[[cur_ident]] = cur_dfs_long
-                
-                
-                ### wide format
-                cur_dfs_wide_val = do.call(rbind, sapply(cur_clones, function(cl) {
-                    
-                    bool_cl = df_data[[col_df_clone_id]]==cl
-                    
-                    if (cur_ident==cur_a) {
-                        # expect there to be no cur_b 
-                        stopifnot( sum(bool_cl & df_data[[col_df_label]]==cur_b)==0 )
+                if (cur_n_clones>0) {
+                    ### long format
+                    cur_dfs_long = do.call(rbind, sapply(cur_clones, function(cl) {
                         
-                        # a val
-                        cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
-                        cur_b_med = NA
+                        bool_cl = df_data[[col_df_clone_id]]==cl
+                        # val
+                        cur_ident_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_ident])
                         
-                    } else {
-                        # expect there to be no cur_a 
-                        stopifnot( sum(bool_cl & df_data[[col_df_label]]==cur_a)==0 )
+                        cl_df = data.frame(cbind(clone_id=cl, ident=cur_ident), 
+                                           stringsAsFactors=F)
+                        cl_df = cbind(cl_df, val=cur_ident_med)
                         
-                        # b val
-                        cur_a_med = NA
-                        cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
-                    }
+                        return(cl_df)
+                        
+                    }, simplify=F))
                     
-                    return(c(cur_a_med, cur_b_med))
-                }, simplify=F))
+                    stopifnot(nrow(cur_dfs_long)==length(cur_clones))
+                    
+                    cur_dfs_long = cbind(facet=cur_facet, cur_dfs_long, stringsAsFactors=F)
+                    rownames(cur_dfs_long) = NULL
+                    
+                    # won't hold if db manually restricted to 10x or bulk only
+                    stopifnot(!is.na(cur_dfs_long))
+                    
+                    cur_lst_long[[cur_ident]] = cur_dfs_long
+                    
+                    
+                    ### wide format
+                    cur_dfs_wide_val = do.call(rbind, sapply(cur_clones, function(cl) {
+                        
+                        bool_cl = df_data[[col_df_clone_id]]==cl
+                        
+                        if (cur_ident==cur_a) {
+                            # expect there to be no cur_b 
+                            stopifnot( sum(bool_cl & df_data[[col_df_label]]==cur_b)==0 )
+                            
+                            # a val
+                            cur_a_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_a])
+                            cur_b_med = NA
+                            
+                        } else {
+                            # expect there to be no cur_a 
+                            stopifnot( sum(bool_cl & df_data[[col_df_label]]==cur_a)==0 )
+                            
+                            # b val
+                            cur_a_med = NA
+                            cur_b_med = median(df_data[[col_df_mf]][bool_cl & df_data[[col_df_label]]==cur_b])
+                        }
+                        
+                        return(c(cur_a_med, cur_b_med))
+                    }, simplify=F))
+                    
+                    cur_dfs_wide_cols = c("facet", "clone_id", "a_ident", "b_ident", "a_val", "b_val")
+                    cur_dfs_wide = data.frame(matrix(NA, nrow=length(cur_clones),
+                                                     ncol=length(cur_dfs_wide_cols)))
+                    colnames(cur_dfs_wide) = cur_dfs_wide_cols
+                    cur_dfs_wide[["facet"]] = cur_facet
+                    cur_dfs_wide[["clone_id"]] = cur_clones
+                    cur_dfs_wide[["a_ident"]] = cur_a
+                    cur_dfs_wide[["b_ident"]] = cur_b
+                    cur_dfs_wide[["a_val"]] = cur_dfs_wide_val[, 1]
+                    cur_dfs_wide[["b_val"]] = cur_dfs_wide_val[, 2]
+                    rownames(cur_dfs_wide) = NULL
+                    
+                    cur_lst_wide[[cur_ident]] = cur_dfs_wide
+                    
+                    # sanity check
+                    # dimension
+                    stopifnot(nrow(cur_dfs_long)==nrow(cur_dfs_wide))
+                    # clone identities
+                    stopifnot(all.equal( sort(cur_dfs_long[[col_df_clone_id]]),
+                                         sort(cur_dfs_wide[[col_df_clone_id]]) ))
+                    # mf associated w each clone
+                    stopifnot(all.equal( cur_dfs_long[["val"]][order(cur_dfs_long[[col_df_clone_id]])],
+                                         cur_dfs_wide[[ifelse(cur_ident==cur_a, "a_val", "b_val")]][order(cur_dfs_wide[[col_df_clone_id]])] ))
+                } else {
+                    cat("no clone containing only", cur_ident, "; skipped.\n")
+                }
                 
-                cur_dfs_wide_cols = c("facet", "clone_id", "a_ident", "b_ident", "a_val", "b_val")
-                cur_dfs_wide = data.frame(matrix(NA, nrow=length(cur_clones),
-                                                 ncol=length(cur_dfs_wide_cols)))
-                colnames(cur_dfs_wide) = cur_dfs_wide_cols
-                cur_dfs_wide[["facet"]] = cur_facet
-                cur_dfs_wide[["clone_id"]] = cur_clones
-                cur_dfs_wide[["a_ident"]] = cur_a
-                cur_dfs_wide[["b_ident"]] = cur_b
-                cur_dfs_wide[["a_val"]] = cur_dfs_wide_val[, 1]
-                cur_dfs_wide[["b_val"]] = cur_dfs_wide_val[, 2]
-                rownames(cur_dfs_wide) = NULL
-                
-                cur_lst_wide[[cur_ident]] = cur_dfs_wide
-                
-                # sanity check
-                # dimension
-                stopifnot(nrow(cur_dfs_long)==nrow(cur_dfs_wide))
-                # clone identities
-                stopifnot(all.equal( sort(cur_dfs_long[[col_df_clone_id]]),
-                                     sort(cur_dfs_wide[[col_df_clone_id]]) ))
-                # mf associated w each clone
-                stopifnot(all.equal( cur_dfs_long[["val"]][order(cur_dfs_long[[col_df_clone_id]])],
-                                     cur_dfs_wide[[ifelse(cur_ident==cur_a, "a_val", "b_val")]][order(cur_dfs_wide[[col_df_clone_id]])] ))
             } else {
-                cat("no clone containing only", cur_ident, "; skipped.\n")
+                stop("Unexpected error.")
             }
         }
         
