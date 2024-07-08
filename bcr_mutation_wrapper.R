@@ -20,6 +20,8 @@ option_list = list(
                 help="Path to working directory where outputs will be saved."),
     make_option("--nproc", action="store", default=1, type="numeric", 
                 help="nproc for foreach."),
+    make_option("--inputFileFormat", action="store", default="RData", 
+                type="character", help="Input file type. Either RData or tsv."),
     make_option("--saveAsTSV", action="store", default=FALSE, 
                 type="logical", 
                 help="Whether to also save as TSV. Default is to only save as RData."),
@@ -63,6 +65,10 @@ stopifnot( all( paste0("path_db_", run_mode) %in% colnames(subj_info) ) )
 nproc = opt$nproc
 col_obsv = opt$colObsv
 col_germ = opt$colGerm
+input_file_format = opt$inputFileFormat
+
+# either "RData" or "tsv"
+stopifnot(input_file_format %in% c("RData", "tsv"))
 
 # allowed combinations:
 # - useFull TRUE,  segmentLimits NULL
@@ -144,8 +150,14 @@ for (i in 1:nrow(subj_info)) {
         # db
         cur_col_db = paste0("path_db_", cur_run_mode)
         cur_fn_db = subj_info[[cur_col_db]][i]
+        
         cat(" - loading", cur_fn_db, "\n")
-        load(cur_fn_db)
+        if (input_file_format=="RData") {
+            load(cur_fn_db)
+        } else if (input_file_format=="tsv") {
+            db = read.table(cur_fn_db, header=T, sep="\t", stringsAsFactors=F)
+        }
+        
         
         # holder
         lst_add = vector(mode="list", length=length(lst_limits))
