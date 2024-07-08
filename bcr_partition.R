@@ -217,7 +217,8 @@ if (opt$calcBetween) {
             cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ,
                           opt$colCell, opt$colLocus)
         } else {
-            cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ)
+            cols_keep = c(opt$colSeqID, opt$colSeq, opt$colV, opt$colJ,
+                          opt$colLocus)
         }
         
         for (i in 1:nrow(subj_info)) {
