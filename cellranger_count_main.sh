@@ -161,6 +161,8 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # --create-bam true
     # --include-introns true
 
+    # v8.0.0 replaced --no-bam with --create-bam; required
+    
     if $BOOL_NUM_EXP_CELLS_SET; then
 
         cellranger count \
@@ -171,6 +173,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             --nosecondary \
             --localcores "${CR_N}" \
             --localmem "${CR_M}" \
+            --create-bam "${BOOL_DEL_BAM}" \
             --expect-cells "${NUM_EXP_CELLS}" \
             &> "${PATH_LOG_ID}"
 
@@ -184,15 +187,16 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             --nosecondary \
             --localcores "${CR_N}" \
             --localmem "${CR_M}" \
+            --create-bam "${BOOL_DEL_BAM}" \
             &> "${PATH_LOG_ID}"
 
     fi
 
     # remove .bam, .bambi, etc.
     
-    if $BOOL_DEL_BAM; then
-        rm "${PATH_OUTPUT}${CUR_ID}"/outs/*.bam*
-    fi
+    #if $BOOL_DEL_BAM; then
+    #    rm "${PATH_OUTPUT}${CUR_ID}"/outs/*.bam*
+    #fi
 
     rm "${PATH_OUTPUT}${CUR_ID}"/_*
     rm -r "${PATH_OUTPUT}${CUR_ID}/SC_RNA_COUNTER_CS"
