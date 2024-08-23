@@ -100,6 +100,9 @@ echo "Config csv: ${NAME_CSV}" &>> "${PATH_LOG}"
 
 cd "${PATH_OUTPUT}"
 
+# default
+# --normalize mapped
+
 cellranger aggr \
 	--id "${AGGR_ID}" \
 	--csv "${PATH_CSV}" \
