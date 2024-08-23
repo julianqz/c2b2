@@ -24,7 +24,8 @@ usage () {
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
     echo -e "  -Z  Amount of memory for cellranger."
-    echo -e "  -W  Delete .bam* files. Default is true."   
+    echo -e "  -W  Delete .bam* files. Default is true."
+    echo -e "  -U  Input for --expect-cells. Optional."   
     echo -e "  -h  This message."
 }
 
@@ -35,7 +36,7 @@ PATH_REF_SET=false
 BOOL_DEL_BAM_SET=false
 
 # Get commandline arguments
-while getopts "J:T:F:R:Y:Z:W:h" OPT; do
+while getopts "J:T:F:R:Y:Z:W:U:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID=$OPTARG
         PROJ_ID_SET=true
@@ -56,6 +57,8 @@ while getopts "J:T:F:R:Y:Z:W:h" OPT; do
     W)  BOOL_DEL_BAM=$OPTARG
         BOOL_DEL_BAM_SET=true
         ;;
+    U)  NUM_EXP_CELLS=$OPTARG
+        BOOL_NUM_EXP_CELLS_SET=true
     h)  usage
         exit
         ;;
@@ -124,6 +127,10 @@ echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
 N_LINES=$(wc -l < "${PATH_LIST}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
 
+if $BOOL_NUM_EXP_CELLS_SET; then
+    echo "--expect-cells: ${NUM_EXP_CELLS}" &>> "${PATH_LOG}"
+fi
+
 
 cd "${PATH_OUTPUT}"
 
@@ -149,16 +156,36 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 	# sample-specific log
 	PATH_LOG_ID="${PATH_AUX}log_cr_count_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
 
+    # default
+    # --create-bam true
+    # --include-introns true
 
-	cellranger count \
-		--id "${CUR_ID}" \
-		--fastqs "${PATH_FASTQ}" \
-        --sample "${CUR_FASTQ_IDS}" \
-        --transcriptome "${PATH_REF}" \
-        --nosecondary \
-		--localcores "${CR_N}" \
-		--localmem "${CR_M}" \
-		&> "${PATH_LOG_ID}"
+    if $BOOL_NUM_EXP_CELLS_SET; then
+
+        cellranger count \
+            --id "${CUR_ID}" \
+            --fastqs "${PATH_FASTQ}" \
+            --sample "${CUR_FASTQ_IDS}" \
+            --transcriptome "${PATH_REF}" \
+            --nosecondary \
+            --localcores "${CR_N}" \
+            --localmem "${CR_M}" \
+            --expect-cells "${NUM_EXP_CELLS}" \
+            &> "${PATH_LOG_ID}"
+
+    else
+
+        cellranger count \
+            --id "${CUR_ID}" \
+            --fastqs "${PATH_FASTQ}" \
+            --sample "${CUR_FASTQ_IDS}" \
+            --transcriptome "${PATH_REF}" \
+            --nosecondary \
+            --localcores "${CR_N}" \
+            --localmem "${CR_M}" \
+            &> "${PATH_LOG_ID}"
+            
+    fi
 
     # remove .bam, .bambi, etc.
     
