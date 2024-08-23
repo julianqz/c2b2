@@ -59,6 +59,7 @@ while getopts "J:T:F:R:Y:Z:W:U:h" OPT; do
         ;;
     U)  NUM_EXP_CELLS=$OPTARG
         BOOL_NUM_EXP_CELLS_SET=true
+        ;;
     h)  usage
         exit
         ;;
@@ -184,7 +185,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             --localcores "${CR_N}" \
             --localmem "${CR_M}" \
             &> "${PATH_LOG_ID}"
-            
+
     fi
 
     # remove .bam, .bambi, etc.
