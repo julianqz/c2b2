@@ -97,9 +97,10 @@ if ! $PATH_REF_SET; then
     exit 1
 fi
 
-# Set BOOL_DEL_BAM to true if no -W specified
+# Set BOOL_DEL_BAM to false if no -W specified
+# i.e. default is to NOT delete bam <=> --create-bam true
 if ! $BOOL_DEL_BAM_SET; then
-    BOOL_DEL_BAM=true
+    BOOL_DEL_BAM=false
 fi
 
 # silly, but works for legacy code
@@ -135,6 +136,8 @@ echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
 
 N_LINES=$(wc -l < "${PATH_LIST}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
+
+echo "--create-bam: ${BOOL_CREATE_BAM}" &>> "${PATH_LOG}"
 
 if $BOOL_NUM_EXP_CELLS_SET; then
     echo "--expect-cells: ${NUM_EXP_CELLS}" &>> "${PATH_LOG}"
