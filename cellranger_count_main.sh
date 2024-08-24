@@ -101,6 +101,13 @@ if ! $BOOL_DEL_BAM_SET; then
     BOOL_DEL_BAM=true
 fi
 
+# silly, but works for legacy code
+if $BOOL_DEL_BAM; then
+    BOOL_CREATE_BAM=false
+else
+    BOOL_CREATE_BAM=true
+fi
+
 # paths
 
 PATH_PROJ="${PATH_ROOT}/${PROJ_ID}"
@@ -173,7 +180,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             --nosecondary \
             --localcores "${CR_N}" \
             --localmem "${CR_M}" \
-            --create-bam "${BOOL_DEL_BAM}" \
+            --create-bam "${BOOL_CREATE_BAM}" \
             --expect-cells "${NUM_EXP_CELLS}" \
             &> "${PATH_LOG_ID}"
 
@@ -187,7 +194,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             --nosecondary \
             --localcores "${CR_N}" \
             --localmem "${CR_M}" \
-            --create-bam "${BOOL_DEL_BAM}" \
+            --create-bam "${BOOL_CREATE_BAM}" \
             &> "${PATH_LOG_ID}"
 
     fi
