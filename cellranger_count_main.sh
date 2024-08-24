@@ -34,6 +34,7 @@ PATH_ROOT_SET=false
 PATH_FASTQ_SET=false
 PATH_REF_SET=false
 BOOL_DEL_BAM_SET=false
+BOOL_NUM_EXP_CELLS_SET=false
 
 # Get commandline arguments
 while getopts "J:T:F:R:Y:Z:W:U:h" OPT; do
