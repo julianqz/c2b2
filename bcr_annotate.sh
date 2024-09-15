@@ -253,6 +253,7 @@ echo "BOOL_QC: ${BOOL_QC}" &>> "${PATH_LOG}"
 echo "BOOL_SP: ${BOOL_SP}" &>> "${PATH_LOG}"
 
 echo "${IG_ORGANISM}" &>> "${PATH_LOG}"
+echo "${PATH_REFS}" &>> "${PATH_LOG}"
 
 N_LINES=$(wc -l < "${PATH_CSV}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
@@ -332,6 +333,11 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         PATH_IG_DB_J="${PATH_IGDATA}/database/${IG_JDB}"
         PATH_IG_DB_C="${PATH_IGDATA}/database/${IG_CDB}"
 
+        echo "PATH_IG_AUX: ${PATH_IG_AUX}" &>> "${PATH_LOG_ID}"
+        echo "PATH_IG_DB_V: ${PATH_IG_DB_V}" &>> "${PATH_LOG_ID}"
+        echo "PATH_IG_DB_D: ${PATH_IG_DB_D}" &>> "${PATH_LOG_ID}"
+        echo "PATH_IG_DB_J: ${PATH_IG_DB_J}" &>> "${PATH_LOG_ID}"
+        echo "PATH_IG_DB_C: ${PATH_IG_DB_C}" &>> "${PATH_LOG_ID}"
 
         # output: [outname]_igblast.fmt7
 
