@@ -805,29 +805,45 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
         if (seq_level & sequential) {
             cat("\nPerforming seq-level and cell-level QCs sequentially\n")
             
-            db = db[bool_seq, ]
+            # wrt db
+            idx_use_for_cell_qc = which(bool_seq)
             
-            if (nrow(db)==0) {
+            if (length(idx_use_for_cell_qc)==0) {
                 stop("No data left after sequence-level QC. Halted before cell-level QC.")
             }
             
-        } 
+        } else {
+            # use all
+            idx_use_for_cell_qc = 1:nrow(db)
+        }
         
-        # - If seq_level & sequential, bool_cell length could be shorter than 
-        #   bool_seq, because db nrow could have changed by subsetting by bool_seq
+        # - If seq_level & sequential, bool_cell_intermediate's length could be shorter than 
+        #   bool_seq, because db[idx_use_for_cell_qc, ] nrow could have changed due to
+        #   subsetting by idx_use_for_cell_qc
+    
+        # - Otherwise, bool_cell_intermediate length should be the same as bool_seq,
+        #   because db[idx_use_for_cell_qc, ] nrow would have stayed unchanged due to
+        #   idx_use_for_cell_qc being 1 through nrow(db)
         
-        # - Otherwise, bool_cell length should be the same as bool_seq,
-        #   because db nrow would have stayed unchanged
-        
-        bool_cell = perform_qc_cell(db, chain_type,
-                                    col_locus, col_cell, col_umi,
-                                    check_locus, col_v_call,
-                                    check_num_HL, logic_num_HL)
+        # wrt db[idx_use_for_cell_qc, ]
+        bool_cell_intermediate = perform_qc_cell(db[idx_use_for_cell_qc, ], chain_type,
+                                                 col_locus, col_cell, col_umi,
+                                                 check_locus, col_v_call,
+                                                 check_num_HL, logic_num_HL)
+
+        # map back to full db
+        # any seq not included in idx_use_for_cell_qc will be FALSE
+        # this ensures db, bool_seq, and bool_cell all have the same length/nrow
+
+        bool_cell = rep(F, nrow(db))
+        bool_cell[idx_use_for_cell_qc] = bool_cell_intermediate
 
     } else {
          bool_cell = rep(T, nrow(db))
     }
     
+    stopifnot(length(bool_seq)==length(bool_cell))
+
     # cases
     # seq_level  cell_level
     # F          F
@@ -842,6 +858,8 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
         # all other cases
         bool_final = bool_seq & bool_cell
     }
+
+    stopifnot(length(bool_final)==nrow(db))
     
     setwd(outdir)
     
