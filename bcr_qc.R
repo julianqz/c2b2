@@ -905,7 +905,10 @@ split_db = function(db_name, col_v_call, col_prod, val_prod, outname, outdir) {
     
     db = read.table(db_name, header=T, sep="\t", stringsAsFactors=F)
     
-    bool_heavy = tolower(substr(db[[col_v_call]], 1, 3))=="igh"
+    #bool_heavy = tolower(substr(db[[col_v_call]], 1, 3))=="igh"
+    # to work with IMGT High/V-QUEST output which adds species name in front of V gene annotation
+    bool_heavy = grepl(pattern="igh", x=db[[col_v_call]])
+
     bool_pr = db[[col_prod]]==val_prod
     
     db_heavy_pr = db[bool_heavy & bool_pr, ]
