@@ -201,12 +201,17 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
     cat("\nPerforming sequence-level QC on", nseqs, "sequences\n")
     
     if (check_valid_vj) {
-        # IG[HKL][VDJ]... or TR[ABDG][VDJ]...
-        pattern_valid = paste0("^", chain_type)
+        # IgBLAST V/D/J calls: IG[HKL][VDJ]... or TR[ABDG][VDJ]...
+        pattern_valid_1 = paste0("^", chain_type)
+
+        # IMGT High/V-QUEST calls: "Musmus IGHV1-81*01 F"
+        # space before IG/TR
+        # \s: space
+        pattern_valid_2 = paste0("\\s", chain_type)
         
         # TRUE means valid 
-        bool_valid_v = grepl(pattern=pattern_valid, x=db[[col_v_call]])
-        bool_valid_j = grepl(pattern=pattern_valid, x=db[[col_j_call]])
+        bool_valid_v = grepl(pattern=pattern_valid_1, x=db[[col_v_call]]) | grepl(pattern=pattern_valid_2, x=db[[col_v_call]])
+        bool_valid_j = grepl(pattern=pattern_valid_1, x=db[[col_j_call]]) | grepl(pattern=pattern_valid_2, x=db[[col_j_call]])
         
         # missing V
         table(db[[col_v_call]][!bool_valid_v], useNA="ifany")
