@@ -936,3 +936,114 @@ prep_3_prime_spacer_mm_lambda = function(vdj_obsv, full_seq, cdr3) {
 }
 
 
+# `ambiguous=TRUE` translates degeneracy-based ambiguous bases (instead of "X")
+#   e.g. GGN -> G (Gly, encoded by GG[ATGC])
+#        GAN -> X (GA[TC] -> D; GA[AG] -> E)
+
+# in-frame triplet "..." is turned into "." (instead of "X")
+# in-frame triplet "---" is turned into "-" (instead of "X")
+# any other triplet containing one or more of "." and/or "-" is turned into "X"
+# triplet containing no "." or "-" is translated per seqinr::translate
+
+# sequence input with length less than 3 is returned as NA
+# NA is returned as NA
+
+# helper function to translate a single triplet
+translate_triplet = function(triplet, ambiguous) {
+    if (triplet=="...") {
+        return(".")
+    } else if (triplet=="---") {
+        return("-")
+    } else if (grepl(pattern="[-.]", x=triplet)) {
+        return("X")
+    } else {
+        return(seqinr::translate(seq=s2c(triplet), 
+                                 numcode=1, NAstring="X",
+                                 ambiguous=ambiguous))
+    }
+}
+
+translate_one_seq = function(sequence, ambiguous=TRUE) {
+    
+    if (is.na(sequence)) {
+        return(NA)
+    } else {
+        stopifnot(is.character(sequence))
+        
+        nchar_seq = stri_length(sequence)
+        
+        if (nchar_seq >= 3) {
+            # trim to length being a multiple of 3
+            nchar_init_mod3 = nchar_seq %% 3
+            
+            if (nchar_init_mod3 != 0) {
+                sequence = substr(sequence, 1, nchar_seq-nchar_init_mod3)
+                # recalculate length
+                nchar_seq = stri_length(sequence)
+            }
+            
+            # split into triplets
+            vec_triplet_start_index = seq(from=1, to=nchar_seq, by=3)
+            vec_triplet = stri_sub(str=sequence, 
+                                   from=vec_triplet_start_index, 
+                                   to=(vec_triplet_start_index+2))
+            
+            # translate multiple triplets
+            vec_triplet_trans = sapply(vec_triplet, translate_triplet, 
+                                       ambiguous=ambiguous,
+                                       USE.NAMES=F)
+            # concat
+            str_trans = stri_join(vec_triplet_trans, collapse="")
+            
+            return(str_trans)
+            
+        } else {
+            # input length <3
+            return(NA)
+        }
+    }
+}
+
+# translate_one_seq(NA)       # NA
+# translate_one_seq("A")      # NA
+# translate_one_seq("AA")     # NA
+# translate_one_seq("AAA")    # K
+# translate_one_seq("AAAA")   # K (trimmed)
+# translate_one_seq("AAAAA")  # K (trimmed)
+# translate_one_seq("AAAAAA") # KK
+# translate_one_seq("AAA...") # K.
+# translate_one_seq("AAA..A") # KX
+# translate_one_seq("AAA..-") # KX
+# translate_one_seq("AAA.A-") # KX
+# translate_one_seq("AAA---") # K-
+# translate_one_seq("AAAA--") # KX
+# translate_one_seq("GGNGGN") # GG
+# translate_one_seq("GGNGAN") # GX
+
+# run translate_one_seq for a vector of nucleotide sequences
+translate_dna = function(vec_sequence, ambiguous=TRUE) {
+    require(seqinr)
+    require(stringi)
+    
+    vec_trans = sapply(vec_sequence, translate_one_seq, ambiguous=ambiguous,
+                       USE.NAMES=F)
+    return(vec_trans)
+}
+
+
+# translate_dna(vec_sequence=c(NA,       # NA
+#                              "A",      # NA
+#                              "AA",     # NA
+#                              "AAA",    # K
+#                              "AAAA",   # K (trimmed)
+#                              "AAAAA",  # K (trimmed)
+#                              "AAAAAA", # KK
+#                              "AAA...", # K.
+#                              "AAA..A", # KX
+#                              "AAA..-", # KX
+#                              "AAA.A-", # KX
+#                              "AAA---", # K-
+#                              "AAAA--", # KX
+#                              "GGNGGN", # GG
+#                              "GGNGAN"),# GX
+#               ambiguous=T)
