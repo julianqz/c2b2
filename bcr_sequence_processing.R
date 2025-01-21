@@ -950,6 +950,8 @@ prep_3_prime_spacer_mm_lambda = function(vdj_obsv, full_seq, cdr3) {
 
 # helper function to translate a single triplet
 translate_triplet = function(triplet, ambiguous) {
+    require(seqinr)
+    
     if (triplet=="...") {
         return(".")
     } else if (triplet=="---") {
@@ -964,6 +966,7 @@ translate_triplet = function(triplet, ambiguous) {
 }
 
 translate_one_seq = function(sequence, ambiguous=TRUE) {
+    require(stringi)
     
     if (is.na(sequence)) {
         return(NA)
@@ -1047,3 +1050,42 @@ translate_dna = function(vec_sequence, ambiguous=TRUE) {
 #                              "GGNGGN", # GG
 #                              "GGNGAN"),# GX
 #               ambiguous=T)
+
+
+# calculate all three possible reading frames
+# Input
+# - nt_seq: nucleotide sequence; a string
+# - frames: an integer vector; values can be one or more of {1,2,3}
+# Output
+# A data.frame, with rows corresponding a frame
+
+get_frames = function(nt_seq, frames=c(1:3)) {
+    stopifnot(length(frames)>0 & 
+                  length(frames)<=3 & 
+                  all(frames %in% 1:3))
+    
+    nt_seq_len = nchar(nt_seq)
+    
+    df_cols = c("frame", "seq")
+    df = data.frame(matrix(NA, nrow=length(frames), ncol=length(df_cols)))
+    colnames(df) = df_cols
+    
+    df[["frame"]] = frames
+    df[["seq"]] = sapply(frames, 
+                         function(fr) {
+                             if (fr<=nt_seq_len) {
+                                 return(substring(nt_seq, first=fr))
+                             } else {
+                                 return(NA)
+                             }
+                         },
+                         simplify=T, USE.NAMES=F)
+    return(df)
+}
+
+get_frames("A", frames=c(1:3)) # expect NA for frames 2:3
+get_frames("AT", frames=c(1:3)) # expect NA for frame 3
+get_frames("ATG", frames=c(1:3)) 
+get_frames("ATGC", frames=c(1:3)) 
+get_frames("ATGC", frames=c(1)) 
+get_frames("ATGC", frames=c(1:4)) # expects error

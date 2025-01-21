@@ -131,13 +131,61 @@ vioplot_2 = function (x, ..., range = 1.5, h = NULL, ylim = NULL, names = NULL,
                    q1 = q1, q3 = q3))
 }
 
-# vecLst: a list of vectors (names of list entries go into x axis)
-# yHoriz: numeric value for horizontal dashed line
-# xLas: 2 = vertical, 1=horizontal
-# yLas: 3 = vertical, 2=horizontal
 
-# useBoxplot: use boxplot instead of violin plot
-# showPoints: show raw points (not recommended to use with useBoxplot=T if there're lots of points)
+#' Violin or box plot with n's printed at the top
+#' 
+#' @param  vecLst              A list of vectors.
+#' @param  vioYmax             ?
+#' @param  vioYmin             ?
+#' @param  xLas                Orientation of x-axis labels. 
+#'                             `2`: vertical (default); `1`: horizontal.
+#' @param  yLas                Orientation of y-axis labels.
+#'                             `3`: vertical (default); `2`: horizontal.
+#' @param  xNames              ?
+#' @param  xTick               ?
+#' @param  xlab                ?
+#' @param  ylab                ? 
+#' @param  title               ?
+#' @param  countCex            ?
+#' @param  xaxisCex            ?
+#' @param  yaxisCex            ?
+#' @param  mainCex             ?
+#' @param  yHoriz              A numeric value specifying the height of a 
+#'                             horizontal dashed line to be drawn. Optional.
+#'                             Defaults to `NULL` (no line).
+#' @param  yHorizCol           Color of horizontal dashed line to be drawn.
+#'                             Defaults to `firebrick2`. Ignored if `yHoriz` is
+#'                             `NULL`.
+#' @param  vioBkgCol           ?
+#' @param  vioMedCol           ?
+#' @param  vioRecCol           ?
+#' @param  vioMedPch           ?
+#' @param  vioMedStyle         ?
+#' @param  vioBoxWidth         ? 
+#' @param  vioWhiskerCol       ?
+#' @param  boxBkgCol           ?
+#' @param  boxLwd              ?
+#' @param  useBoxplot          Boolean. Whether to use `boxplot` instead of 
+#'                             `vioplot_2`. Defaults to `FALSE`.
+#' @param  showPoints          Boolean. Whether to show raw points. Defaults to 
+#'                             `FALSE`. Not recommended to use with `useBoxplot=TRUE` 
+#'                             if there are lots of points.
+#' @param  pointsPch           A vector matching the length of ``
+#' @param  pointsCol           ?
+#' @param  pointsCex           ?
+#' @param  pointsJitterAmount  ?
+#' @param  pointsJitterBool    ?
+#' 
+#' @return 
+#' 
+#' @details 
+#' 
+
+
+
+
+
+
 # configs for showPoints=T:
 # - pointsPch: VECTORS matching length of vecLst
 # - pointsCol: VECTORS matching length of vecLst (recommen using transparency via scales::alpha)
