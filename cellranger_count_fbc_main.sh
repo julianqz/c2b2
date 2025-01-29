@@ -26,7 +26,7 @@ usage () {
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
     echo -e "  -Z  Amount of memory for cellranger."
-    echo -e "  -W  Delete .bam* files. Default is true."   
+    echo -e "  -W  Delete .bam* files. Default is false."   
     echo -e "  -h  This message."
 }
 
@@ -85,8 +85,16 @@ if ! $PATH_REF_SET; then
 fi
 
 # Set BOOL_DEL_BAM to true if no -W specified
+# i.e. default is to NOT delete bam <=> --create-bam true
 if ! $BOOL_DEL_BAM_SET; then
-    BOOL_DEL_BAM=true
+    BOOL_DEL_BAM=false
+fi
+
+# silly, but works for legacy code
+if $BOOL_DEL_BAM; then
+    BOOL_CREATE_BAM=false
+else
+    BOOL_CREATE_BAM=true
 fi
 
 # paths
@@ -117,6 +125,7 @@ echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
 N_LINES=$(wc -l < "${PATH_LIST}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
 
+echo "--create-bam: ${BOOL_CREATE_BAM}" &>> "${PATH_LOG}"
 
 cd "${PATH_OUTPUT}"
 
@@ -166,31 +175,22 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # https://www.10xgenomics.com/support/software/cell-ranger/latest/analysis/running-pipelines/cr-feature-bc-analysis#libraries-csv
 
     # --include-introns is true by default
-    # --no-bam is false by default
-
-    if ${BOOL_DEL_BAM}; then
-        cellranger count \
-            --id "${CUR_ID}" \
-            --libraries "${PATH_CUR_CSV_LIB}" \
-            --feature-ref "${PATH_CUR_CSV_FR}" \
-            --transcriptome "${PATH_REF}" \
-            --nosecondary \
-            --no-bam \
-            --localcores "${CR_N}" \
-            --localmem "${CR_M}" \
-            &> "${PATH_LOG_ID}"
-    else
-        cellranger count \
-            --id "${CUR_ID}" \
-            --libraries "${PATH_CUR_CSV_LIB}" \
-            --feature-ref "${PATH_CUR_CSV_FR}" \
-            --transcriptome "${PATH_REF}" \
-            --nosecondary \
-            --localcores "${CR_N}" \
-            --localmem "${CR_M}" \
-            &> "${PATH_LOG_ID}"
-    fi
-
+    
+    # --no-bam is false by default [outdated]
+    # v8.0.0 replaced --no-bam with --create-bam; required
+    # default of --create-bam is true
+    
+    cellranger count \
+        --id "${CUR_ID}" \
+        --libraries "${PATH_CUR_CSV_LIB}" \
+        --feature-ref "${PATH_CUR_CSV_FR}" \
+        --transcriptome "${PATH_REF}" \
+        --nosecondary \
+        --create-bam "${BOOL_CREATE_BAM}" \
+        --localcores "${CR_N}" \
+        --localmem "${CR_M}" \
+        &> "${PATH_LOG_ID}"
+    
 
     rm "${PATH_OUTPUT}${CUR_ID}"/_*
     rm -r "${PATH_OUTPUT}${CUR_ID}/SC_RNA_COUNTER_CS"
