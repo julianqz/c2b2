@@ -24,7 +24,7 @@ usage () {
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
     echo -e "  -Z  Amount of memory for cellranger."
-    echo -e "  -W  Delete .bam* files. Default is true."
+    echo -e "  -W  Delete .bam* files. Default is false."
     echo -e "  -U  Input for --expect-cells. Optional."   
     echo -e "  -h  This message."
 }
@@ -132,6 +132,7 @@ PATH_LIST="${PATH_AUX}${NAME_LIST}"
 
 cellranger --version &> "${PATH_LOG}"
 echo "--localcores=${CR_N}; --localmem=${CR_M}" &>> "${PATH_LOG}"
+echo "Whether to remove .bam files: ${BOOL_DEL_BAM}" &>> "${PATH_LOG}"
 echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
 
 N_LINES=$(wc -l < "${PATH_LIST}")
