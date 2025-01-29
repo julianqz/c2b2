@@ -15,7 +15,7 @@
 #             [sample];[comma-separated fastq id(s)]
 # 
 #      OR     (if using a different fastq dir for each sample)
-#             [sample];[comma-separated fastq id(s)]
+#             [sample];[comma-separated fastq id(s)];[(a single) fastq dir]
 
 
 # Print usage
