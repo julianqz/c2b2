@@ -36,6 +36,7 @@ source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
+input_file_format = opt$inputFileFormat
 # either "RData" or "tsv"
 stopifnot(input_file_format %in% c("RData", "tsv"))
 
