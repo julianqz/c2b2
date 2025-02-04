@@ -20,6 +20,8 @@ option_list = list(
                 type="character", help="Path to CSV containing subject list and paths to input files."),
     make_option("--pathWork", action="store", default=NA, type="character", 
                 help="path_work."),
+    make_option("--inputFileFormat", action="store", default="RData", 
+                type="character", help="Input file type. Either RData or tsv."),
     make_option("--colClone", action="store", default="clone_id", 
                 type="character", help="col_clone."),
     make_option("--colVec", action="store", default=NA, 
@@ -34,6 +36,9 @@ source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
+# either "RData" or "tsv"
+stopifnot(input_file_format %in% c("RData", "tsv"))
+
 # parse
 # \s is space
 # ? means preceding item is optional and will be matched at most once
@@ -46,8 +51,15 @@ for (i in 1:nrow(subj_info)) {
     subj = subj_info[["subj"]][i]
     cat("\n", subj, "\n")
     
+    cur_fn_db = subj_info[["path_db_heavy"]][i]
+
     # load db
-    load(subj_info[["path_db_heavy"]][i])
+    if (input_file_format=="RData") {
+        load(cur_fn_db)
+    } else if (input_file_format=="tsv") {
+        db = read.table(cur_fn_db, header=T, sep="\t", stringsAsFactors=F)
+    }
+    
     
     # summarize
     clone_info = summarize_clone(db, 
