@@ -608,12 +608,13 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
           cur_light_chain = vec_light_chain_uniq[vec_light_chain_uniq_bool]
           stopifnot(length(cur_light_chain)==1)
           
-          chain_count_mtx[, "light"] = sum(tab_cell_chain[cur_light_chain, idx_tab])
+          chain_count_mtx[, "light"] = tab_cell_chain[cur_light_chain, idx_tab]
         }
         
         
         # sanity check
         stopifnot(!any(is.na(chain_count_mtx)))
+        # number of chains per cell should match
         stopifnot( all.equal( rowSums(chain_count_mtx), 
                               colSums(tab_cell_chain)[idx_tab], 
                               check.attributes=F ) )
