@@ -581,7 +581,7 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
     # number of heavy and light chain(s) per cell
     if (check_num_HL) {
         #* currently only supports chain_type="IG"
-        chain_count_mtx = matrix(NA, nrow=length(uniq_cells), ncol=2)
+        chain_count_mtx = matrix(0, nrow=length(uniq_cells), ncol=2)
         colnames(chain_count_mtx) = c("heavy", "light")
         rownames(chain_count_mtx) = uniq_cells
         
@@ -593,10 +593,27 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
         idx_tab = match(uniq_cells, colnames(tab_cell_chain))
         stopifnot(all.equal(uniq_cells, colnames(tab_cell_chain)[idx_tab]))
         
-        chain_count_mtx[, "heavy"] = tab_cell_chain["IGH", idx_tab]
-        chain_count_mtx[, "light"] = colSums(tab_cell_chain[c("IGL", "IGK"), idx_tab])
+        if ("IGH" %in% db[[col_locus]]) {
+          chain_count_mtx[, "heavy"] = tab_cell_chain["IGH", idx_tab]
+        }
+        
+        vec_light_chain_uniq = c("IGL", "IGK")
+        vec_light_chain_uniq_bool = vec_light_chain_uniq %in% db[[col_locus]]
+        if (all(vec_light_chain_uniq_bool)) {
+          # both IGL and IGK present
+          chain_count_mtx[, "light"] = colSums(tab_cell_chain[vec_light_chain_uniq, idx_tab])
+        } else {
+          # only one of IGL or IGK present
+          # colSums might fail with a single column
+          cur_light_chain = vec_light_chain_uniq[vec_light_chain_uniq_bool]
+          stopifnot(length(cur_light_chain)==1)
+          
+          chain_count_mtx[, "light"] = sum(tab_cell_chain[cur_light_chain, idx_tab])
+        }
+        
         
         # sanity check
+        stopifnot(!any(is.na(chain_count_mtx)))
         stopifnot( all.equal( rowSums(chain_count_mtx), 
                               colSums(tab_cell_chain)[idx_tab], 
                               check.attributes=F ) )
