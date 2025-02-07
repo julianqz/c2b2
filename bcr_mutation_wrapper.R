@@ -28,6 +28,8 @@ option_list = list(
     make_option("--heavyLight", action="store", default=FALSE, 
                 type="logical", 
                 help="Whether to run separately for both heavy and light chains. Default is heavy only."),
+    make_option("--runMode", action="store", default=NA, 
+                type="character", help="One of H, L, or HL. If specified, supercedes --heavyLight"),
     make_option("--colObsv", action="store", default="sequence_alignment", 
                 type="character", help="Column to observed sequences."),
     make_option("--colGerm", action="store", default="", 
@@ -52,11 +54,25 @@ source(opt$pathHelper)
 
 subj_info = read.table(opt$pathCSV, header=T, sep=",", stringsAsFactors=F)
 
-if (opt$heavyLight) {
-    run_mode = c("heavy", "light")
+if (is.na(opt$runMode)) {
+    # --runMode not specified, use --heavyLight
+    if (opt$heavyLight) {
+        run_mode = c("heavy", "light")
+    } else {
+        run_mode = c("heavy")
+    }
 } else {
-    run_mode = c("heavy")
+    # --runMode specified, supercedes --heavyLight
+    stopifnot(opt$runMode %in% c("H", "L", "HL"))
+    if (opt$runMode=="H") {
+        run_mode = c("heavy")
+    } else if (opt$runMode=="L") {
+        run_mode = c("light")
+    } else if (opt$runMode=="HL") {
+        run_mode = c("heavy", "light")
+    }
 }
+
 
 # check presence of necessary columns
 stopifnot( all( paste0("path_db_", run_mode) %in% colnames(subj_info) ) )
