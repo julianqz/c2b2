@@ -10,8 +10,12 @@
 # 1) The following must be in ${PROJ_ID}/aux/
 #    - a sample list: "cr_list_count_${PROJ_ID}.txt"
 #      each row is semi-colon-separated
-#      [sample];[comma-separated fastq id(s)]
-# 2) Assumes that all fastqs are in one centralized folder
+#
+#      EITHER (if using a centralized fastq dir for all samples)
+#             [sample];[comma-separated fastq id(s)]
+# 
+#      OR     (if using a different fastq dir for each sample)
+#             [sample];[comma-separated fastq id(s)];[(a single) fastq dir]
 
 # NOTE: not for data involving Feature Barcode
 
@@ -20,6 +24,7 @@ usage () {
     echo -e "Usage: `basename $0` [OPTIONS]"
     echo -e "  -J  Project ID."                        
     echo -e "  -T  Path to the top-level working dir." 
+    echo -e "  -L  Whether to use a centralized fastq dir. Default is true." 
     echo -e "  -F  Path to the centralized fastq dir." 
     echo -e "  -R  Path to the reference dir." 
     echo -e "  -Y  Number of cores for cellranger."    
@@ -31,19 +36,23 @@ usage () {
 
 PROJ_ID_SET=false
 PATH_ROOT_SET=false
+BOOL_ONE_FASTQ_DIR_SET=false
 PATH_FASTQ_SET=false
 PATH_REF_SET=false
 BOOL_DEL_BAM_SET=false
 BOOL_NUM_EXP_CELLS_SET=false
 
 # Get commandline arguments
-while getopts "J:T:F:R:Y:Z:W:U:h" OPT; do
+while getopts "J:T:L:F:R:Y:Z:W:U:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID=$OPTARG
         PROJ_ID_SET=true
         ;;
     T)  PATH_ROOT=$(realpath $OPTARG)
         PATH_ROOT_SET=true
+        ;;
+    L)  BOOL_ONE_FASTQ_DIR=$OPTARG
+        BOOL_ONE_FASTQ_DIR_SET=true
         ;;
     F)  PATH_FASTQ=$(realpath $OPTARG)
         PATH_FASTQ_SET=true
@@ -85,8 +94,14 @@ if ! $PATH_ROOT_SET; then
     exit 1
 fi
 
-# Exit if no centralized fastq directory provided
-if ! $PATH_FASTQ_SET; then
+
+# Set BOOL_ONE_FASTQ_DIR to true if no -L specified
+if ! $BOOL_ONE_FASTQ_DIR_SET; then
+    BOOL_ONE_FASTQ_DIR=true
+fi
+
+# If BOOL_ONE_FASTQ_DIR true, exit if no centralized fastq directory provided
+if [[ $BOOL_ONE_FASTQ_DIR && ! $PATH_FASTQ_SET ]]; then
     echo "You must specify a centralized fastq directory that contains all the fastq files via the -F option" >&2
     exit 1
 fi
@@ -132,6 +147,7 @@ PATH_LIST="${PATH_AUX}${NAME_LIST}"
 
 cellranger --version &> "${PATH_LOG}"
 echo "--localcores=${CR_N}; --localmem=${CR_M}" &>> "${PATH_LOG}"
+echo "Whethe to use a single centralized FASTQ folder: ${BOOL_ONE_FASTQ_DIR}" &>> "${PATH_LOG}"
 echo "Whether to remove .bam files: ${BOOL_DEL_BAM}" &>> "${PATH_LOG}"
 echo "Sample list: ${NAME_LIST}" &>> "${PATH_LOG}"
 
@@ -163,8 +179,18 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # fastq id(s) (this is what cellranger calls `sample` -- confusing eh?)
     CUR_FASTQ_IDS=${strarr[1]}
 
+    # fastq dir
+    if $BOOL_ONE_FASTQ_DIR; then
+        # using a single centralized fastq dir
+        CUR_PATH_FASTQ="${PATH_FASTQ}"
+    else
+        # using individualized fastq dir
+        CUR_PATH_FASTQ=${strarr[2]}
+    fi
+
 
 	echo "IDX: ${IDX}; CUR_ID: ${CUR_ID}" &>> "${PATH_LOG}"
+    echo "   FASTQ dir: ${CUR_PATH_FASTQ}" &>> "${PATH_LOG}"
 
 	# sample-specific log
 	PATH_LOG_ID="${PATH_AUX}log_cr_count_${IDX}_${CUR_ID}_$(date '+%m%d%Y_%H%M%S').log"
@@ -179,7 +205,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
         cellranger count \
             --id "${CUR_ID}" \
-            --fastqs "${PATH_FASTQ}" \
+            --fastqs "${CUR_PATH_FASTQ}" \
             --sample "${CUR_FASTQ_IDS}" \
             --transcriptome "${PATH_REF}" \
             --nosecondary \
@@ -193,7 +219,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
 
         cellranger count \
             --id "${CUR_ID}" \
-            --fastqs "${PATH_FASTQ}" \
+            --fastqs "${CUR_PATH_FASTQ}" \
             --sample "${CUR_FASTQ_IDS}" \
             --transcriptome "${PATH_REF}" \
             --nosecondary \
