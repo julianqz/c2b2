@@ -1083,9 +1083,9 @@ get_frames = function(nt_seq, frames=c(1:3)) {
     return(df)
 }
 
-get_frames("A", frames=c(1:3)) # expect NA for frames 2:3
-get_frames("AT", frames=c(1:3)) # expect NA for frame 3
-get_frames("ATG", frames=c(1:3)) 
-get_frames("ATGC", frames=c(1:3)) 
-get_frames("ATGC", frames=c(1)) 
-get_frames("ATGC", frames=c(1:4)) # expects error
+# get_frames("A", frames=c(1:3)) # expect NA for frames 2:3
+# get_frames("AT", frames=c(1:3)) # expect NA for frame 3
+# get_frames("ATG", frames=c(1:3)) 
+# get_frames("ATGC", frames=c(1:3)) 
+# get_frames("ATGC", frames=c(1)) 
+# get_frames("ATGC", frames=c(1:4)) # expects error
