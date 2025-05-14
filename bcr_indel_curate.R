@@ -9,40 +9,67 @@
 set.seed(394752)
 seqinr::c2s(sample(x=c("A","T","G","C"), size=100, replace=T))
 
+### del at left edge + ins at right edge
+
 #                                                                                                                       1111
 # ---                               23    33          4 4               66      77                    9    9            0111
-# 321     6   7                     90    56          6 8               56      34                    5    6            9012 
+# 321123456   7                     90    56          6 8               56      34                    5    6            9012 
 #    TACTTA   GCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTT    GTTTTAGTCTTTGTTTT  obsv
 # GGGTACTTAATGGCCGAACATAGCAGATAGCAAGT      GCAATTTATCTCCCGATACCGCAACACCAA        AGAATGTGGCAAGGCCGTGGTTATGCGTTTTAGTCTTTG      germ
 
-# -
-#             1                     33    33          4 5               66      77                    9    9           11  1
-#         9   0                     23    89          9 1               89      67                    8    9           12  5
-#    TACTTA   GCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTT    GTTTTAGTCTTTGTTTT  obsv
-# GGGTACTTAATGGCCGAACATAGCAGATAGCAAGT      GCAATTTATCTCCCGATACCGCAACACCAA        AGAATGTGGCAAGGCCGTGGTTATGCGTTTTAGTCTTTG      germ
-
-
-# TACTTA___GCCGAACATAGCAGATAGCAAGT+AGTAGG+GCAATTTATCT>GTG<GATACCGCAACACCAA+GGTTAACC+AGAATGTGGCAAGGCCGTGGTT____GTTTTAGTCTTTG
+# ___TACTTA___GCCGAACATAGCAGATAGCAAGT+AGTAGG+GCAATTTATCT>GTG<GATACCGCAACACCAA+GGTTAACC+AGAATGTGGCAAGGCCGTGGTT____GTTTTAGTCTTTG
 
 # idea: use code to generate ^^^; manually turn ___/++/>< in Word to highlights; check events for pos; check printed table() for clonal members
 
-seq_obj = vector(mode="list", length=2)
-names(seq_obj) = c("sequence", "events")
-seq_obj[["sequence"]] = "TACTTAGCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTTGTTTTAGTCTTTGTTTT"
+seq_obj_1 = vector(mode="list", length=2)
+names(seq_obj_1) = c("sequence", "events")
+seq_obj_1[["sequence"]] = "TACTTAGCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTTGTTTTAGTCTTTGTTTT"
 
-events = data.frame(matrix(NA, nrow=7, ncol=5))
-colnames(events) = c("event_type", "event_start", "event_end",
+events_1 = data.frame(matrix(NA, nrow=7, ncol=5))
+colnames(events_1) = c("event_type", "event_start", "event_end",
                      "event_len", "event_seq")
-events[["event_type"]] = c("deletion", "deletion", "insertion", "substitution",
+events_1[["event_type"]] = c("deletion", "deletion", "insertion", "substitution",
                            "insertion", "deletion", "insertion")
-events[["event_start"]] = c(-3,6,30,46,66,95,109)
-events[["event_end"]] = c(-1,7,35,48,73,96,112)
-events[["event_len"]] = c(3,3,6,3,8,4,4)
-events[["event_seq"]] = c("GGG", "ATG", "AGTAGG", "GTG", "GGTTAACC", "ATGC", "TTTT")
-stopifnot(!any(is.na(events)))
+events_1[["event_start"]] = c(-3,6,30,46,66,95,109)
+events_1[["event_end"]] = c(-1,7,35,48,73,96,112)
+events_1[["event_len"]] = c(3,3,6,3,8,4,4)
+events_1[["event_seq"]] = c("GGG", "ATG", "AGTAGG", "GTG", "GGTTAACC", "ATGC", "TTTT")
+stopifnot(!any(is.na(events_1)))
 
-seq_obj[["events"]] = events
-rm(events)
+seq_obj_1[["events"]] = events_1
+rm(events_1)
+
+
+### ins at left edge and del at right edge
+
+#                                                                                                                     111111
+#             1                     33    33         45555              66      77                    9    9          111111
+# 123456789   0                     23    89         90123              89      67                    8    9          012345
+# GGGTACTTA   GCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTT    GTTTTAGTCTTTG      obsv
+#    TACTTAATGGCCGAACATAGCAGATAGCAAGT      GCAATTTATCTCCCGATACCGCAACACCAA        AGAATGTGGCAAGGCCGTGGTTATGCGTTTTAGTCTTTGTTTT  germ
+
+# ___TACTTA___GCCGAACATAGCAGATAGCAAGT+AGTAGG+GCAATTTATCT>GTG<GATACCGCAACACCAA+GGTTAACC+AGAATGTGGCAAGGCCGTGGTT____GTTTTAGTCTTTG
+
+# idea: use code to generate ^^^; manually turn ___/++/>< in Word to highlights; check events for pos; check printed table() for clonal members
+
+seq_obj_2 = vector(mode="list", length=2)
+names(seq_obj_2) = c("sequence", "events")
+seq_obj_2[["sequence"]] = "GGGTACTTAGCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTTGTTTTAGTCTTTG"
+
+events_2 = data.frame(matrix(NA, nrow=7, ncol=5))
+colnames(events_2) = c("event_type", "event_start", "event_end",
+                     "event_len", "event_seq")
+events_2[["event_type"]] = c("insertion", "deletion", "insertion", "substitution",
+                           "insertion", "deletion", "deletion")
+events_2[["event_start"]] = c(1,9,33,50,69,98,112)
+events_2[["event_end"]] = c(3,10,38,52,76,99,115)
+events_2[["event_len"]] = c(3,3,6,3,8,4,4)
+events_2[["event_seq"]] = c("GGG", "ATG", "AGTAGG", "GTG", "GGTTAACC", "ATGC", "TTTT")
+stopifnot(!any(is.na(events_2)))
+
+seq_obj_2[["events"]] = events_2
+rm(events_2)
+
 
 #### functions ####
 
@@ -68,23 +95,48 @@ EVENT_TYPES = c("insertion", "deletion", "substitution")
 # - TRUE/FALSE
 check_event_start_end = function(event_type, event_start, event_end, seq_end) {
     
+    stopifnot( event_end >= event_start )
+    
     if (event_type=="substitution") {
-        stopifnot(event_start>=1 & event_end<=seq_end)
-        return(TRUE)
+
+        if (event_start >= 1 & event_end <= seq_end) {
+            return(TRUE)
+        } else {
+            return(FALSE)
+        }
         
-    } else if (event_type %in% c("insertion", "deletion")) {
-        
+    } else if (event_type=="deletion") {
         # at left edge
-        bool_left_edge = (event_start<0 & event_end<0)
+        bool_left_edge = (event_end == -1)
         # at right edge
-        bool_right_edge = (event_start>seq_end & event_end>seq_end)
+        bool_right_edge = (event_start == seq_end+1)
         # not at edge
-        bool_not_edge = (event_start>1 & event_end<seq_end)
+        bool_not_edge = (event_start > 1 & event_end < seq_end)
         
         if (sum(c(bool_left_edge, bool_right_edge, bool_not_edge))==1) {
             return(TRUE)
         } else {
-            cat("Unexpected scenario.\n")
+            return(FALSE)
+        }
+        
+    } else if (event_type=="insertion") {
+        # at left edge
+        bool_left_edge = (event_start == 1)
+        # at right edge
+        bool_right_edge = (event_end == seq_end)
+        # not at edge
+        bool_not_edge = (event_start > 1 & event_end < seq_end)
+        
+        if (bool_left_edge) {
+            stopifnot(event_end<seq_end)
+        }
+        if (bool_right_edge) {
+            stopifnot(event_start>1)
+        }
+        
+        if (sum(c(bool_left_edge, bool_right_edge, bool_not_edge))==1) {
+            return(TRUE)
+        } else {
             return(FALSE)
         }
         
@@ -105,17 +157,15 @@ check_event_start_end = function(event_type, event_start, event_end, seq_end) {
 # - If check fails, an error will be raised
 calculate_event_len_from_start_end = function(event_type, event_start, event_end, seq_end) {
     
-    if (event_start>0 & event_end<seq_end) {
+    if (event_start > 1 & event_end < seq_end) {
         # not at one of two edges
         
         if (event_type %in% c("substitution", "insertion")) {
-            # insertion or substitution
-            len = event_end-event_start+1
+            len = event_end - event_start + 1
             return(len)
             
         } else if (event_type=="deletion") {
-            # deletion
-            # can't calculate from start and end
+            # can't calculate from start/end
             return(NA)
             
         } else {
@@ -124,33 +174,10 @@ calculate_event_len_from_start_end = function(event_type, event_start, event_end
         
     } else {
         # at one of two edges
-        
-        # either event_start<0 or event_end>seq_end, but not both
-        stopifnot(sum(c(event_start<0, event_end>seq_end))==1)
-        
-        if (event_start<0) {
-            # at left edge
-            
-            # must be indel
-            stopifnot(event_type %in% c("deletion", "insertion"))
-            
-            # absolute value of event_start
-            len = abs(event_start)
-            return(len)
-            
-        } else if (event_end>seq_end) {
-            # at right edge
-            
-            # must be indel
-            stopifnot(event_type %in% c("deletion", "insertion"))
-            
-            len = event_end-event_start+1
-            return(len)
-            
-        } else {
-            stop("Unexpected scenario.")
-        }
+        len = event_end - event_start + 1
+        return(len)
     }
+
 }
 
 
@@ -231,7 +258,8 @@ check_seq_obj = function(seq_obj,
 }
 
 # expect TRUE
-check_seq_obj(seq_obj)
+check_seq_obj(seq_obj_1)
+check_seq_obj(seq_obj_2)
 
 
 # Assumes that `seq_obj` has passed `check_seq_obj`
