@@ -39,7 +39,6 @@ stopifnot(!any(is.na(events_1)))
 seq_obj_1[["events"]] = events_1
 rm(events_1)
 
-
 ### ins at left edge and del at right edge
 
 #                                                                                                                     111111
@@ -48,7 +47,7 @@ rm(events_1)
 # GGGTACTTA   GCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTT    GTTTTAGTCTTTG      obsv
 #    TACTTAATGGCCGAACATAGCAGATAGCAAGT      GCAATTTATCTCCCGATACCGCAACACCAA        AGAATGTGGCAAGGCCGTGGTTATGCGTTTTAGTCTTTGTTTT  germ
 
-# ___TACTTA___GCCGAACATAGCAGATAGCAAGT+AGTAGG+GCAATTTATCT>GTG<GATACCGCAACACCAA+GGTTAACC+AGAATGTGGCAAGGCCGTGGTT____GTTTTAGTCTTTG
+# +GGG+TACTTA___GCCGAACATAGCAGATAGCAAGT+AGTAGG+GCAATTTATCT>GTG<GATACCGCAACACCAA+GGTTAACC+AGAATGTGGCAAGGCCGTGGTT____GTTTTAGTCTTTG____
 
 # idea: use code to generate ^^^; manually turn ___/++/>< in Word to highlights; check events for pos; check printed table() for clonal members
 
@@ -263,15 +262,206 @@ check_seq_obj(seq_obj_2)
 
 
 # Assumes that `seq_obj` has passed `check_seq_obj`
-generate_indel_annotation = function(seq_obj) {
-    # deletion: _ for each deleted position
-    # insertion: + for start and end of insertion
-    # substitution: > for start and < for end of substitution
+# deletion: _ for each deleted position
+# insertion: + for start and end of insertion
+# substitution: > for start and < for end of substitution
+
+parse_single_event = function(event_idx_cur, seq_obj) {
     
-    seq_orig = seq_obj[[NAME_SEQ]]
     events = seq_obj[[NAME_EVENTS]]
+    sequence = seq_obj[[NAME_SEQ]]
+    
+    n_events = nrow(events)
+    seq_end = nchar(sequence)
+
+    event_type_cur = events[[NAME_EVENT_TYPE]][event_idx_cur]
+    event_start_cur = events[[NAME_EVENT_START]][event_idx_cur]
+    event_end_cur = events[[NAME_EVENT_END]][event_idx_cur]
+    event_len_cur = events[[NAME_EVENT_LEN]][event_idx_cur]
+    
+    ### part 1
+    
+    if (event_idx_cur==1) {
+        
+        # if 1st event, check whether there's seq before current event point
+        
+        if (event_start_cur==1 &
+            event_type_cur %in% c("insertion", "substitution")) {
+            # no seq before current event point
+            # i.e. current ins/sub is at left edge
+            seq_1_pos = NA
+            seq_1_str = ""
+            
+        } else {
+            # there's seq before current event point
+            seq_1_start = 1
+            
+            if (event_type_cur %in% c("insertion", "substitution")) {
+                seq_1_end = event_start_cur-1
+            } else if (event_type_cur=="deletion") {
+                seq_1_end = event_start_cur
+            }
+            
+            seq_1_pos = seq_1_start:seq_1_end
+            seq_1_str = substr(sequence, seq_1_start, seq_1_end)
+        }
+        
+    } else {
+        
+        event_idx_bf = event_idx_cur-1
+        event_end_bf = events[[NAME_EVENT_END]][event_idx_bf]
+        event_type_bf = events[[NAME_EVENT_TYPE]][event_idx_bf]
+
+        if (event_type_bf %in% c("insertion", "substitution")) {
+            seq_1_start = event_end_bf+1
+        } else if (event_type_bf=="deletion") {
+            seq_1_start = event_end_bf
+        }
+        
+        if (event_type_cur %in% c("insertion", "substitution")) {
+            seq_1_end = event_start_cur-1
+        } else if (event_type_cur=="deletion") {
+            
+            if (event_start_cur > seq_end) {
+                # del at right edge
+                seq_1_end = event_start_cur-1
+            } else {
+                # del not at right edge
+                seq_1_end = event_start_cur
+            }
+            
+        }
+        
+        seq_1_pos = seq_1_start:seq_1_end
+        seq_1_str = substr(sequence, seq_1_start, seq_1_end)
+        
+    }
+    
+    ### part 2
+    
+    if (event_type_cur %in% c("insertion", "substitution")) {
+        seq_2_start = event_start_cur
+        seq_2_end = event_end_cur
+        seq_2_pos = seq_2_start:seq_2_end
+        seq_2_str_stem = substr(sequence, seq_2_start, seq_2_end)
+        
+        if (event_type_cur=="insertion") {
+            seq_2_str = paste0("+", seq_2_str_stem, "+")
+        } else if (event_type_cur=="substitution") {
+            seq_2_str = paste0(">", seq_2_str_stem, "<")
+        }
+        
+    } else if (event_type_cur=="deletion") {
+        seq_2_pos = NA
+        seq_2_str = paste0(rep("_", event_len_cur), collapse="")
+    }
+    
+    ### part 3
+    
+    if (event_idx_cur==n_events) {
+        # if last event, check whether there's seq after current event point
+        if (event_end_cur>=seq_end) {
+            # no seq after current event point
+            seq_3_pos = NA
+            seq_3_str = ""
+        } else {
+            # there's seq after current event point
+            if (event_type_cur %in% c("insertion", "substitution")) {
+                seq_3_start = event_end_cur+1
+                
+            } else if (event_type_cur=="deletion") {
+                seq_3_start = event_end_cur
+            }
+            seq_3_end = seq_end
+            seq_3_pos = seq_3_start:seq_3_end
+            seq_3_str = substr(sequence, seq_3_start, seq_3_end)
+        }
+    } else {
+        seq_3_pos = NA
+        seq_3_str = ""
+    }
+    
+    
+    cat(event_idx_cur, "\n")
+    cat("seq_1_pos:\n")
+    print(seq_1_pos)
+    cat("seq_1_str:", seq_1_str, "\n")
+    cat("seq_2_pos:\n")
+    print(seq_2_pos)
+    cat("seq_2_str:", seq_2_str, "\n")
+    cat("seq_3_pos:\n")
+    print(seq_3_pos)
+    cat("seq_3_str:", seq_3_str, "\n")
+    
+    lst_return = vector(mode="list", length=6)
+    names(lst_return) = paste0("seq_", rep(1:3, each=2), rep(c("_pos", "_str"), times=3))
+    lst_return[["seq_1_pos"]] = seq_1_pos
+    lst_return[["seq_1_str"]] = seq_1_str
+    lst_return[["seq_2_pos"]] = seq_2_pos
+    lst_return[["seq_2_str"]] = seq_2_str
+    lst_return[["seq_3_pos"]] = seq_3_pos
+    lst_return[["seq_3_str"]] = seq_3_str
+    
+    return(lst_return)
 }
 
+
+parse_seq_obj = function(seq_obj) {
+    
+    n_events = nrow(seq_obj[[NAME_EVENTS]])
+    sequence = seq_obj[[NAME_SEQ]]
+    seq_end = nchar(sequence)
+    
+    lst_parsed = vector(mode="list", length=n_events)
+    
+    for (i_event in 1:n_events) {
+        lst_parsed[[i_event]] = parse_single_event(event_idx_cur=i_event, 
+                                                   seq_obj=seq_obj)
+    }
+    
+    # All the seq_*_pos combined should have no duplicate and 
+    # should cover all of the positions in input sequence
+    
+    .collapse_seq_pos = function(x) {
+        return(c(x[["seq_1_pos"]], x[["seq_2_pos"]], x[["seq_3_pos"]]))
+    }
+    
+    vec_seq_pos_w_na = unlist(lapply(lst_parsed, .collapse_seq_pos))
+    vec_seq_pos_no_na = vec_seq_pos_w_na[!is.na(vec_seq_pos_w_na)]
+    
+    stopifnot(length(vec_seq_pos_no_na)==seq_end)
+    stopifnot(!any(duplicated(vec_seq_pos_no_na)))
+    stopifnot(all.equal(sort(vec_seq_pos_no_na), 1:seq_end))
+    
+    .collapse_seq_str = function(x) {
+        return(c(x[["seq_1_str"]], x[["seq_2_str"]], x[["seq_3_str"]]))
+    }
+    
+    # All the seq_*_str combined, and with +_<> removed, should match input sequence
+    vec_seq_str_w_annotation = unlist(lapply(lst_parsed, .collapse_seq_str))
+    str_annotated = paste(vec_seq_str_w_annotation, collapse="")
+    # remove all occurrences of "+", "_", ">", "<"
+    str_restored = gsub(pattern="[_><+]", replacement="", x=str_annotated, fixed=F)
+    
+    stopifnot(str_restored==sequence)
+    
+    lst_return = vector(mode="list", length=2)
+    names(lst_return) = c("lst_parsed", "str_annotated")
+    lst_return[["lst_parsed"]] = lst_parsed
+    lst_return[["str_annotated"]] = str_annotated
+    
+    return(lst_return)
+}
+
+
+parse_seq_obj(seq_obj_2)
+parse_seq_obj(seq_obj_2)[["str_annotated"]]
+
+# TODO
+# test on seq_obj_1
+# rename parse_
+# add doc
+# lots of additional test cases and edge cases
 
 
 #### temp ####
