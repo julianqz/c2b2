@@ -260,13 +260,39 @@ check_seq_obj = function(seq_obj,
 check_seq_obj(seq_obj_1)
 check_seq_obj(seq_obj_2)
 
-
-# Assumes that `seq_obj` has passed `check_seq_obj`
-# deletion: _ for each deleted position
-# insertion: + for start and end of insertion
-# substitution: > for start and < for end of substitution
-
-parse_single_event = function(event_idx_cur, seq_obj) {
+# Parse the a single event from the $events data.frame of a seq_obj and 
+# synthesize a subsequence annotated correponding to the event as follows:
+# - deletion: "_" for each deleted position
+# - insertion: "+" before the start and after the end of insertion
+# - substitution: ">" before the start and "<" after the end of substitution
+# Input: 
+# - event_idx_cur: integer row indx wrt $events in seq_obj
+# - seq_obj: assumed to have passed `check_seq_obj`
+# - verbose: if T, print out informational messages
+# Output: a list containing 6 entries
+# - seq_[123]_pos
+# - seq_[123]_str
+# 
+# Details:
+# 
+# The synthesis of an annotated subsequence involves 3 parts.
+# 
+# Each part, if applicable, has a corresponding seq_*_pos/str in the output.
+# Part 1 and/or 3 may not always be applicable.
+# 
+# Part 1: part of the sequence from either the end of the prior event or 
+#         beginning of the full sequence to the start of the current event.
+#         - If there's an event before the current event, from the end of the 
+#           prior event to the start of the current event.
+#         - If there's no event before the current event, any part of the sequence 
+#           that exists before and up to the start of the current event.
+# 
+# Part 2: part of the sequence corresponding to the current event.
+# 
+# Part 3: part of the sequence that exists after the last event. Only applicable 
+#        if the current event is the last.
+#
+parse_single_event = function(event_idx_cur, seq_obj, verbose=T) {
     
     events = seq_obj[[NAME_EVENTS]]
     sequence = seq_obj[[NAME_SEQ]]
@@ -387,17 +413,18 @@ parse_single_event = function(event_idx_cur, seq_obj) {
         seq_3_str = ""
     }
     
-    
-    cat(event_idx_cur, "\n")
-    cat("seq_1_pos:\n")
-    print(seq_1_pos)
-    cat("seq_1_str:", seq_1_str, "\n")
-    cat("seq_2_pos:\n")
-    print(seq_2_pos)
-    cat("seq_2_str:", seq_2_str, "\n")
-    cat("seq_3_pos:\n")
-    print(seq_3_pos)
-    cat("seq_3_str:", seq_3_str, "\n")
+    if (verbose) {
+        cat(event_idx_cur, "\n")
+        cat("seq_1_pos:\n")
+        print(seq_1_pos)
+        cat("seq_1_str:", seq_1_str, "\n")
+        cat("seq_2_pos:\n")
+        print(seq_2_pos)
+        cat("seq_2_str:", seq_2_str, "\n")
+        cat("seq_3_pos:\n")
+        print(seq_3_pos)
+        cat("seq_3_str:", seq_3_str, "\n")
+    }
     
     lst_return = vector(mode="list", length=6)
     names(lst_return) = paste0("seq_", rep(1:3, each=2), rep(c("_pos", "_str"), times=3))
@@ -411,7 +438,15 @@ parse_single_event = function(event_idx_cur, seq_obj) {
     return(lst_return)
 }
 
-
+# Parse all events from the $events data.frame of a seq_obj and 
+# synthesize a sequence annotated for indels and substitutions.
+# Also perform integrity checks on the annotated sequence.
+# Input:
+# - seq_obj: assumed to have passed `check_seq_obj`
+# Output: a list of two entries
+# - lst_parsed: a list of outputs produced by parse_single_event for all events 
+# - str_annotated
+# 
 parse_seq_obj = function(seq_obj) {
     
     n_events = nrow(seq_obj[[NAME_EVENTS]])
@@ -425,8 +460,8 @@ parse_seq_obj = function(seq_obj) {
                                                    seq_obj=seq_obj)
     }
     
-    # All the seq_*_pos combined should have no duplicate and 
-    # should cover all of the positions in input sequence
+    ### All the seq_*_pos combined should have no duplicate and 
+    #   should cover all of the positions in input sequence
     
     .collapse_seq_pos = function(x) {
         return(c(x[["seq_1_pos"]], x[["seq_2_pos"]], x[["seq_3_pos"]]))
@@ -443,7 +478,8 @@ parse_seq_obj = function(seq_obj) {
         return(c(x[["seq_1_str"]], x[["seq_2_str"]], x[["seq_3_str"]]))
     }
     
-    # All the seq_*_str combined, and with +_<> removed, should match input sequence
+    ### All the seq_*_str combined, and with +_<> removed, 
+    #   should match input sequence
     vec_seq_str_w_annotation = unlist(lapply(lst_parsed, .collapse_seq_str))
     str_annotated = paste(vec_seq_str_w_annotation, collapse="")
     # remove all occurrences of "+", "_", ">", "<"
@@ -467,13 +503,12 @@ parse_seq_obj(seq_obj_1)
 parse_seq_obj(seq_obj_1)[["str_annotated"]]
 
 
-# TODO
-
-# rename parse_
-# add doc
 # lots of additional test cases and edge cases
 # gather tough cases (see ELN 2025-05-09)
 
+# generate $events in seq_obj
+# generate tabulation
+# test using tough cases
 
 #### temp ####
 
