@@ -13,11 +13,11 @@ seqinr::c2s(sample(x=c("A","T","G","C"), size=100, replace=T))
 
 #                                                                                                                       1111
 # ---                               23    33          4 4               66      77                    9    9            0111
-# 321123456   7                     90    56          6 8               56      34                    5    6            9012 
+# 321123456   7                     90    56          7 9               56      34                    5    6            9012 
 #    TACTTA   GCCGAACATAGCAGATAGCAAGTAGTAGGGCAATTTATCTGTGGATACCGCAACACCAAGGTTAACCAGAATGTGGCAAGGCCGTGGTT    GTTTTAGTCTTTGTTTT  obsv
 # GGGTACTTAATGGCCGAACATAGCAGATAGCAAGT      GCAATTTATCTCCCGATACCGCAACACCAA        AGAATGTGGCAAGGCCGTGGTTATGCGTTTTAGTCTTTG      germ
 
-# ___TACTTA___GCCGAACATAGCAGATAGCAAGT+AGTAGG+GCAATTTATCT>GTG<GATACCGCAACACCAA+GGTTAACC+AGAATGTGGCAAGGCCGTGGTT____GTTTTAGTCTTTG
+# ___TACTTA___GCCGAACATAGCAGATAGCAAGT+AGTAGG+GCAATTTATCT>GTG<GATACCGCAACACCAA+GGTTAACC+AGAATGTGGCAAGGCCGTGGTT____GTTTTAGTCTTTG+TTTT+
 
 # idea: use code to generate ^^^; manually turn ___/++/>< in Word to highlights; check events for pos; check printed table() for clonal members
 
@@ -30,8 +30,8 @@ colnames(events_1) = c("event_type", "event_start", "event_end",
                      "event_len", "event_seq")
 events_1[["event_type"]] = c("deletion", "deletion", "insertion", "substitution",
                            "insertion", "deletion", "insertion")
-events_1[["event_start"]] = c(-3,6,30,46,66,95,109)
-events_1[["event_end"]] = c(-1,7,35,48,73,96,112)
+events_1[["event_start"]] = c(-3,6,30,47,66,95,109)
+events_1[["event_end"]] = c(-1,7,35,49,73,96,112)
 events_1[["event_len"]] = c(3,3,6,3,8,4,4)
 events_1[["event_seq"]] = c("GGG", "ATG", "AGTAGG", "GTG", "GGTTAACC", "ATGC", "TTTT")
 stopifnot(!any(is.na(events_1)))
@@ -285,8 +285,8 @@ parse_single_event = function(event_idx_cur, seq_obj) {
         
         # if 1st event, check whether there's seq before current event point
         
-        if (event_start_cur==1 &
-            event_type_cur %in% c("insertion", "substitution")) {
+        if ( (event_type_cur %in% c("insertion", "substitution") & event_start_cur==1) | 
+             (event_type_cur=="deletion" & event_start_cur<0) ) {
             # no seq before current event point
             # i.e. current ins/sub is at left edge
             seq_1_pos = NA
@@ -315,7 +315,13 @@ parse_single_event = function(event_idx_cur, seq_obj) {
         if (event_type_bf %in% c("insertion", "substitution")) {
             seq_1_start = event_end_bf+1
         } else if (event_type_bf=="deletion") {
-            seq_1_start = event_end_bf
+            if (event_end_bf!=-1) {
+                seq_1_start = event_end_bf
+            } else {
+                # when event_idx_cur=2, event_idx_bf=1, 
+                # and 1st event is a deletion at left edge
+                seq_1_start = 1
+            }
         }
         
         if (event_type_cur %in% c("insertion", "substitution")) {
@@ -457,11 +463,16 @@ parse_seq_obj = function(seq_obj) {
 parse_seq_obj(seq_obj_2)
 parse_seq_obj(seq_obj_2)[["str_annotated"]]
 
+parse_seq_obj(seq_obj_1)
+parse_seq_obj(seq_obj_1)[["str_annotated"]]
+
+
 # TODO
-# test on seq_obj_1
+
 # rename parse_
 # add doc
 # lots of additional test cases and edge cases
+# gather tough cases (see ELN 2025-05-09)
 
 
 #### temp ####
