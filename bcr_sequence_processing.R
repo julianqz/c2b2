@@ -343,7 +343,7 @@ clean_obsv = function(vdj_obsv, vdj_germ,
     # the length without IMGT gaps should usually match vdj_obsv_end-start+1
     # push further upstream 5' if there're leading dots
     # push further downstream 3' if there're trailing dots
-    # expections:
+    # exceptions:
     # - insertions (excluded in IMGT-aligned seq)
     #   (eg. 368-22, h, i=23, 159; l, i=22)
     len_ck = (vdj_obsv_end+n_trail)-(vdj_obsv_start-n_lead)+1
@@ -360,6 +360,7 @@ clean_obsv = function(vdj_obsv, vdj_germ,
     # 2) if there's any non-ATGC in obsv, 
     # patch with corresponding positions from germ
     vec_atgc = c("A","T","G","C","a","t","g","c")
+    # [^] means any character NOT in the list
     if (grepl(pattern="[^ATGCatgc]", x=vdj_obsv_no_gaps)) {
         # convert to vector of single characters
         vdj_obsv_no_gaps_c = s2c(vdj_obsv_no_gaps)
