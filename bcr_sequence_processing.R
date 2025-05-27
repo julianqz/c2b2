@@ -83,6 +83,7 @@ export_fasta = function(sequences, headers, add_header_symbol, filename) {
 #' Given a fasta file, remove duplicate entries based on sequence identity.
 #' 
 #' @param   filename       filename of fasta file. Multi-line fasta file supported.
+#' @param   vec_fasta      a named character vector; names correspond to fasta IDs
 #' 
 #' @return  A named character vector containing unique fasta entries. Fasta 
 #'          headers are in the names of the vector.
@@ -90,14 +91,26 @@ export_fasta = function(sequences, headers, add_header_symbol, filename) {
 #' @details For each unique sequence corresponding to multiple duplicate fasta
 #'          entries, only one fasta entry is kept. The entry to be kept is the 
 #'          one that appears the first amongst the duplicate entries in the 
-#'          input fasta file.          
+#'          input fasta file or vector.
+#'          
+#'          Exactly one of `filename` or `vec_fasta` should be specified, with
+#'          the other one being left as `NULL`.
+#'                    
+remove_duplicate_fasta = function(filename=NULL, vec_fasta=NULL) {
+    
+    # check input
+    # exactly one of file and vec_fasta must be NULL
+    stopifnot(sum(c(is.null(filename), is.null(vec_fasta)))==1)
+    
+    if (!is.null(filename)) {
+        cat("\n", filename, "\n")
+        
+        # read in fasta entries
+        vec = read_multiline_fasta(filename)
+    } else {
+        vec = vec_fasta
+    }
 
-remove_duplicate_fasta = function(filename) {
-    cat("\n", filename, "\n")
-    
-    # read in fasta entries
-    vec = read_multiline_fasta(filename)
-    
     # are there duplicate entries in terms of sequence identity?
     bool_dup = length(unique(vec))<length(vec)
     
@@ -142,7 +155,7 @@ remove_duplicate_fasta = function(filename) {
             idx_keep[i] = df_dup[["idx_vec"]][idx_df_dup[1]]
             
             # verbose
-            cat("---------------", i, "---------------\nIn:", 
+            cat("---------------", i, "---------------\n In:", 
                 df_dup[["header"]][idx_df_dup[1]],
                 ";\nOut:", df_dup[["header"]][idx_df_dup[-1]], "\n")
         }
