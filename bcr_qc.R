@@ -3,7 +3,92 @@
 
 # functions to perform QC on BCRs
 
-#' Check chain consistency of V, D, J, C gene annotations of a sequence
+#' Determine if a TCR V gene annotation contains the TRAV/DV pattern
+#' 
+#' @param  vg  A single instance of TCR V gene annotation.
+#' 
+#' @returns  `TRUE` if TRAV/DV pattern detected.
+#' 
+#' @details  The pattern is defined as TRAV__/DV__*, 
+#'           where __ can be any combination of letters, numbers, and/or "-"
+#' 
+detect_tr_av_dv = function(vg) {
+    
+    # Human TCR: 
+    # 5 variable segments can be used in either alpha or delta chains and are
+    # described by TRAV/DV symbols
+    
+    # [[:digit:]-] includes 0-9 and "-"
+    # ? the preceding item is optional and will be matched at most once
+    # * the preceding item will be matched 0 or more times
+    # + the preceding item will be matched 1 or more times
+    
+    # ^ matches the empty string at the beginning of a line
+    # $ matches the empty string at the end of a line
+    
+    # examples to catch (vg being a single TR V gene annotation)
+    # TRAV29/DV5*01
+    # TRAV38-2/DV8*01
+    # TRAV14D-3/DV8*06
+    # TRAV15D-1/DV6D-1*01
+    regex_tr_av_dv = "^TRAV[[:alnum:]-]+/DV[[:alnum:]-]+\\*"
+    
+    bool = grepl(pattern=regex_tr_av_dv, x=vg, fixed=F)
+    return(bool)
+}
+
+# detect_tr_av_dv(vg="TRAV29/DV5*01")
+# detect_tr_av_dv(vg="TRAV29-2/DV5*01")
+# detect_tr_av_dv(vg="TRAV29-2-3/DV5*01")
+# detect_tr_av_dv(vg="TRAV29/DV5-2*01")
+# detect_tr_av_dv(vg="TRAV29-2/DV5-2*01")
+# detect_tr_av_dv(vg="TRAV29-2//DV5-2*01") # expect F
+# detect_tr_av_dv(vg="TRAV29-2//DV5-2") # expect F
+# detect_tr_av_dv(vg="TRAV38-2/DV8*01")
+# detect_tr_av_dv(vg="TRAV14D-3/DV8*06")
+# detect_tr_av_dv(vg="TRAV15D-1/DV6D-1*01")
+# detect_tr_av_dv(vg="TRAV15D-1") # expect F
+# detect_tr_av_dv(vg="TRDV6D-1*01") # expect F
+
+
+#' Split a TCR V gene annotation containing the TRAV/DV pattern into AV and DV
+#' 
+#' @param  vg  A single instance of TCR V gene annotation.
+#' 
+#' @returns  A character vector of length 2. Entries correspond to TRAV and 
+#'           TRDV respectively.
+#'           
+split_tr_av_dv = function(vg) {
+    # input format (a single TR V gene annotation)
+    # TRAV14/DV4*0[1-4]
+    # TRAV38-2/DV8*01
+    # TRAV14D-3/DV8*06
+    # TRAV15D-1/DV6D-1*01
+    stopifnot(grepl(pattern="/", x=vg, fixed=T))
+    stopifnot(grepl(pattern="*", x=vg, fixed=T))
+    
+    s_split_by_slash = strsplit(vg, "/")[[1]]
+    s_split_by_asterisk = strsplit(vg, "\\*")[[1]]
+    s_av = paste0(s_split_by_slash[1], "*", s_split_by_asterisk[2])
+    s_dv = paste0("TR", s_split_by_slash[2])
+    
+    stopifnot(grepl(pattern="^TRAV[[:alnum:]-]+\\*[[:alnum:]]+", x=s_av))
+    stopifnot(grepl(pattern="^TRDV[[:alnum:]-]+\\*[[:alnum:]]+", x=s_dv))
+    return(c(s_av, s_dv))
+}
+
+# split_tr_av_dv("TRAV14D-3/DV8*06")
+# split_tr_av_dv("TRAV15D-1/DV6D-1*01")
+# split_tr_av_dv("TRAV38-2/DV8*01")
+# split_tr_av_dv("TRAV29/DV5*04")
+# split_tr_av_dv("TRAV29/DV5**04") # error (expected)
+# split_tr_av_dv("TRAV29//DV5*04") # error (expected)
+# split_tr_av_dv("TRAV29DV5*04") # error (expected)
+# split_tr_av_dv("TRAV/DV5*04") # error (expected)
+# split_tr_av_dv("TRAV29/GV5*04") # error (expected)
+
+
+#' Check chain consistency of V, D, J, C gene annotations of a B/TCR sequence
 #' 
 #' @param    vg          V gene annotation(s) of a sequence. 
 #' @param    dg          D gene annotation(s) of a sequence
@@ -19,8 +104,126 @@
 #' 
 #' @details  Checks if all non-NULL, non-NA, non-empty input annotations have 
 #'           the same chain type, e.g. all "IGH", "IGK", "IGL", "TRA", etc.
-
+#'           
+#'           Treatment of TCR V gene annotations with TRAV/DV patterns:
+#'           - Each TRAV/DV annotation is split into TRAV and TRDV.
+#'           - Two rounds of examination are performed.
+#'           - First, all TRAV annotations are joined with any 
+#'             non-TRAV, non-TRDV V gene annotation(s), and examined with the 
+#'             rest (dg, jg,  etc.)
+#'           - Second, all TRDV annotations are joined with any
+#'             non-TRAV, non-TRDV V gene annotation(s), and examiend with the
+#'             rest (dg, jg, etc.)
+#'           - Chain consistency check passes if one of these two rounds of 
+#'             examinations yields a `TRUE`.
+#'           - Example:
+#'           - `vg="TRAV15D-1/DV6D-1*01,TRAV38-2/DV8*01,TRBV10-1*01"`
+#'           - One examination involves `"TRAV15D-1*01,TRAV38-2*01,TRBV10-1*01"` (FALSE)
+#'           - One examination involves `"TRDV6D-1*01,TRDV8*01,TRBV10-1*01"` (FALSE)
+#'           - Because both examinations yield `FALSE`, consistency check fails
+#'           
 inspect_chain_consistency = function(vg, dg, jg, cg, 
+                                     loci=c("IG", "TR"), 
+                                     separator=",",
+                                     verbose=F) {
+    
+    require(stringi)
+    
+    # check value for `loci` is valid 
+    stopifnot(loci %in% c("IG", "TR"))
+    
+    # is there any AV/DV TCR V gene annotation?
+    if (!is.null(vg)) {
+        
+        if (is.na(vg) || vg=="") {
+            # "" or NA
+            bool_tr_av_dv = FALSE
+            
+        } else {
+            vg = toupper(vg)
+            
+            # each boolean entry corresponds to an annotation separated by `separator`
+            vec_vg = strsplit(vg, split=separator)[[1]]
+            vec_bool_tr_av_dv = sapply(vec_vg, detect_tr_av_dv)
+            
+            bool_tr_av_dv = any(vec_bool_tr_av_dv)
+        }
+        
+    } else {
+        bool_tr_av_dv = FALSE
+    }
+    
+    
+    if (!bool_tr_av_dv) {
+        # if there is no AV/DV TCR V gene annotation
+        bool_final = inspect_chain_consistency_innie(vg, dg, jg, cg, 
+                                                     loci, separator, verbose)
+    } else {
+        # should be TR
+        stopifnot(loci=="TR")
+        
+        # if there is one or more AV/DV TCR V gene annotation
+        
+        lst = vector(mode="list", length=length(vec_vg))
+        for (i_lst in 1:length(lst)) {
+            if (vec_bool_tr_av_dv[i_lst]) {
+                lst[[i_lst]] = split_tr_av_dv(vec_vg[i_lst])
+            } else {
+                lst[[i_lst]] = vec_vg[i_lst]
+            }
+        }
+        
+        vec_vg_all_av = unlist(lapply(lst[vec_bool_tr_av_dv], function(x){x[1]}))
+        vec_vg_all_dv = unlist(lapply(lst[vec_bool_tr_av_dv], function(x){x[2]}))
+        vec_vg_not_av_dv = unlist(lst[!vec_bool_tr_av_dv])
+        
+        vec_vg_av_etc = c(vec_vg_all_av, vec_vg_not_av_dv)
+        vec_vg_dv_etc = c(vec_vg_all_dv, vec_vg_not_av_dv)
+        
+        # collapse into string
+        str_vg_av_etc = paste(vec_vg_av_etc, collapse=",")
+        str_vg_dv_etc = paste(vec_vg_dv_etc, collapse=",")
+        
+        if (verbose) {cat("checking:", str_vg_av_etc, "\n")}
+        bool_vg_av_etc = inspect_chain_consistency_innie(str_vg_av_etc, dg, jg, cg, 
+                                                         loci, separator, verbose)
+        
+        if (verbose) {cat("checking:", str_vg_dv_etc, "\n")}
+        bool_vg_dv_etc = inspect_chain_consistency_innie(str_vg_dv_etc, dg, jg, cg, 
+                                                         loci, separator, verbose)
+        
+        # at most 1 TRUE
+        vec_bool_final = c(bool_vg_av_etc, bool_vg_dv_etc)
+        stopifnot(sum(vec_bool_final)<=1)
+        
+        bool_final = any(vec_bool_final)
+    }
+    
+    return(bool_final)
+}
+
+
+#' Check chain consistency of V, D, J, C gene annotations of a B/TCR sequence
+#' 
+#' @param    vg          V gene annotation(s) of a sequence. 
+#' @param    dg          D gene annotation(s) of a sequence
+#' @param    jg          J gene annotation(s) of a sequence
+#' @param    cg          C gene annotation(s) of a sequence. 
+#' @param    loci        One of "IG" or "TR".
+#' @param    separator   Character that separates multiple annotations. 
+#'                       Default to `,` (comma).
+#' @param    verbose     Boolean. If TRUE, prints the inconsistency when check 
+#'                       is failed.
+#' 
+#' @returns  TRUE or FALSE.
+#' 
+#' @details  Checks if all non-NULL, non-NA, non-empty input annotations have 
+#'           the same chain type, e.g. all "IGH", "IGK", "IGL", "TRA", etc.
+#'           
+#'           The `_innie` function assumes that TCR V gene annotations carrying
+#'           the TRAV/DV pattern have been properly parsed/split.
+#'           
+inspect_chain_consistency_innie = function(vg, dg, jg, cg, 
                                      loci=c("IG", "TR"), 
                                      separator=",",
                                      verbose=F){
@@ -78,6 +281,40 @@ inspect_chain_consistency = function(vg, dg, jg, cg,
         if (verbose) { cat("Failed chain consistency check:", uniq_chain, "\n") }
         return(F)
     }
+}
+
+RUN=F
+if (RUN) {
+    # expect F
+    inspect_chain_consistency(vg="TRAV15D-1/DV6D-1*01,TRAV38-2/DV8*01,TRBV10-1*01", 
+                              dg="TRDD3*01", jg="TRDJ1*01", cg="TRDC*01", 
+                              loci="TR", separator=",", verbose=T)
+    
+    # expect T
+    inspect_chain_consistency(vg="TRAV15D-1/DV6D-1*01,TRAV38-2/DV8*01", 
+                              dg="TRDD3*01", jg="TRDJ1*01", cg="TRDC*01", 
+                              loci="TR", separator=",", verbose=T)
+    
+    # expect F
+    inspect_chain_consistency(vg="TRAV15D-1/DV6D-1*01,TRBV10-1*01", 
+                              dg="TRDD3*01", jg="TRDJ1*01", cg="TRDC*01", 
+                              loci="TR", separator=",", verbose=T)
+    
+    # expect T
+    inspect_chain_consistency(vg="TRAV15D-1/DV6D-1*01", 
+                              dg="TRDD3*01", jg="TRDJ1*01", cg="TRDC*01", 
+                              loci="TR", separator=",", verbose=T)
+    
+    # expect F
+    inspect_chain_consistency(vg="TRBV10-1*01", 
+                              dg="TRDD3*01", jg="TRDJ1*01", cg="TRDC*01", 
+                              loci="TR", separator=",", verbose=T)
+    
+    # expect T
+    inspect_chain_consistency(vg="TRDV10-1*01", 
+                              dg="TRDD3*01", jg="TRDJ1*01", cg="TRDC*01", 
+                              loci="TR", separator=",", verbose=T)
+    
 }
 
 
@@ -580,168 +817,296 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
     
     # number of heavy and light chain(s) per cell
     if (check_num_HL) {
-        #* currently only supports chain_type="IG"
-        chain_count_mtx = matrix(0, nrow=length(uniq_cells), ncol=2)
-        colnames(chain_count_mtx) = c("heavy", "light")
-        rownames(chain_count_mtx) = uniq_cells
         
-        # row: IG[HKL]
-        # col: cell ID
-        tab_cell_chain = table(db[[col_locus]], db[[col_cell]], useNA="ifany")
-        
-        # wrt tab_cell_chain
-        idx_tab = match(uniq_cells, colnames(tab_cell_chain))
-        stopifnot(all.equal(uniq_cells, colnames(tab_cell_chain)[idx_tab]))
-        
-        if ("IGH" %in% db[[col_locus]]) {
-          chain_count_mtx[, "heavy"] = tab_cell_chain["IGH", idx_tab]
-        }
-        
-        vec_light_chain_uniq = c("IGL", "IGK")
-        vec_light_chain_uniq_bool = vec_light_chain_uniq %in% db[[col_locus]]
-        if (all(vec_light_chain_uniq_bool)) {
-          # both IGL and IGK present
-          chain_count_mtx[, "light"] = colSums(tab_cell_chain[vec_light_chain_uniq, idx_tab])
-        } else {
-          # only one of IGL or IGK present
-          # colSums might fail with a single column
-          cur_light_chain = vec_light_chain_uniq[vec_light_chain_uniq_bool]
-          stopifnot(length(cur_light_chain)==1)
-          
-          chain_count_mtx[, "light"] = tab_cell_chain[cur_light_chain, idx_tab]
-        }
-        
-        
-        # sanity check
-        stopifnot(!any(is.na(chain_count_mtx)))
-        # number of chains per cell should match
-        stopifnot( all.equal( rowSums(chain_count_mtx), 
-                              colSums(tab_cell_chain)[idx_tab], 
-                              check.attributes=F ) )
-        
-        cat("\nNumber of heavy chains per cell:\n")
-        print(table(chain_count_mtx[, "heavy"], useNA="ifany"))
-        cat("\n")
-        
-        cat("\nNumber of light chains per cell:\n")
-        print(table(chain_count_mtx[, "light"], useNA="ifany"))
-        cat("\n")
-        
-        cat("\nNumber of heavy and light chains per cell:\n")
-        print(table(chain_count_mtx[, "heavy"], chain_count_mtx[, "light"]))
-        cat("\n")
-        
-        cat("\nConfig:", logic_num_HL, "\n")
-        
-        if (logic_num_HL=="1H_1L") {
-            # exactly 1 heavy, exactly 1 light
-            bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]==1
-        } else if (logic_num_HL=="1H_min1L") {
-            # exactly 1 heavy, at least 1 light
-            bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]>=1
-        } else if (logic_num_HL=="1H") {
-            # excatly 1 heavy, regardless of the number of light chain(s)
-            # (could be 0 light chain)
-            bool_num_HL = chain_count_mtx[, "heavy"]==1
-        } else if (logic_num_HL=="1H_min1L_or_min1H_1L") {
-            # exactly 1 heavy, at least 1 light
-            # OR
-            # at least 1 heavy, exactly 1 light
-            bool_1H_min1L = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]>=1
-            bool_min1H_1L = chain_count_mtx[, "heavy"]>=1 & chain_count_mtx[, "light"]==1
-            bool_num_HL = bool_1H_min1L | bool_min1H_1L
-        } else {
-            warning("Unrecognized option for `logic`. `check_num_HL` skipped.\n")
-            bool_num_HL = rep(T, nrow(chain_count_mtx))
-        }
-        
-        cat("\ncheck_num_HL, number of cells:\n")
-        cat("col:", col_cell, "\n")
-        print(table(bool_num_HL), useNA="ifany")
-        
-        # map back to db
-        uniq_cells_pass = uniq_cells[bool_num_HL]
-        
-        bool_num_HL_db = db[[col_cell]] %in% uniq_cells_pass
-        
-        # filter down to exactly 1 H and exactly 1 L
-        if (logic_num_HL %in% c("1H_min1L", "1H_min1L_or_min1H_1L")) {
-            # if there are cells with more than 1 H or L
-            if ( sum(bool_num_HL_db) != length(uniq_cells_pass)*2 ) {
+        if (chain_type=="IG") {
+            
+            chain_count_mtx = matrix(0, nrow=length(uniq_cells), ncol=2)
+            colnames(chain_count_mtx) = c("heavy", "light")
+            rownames(chain_count_mtx) = uniq_cells
+            
+            # row: IG[HKL]
+            # col: cell ID
+            tab_cell_chain = table(db[[col_locus]], db[[col_cell]], useNA="ifany")
+            
+            # wrt tab_cell_chain
+            idx_tab = match(uniq_cells, colnames(tab_cell_chain))
+            stopifnot(all.equal(uniq_cells, colnames(tab_cell_chain)[idx_tab]))
+            
+            if ("IGH" %in% db[[col_locus]]) {
+                chain_count_mtx[, "heavy"] = tab_cell_chain["IGH", idx_tab]
+            }
+            
+            vec_light_chain_uniq = c("IGL", "IGK")
+            vec_light_chain_uniq_bool = vec_light_chain_uniq %in% db[[col_locus]]
+            if (all(vec_light_chain_uniq_bool)) {
+                # both IGL and IGK present
+                chain_count_mtx[, "light"] = colSums(tab_cell_chain[vec_light_chain_uniq, idx_tab])
+            } else {
+                # only one of IGL or IGK present
+                # colSums might fail with a single column
+                cur_light_chain = vec_light_chain_uniq[vec_light_chain_uniq_bool]
+                stopifnot(length(cur_light_chain)==1)
                 
-                # initialize
-                bool_keep_seq = rep(T, nrow(db))
-                
-                # cells with >1 heavy, or {either >1 heavy or >1 light}
-                
-                chain_count_mtx_2 = chain_count_mtx[bool_num_HL, ]
-                # sanity check: every cell in this table should have at least 1H
-                # and/or at least 1L
-                stopifnot(all( rowSums(chain_count_mtx_2>=1)==2 ))
-                
-                if (logic_num_HL=="1H_min1L") {
-                    cells_min1 = rownames(chain_count_mtx_2)[chain_count_mtx_2[, "light"]>1]
-                } else {
-                    # in each cell, how many chains have count >1?
-                    chain_count_mtx_2_rowsum = rowSums(chain_count_mtx_2>1)
-                    # expect at most 1 chain has count >1
-                    stopifnot(all(chain_count_mtx_2_rowsum<=1))
-                    # cells with chain with count >1
-                    cells_min1 = rownames(chain_count_mtx_2)[chain_count_mtx_2_rowsum==1]
-                }
-                
-                # For each cell, set the boolean in bool_kep_seq for the non-majority
-                # heavy/light (depending on which chain has >1) to F
-                # If tied, keep the seq that appears earlier in the db (which.max) 
-                for (cur_cell in cells_min1) {
-                    # wrt db
-                    idx_cell = which(db[[col_cell]]==cur_cell)
+                chain_count_mtx[, "light"] = tab_cell_chain[cur_light_chain, idx_tab]
+            }
+            
+            
+            # sanity check
+            stopifnot(!any(is.na(chain_count_mtx)))
+            # number of chains per cell should match
+            stopifnot( all.equal( rowSums(chain_count_mtx), 
+                                  colSums(tab_cell_chain)[idx_tab], 
+                                  check.attributes=F ) )
+            
+            cat("\nNumber of heavy chains per cell:\n")
+            print(table(chain_count_mtx[, "heavy"], useNA="ifany"))
+            cat("\n")
+            
+            cat("\nNumber of light chains per cell:\n")
+            print(table(chain_count_mtx[, "light"], useNA="ifany"))
+            cat("\n")
+            
+            cat("\nNumber of heavy and light chains per cell:\n")
+            print(table(chain_count_mtx[, "heavy"], chain_count_mtx[, "light"]))
+            cat("\n")
+            
+            cat("\nConfig:", logic_num_HL, "\n")
+            
+            if (logic_num_HL=="1H_1L") {
+                # exactly 1 heavy, exactly 1 light
+                bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]==1
+            } else if (logic_num_HL=="1H_min1L") {
+                # exactly 1 heavy, at least 1 light
+                bool_num_HL = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]>=1
+            } else if (logic_num_HL=="1H") {
+                # excatly 1 heavy, regardless of the number of light chain(s)
+                # (could be 0 light chain)
+                bool_num_HL = chain_count_mtx[, "heavy"]==1
+            } else if (logic_num_HL=="1H_min1L_or_min1H_1L") {
+                # exactly 1 heavy, at least 1 light
+                # OR
+                # at least 1 heavy, exactly 1 light
+                bool_1H_min1L = chain_count_mtx[, "heavy"]==1 & chain_count_mtx[, "light"]>=1
+                bool_min1H_1L = chain_count_mtx[, "heavy"]>=1 & chain_count_mtx[, "light"]==1
+                bool_num_HL = bool_1H_min1L | bool_min1H_1L
+            } else {
+                warning("Unrecognized option for `logic`. `check_num_HL` skipped.\n")
+                bool_num_HL = rep(T, nrow(chain_count_mtx))
+            }
+            
+            cat("\ncheck_num_HL, number of cells:\n")
+            cat("col:", col_cell, "\n")
+            print(table(bool_num_HL), useNA="ifany")
+            
+            # map back to db
+            uniq_cells_pass = uniq_cells[bool_num_HL]
+            
+            bool_num_HL_db = db[[col_cell]] %in% uniq_cells_pass
+            
+            # filter down to exactly 1 H and exactly 1 L
+            if (logic_num_HL %in% c("1H_min1L", "1H_min1L_or_min1H_1L")) {
+                # if there are cells with more than 1 H or L
+                if ( sum(bool_num_HL_db) != length(uniq_cells_pass)*2 ) {
                     
-                    # which has >1? heavy or light
-                    cur_cell_locus_tab = table(db[[col_locus]][idx_cell])
-                    # wrt cur_cell_locus_tab
-                    i_tab_h = which(names(cur_cell_locus_tab)=="IGH")
+                    # initialize
+                    bool_keep_seq = rep(T, nrow(db))
                     
-                    if (cur_cell_locus_tab[i_tab_h]>1) {
-                        # if >1 heavy, must be only 1 light
-                        stopifnot(sum(cur_cell_locus_tab[-i_tab_h])==1)
-                        # keep most abundant heavy; disregard remaining heavy
-                        # wrt db
-                        idx_db_h = which(db[[col_cell]]==cur_cell & db[[col_locus]]=="IGH")
-                        # wrt idx_db_h
-                        idx_db_h_max = which.max(db[[col_umi]][idx_db_h])
-                        bool_keep_seq[idx_db_h[-idx_db_h_max]] = F
+                    # cells with >1 heavy, or {either >1 heavy or >1 light}
+                    
+                    chain_count_mtx_2 = chain_count_mtx[bool_num_HL, ]
+                    # sanity check: every cell in this table should have at least 1H
+                    # and/or at least 1L
+                    stopifnot(all( rowSums(chain_count_mtx_2>=1)==2 ))
+                    
+                    if (logic_num_HL=="1H_min1L") {
+                        cells_min1 = rownames(chain_count_mtx_2)[chain_count_mtx_2[, "light"]>1]
                     } else {
-                        # if 1 heavy, must be >1 light
-                        stopifnot(sum(cur_cell_locus_tab[-i_tab_h])>1)
-                        # keep most abundant light; disregard remaining light
-                        # wrt db
-                        idx_db_l = which(db[[col_cell]]==cur_cell & db[[col_locus]]!="IGH")
-                        # wrt idx_db_l
-                        idx_db_l_max = which.max(db[[col_umi]][idx_db_l])
-                        bool_keep_seq[idx_db_l[-idx_db_l_max]] = F
+                        # in each cell, how many chains have count >1?
+                        chain_count_mtx_2_rowsum = rowSums(chain_count_mtx_2>1)
+                        # expect at most 1 chain has count >1
+                        stopifnot(all(chain_count_mtx_2_rowsum<=1))
+                        # cells with chain with count >1
+                        cells_min1 = rownames(chain_count_mtx_2)[chain_count_mtx_2_rowsum==1]
                     }
+                    
+                    # For each cell, set the boolean in bool_kep_seq for the non-majority
+                    # heavy/light (depending on which chain has >1) to F
+                    # If tied, keep the seq that appears earlier in the db (which.max) 
+                    for (cur_cell in cells_min1) {
+                        # wrt db
+                        idx_cell = which(db[[col_cell]]==cur_cell)
+                        
+                        # which has >1? heavy or light
+                        cur_cell_locus_tab = table(db[[col_locus]][idx_cell])
+                        # wrt cur_cell_locus_tab
+                        i_tab_h = which(names(cur_cell_locus_tab)=="IGH")
+                        
+                        if (cur_cell_locus_tab[i_tab_h]>1) {
+                            # if >1 heavy, must be only 1 light
+                            stopifnot(sum(cur_cell_locus_tab[-i_tab_h])==1)
+                            # keep most abundant heavy; disregard remaining heavy
+                            # wrt db
+                            idx_db_h = which(db[[col_cell]]==cur_cell & db[[col_locus]]=="IGH")
+                            # wrt idx_db_h
+                            idx_db_h_max = which.max(db[[col_umi]][idx_db_h])
+                            bool_keep_seq[idx_db_h[-idx_db_h_max]] = F
+                        } else {
+                            # if 1 heavy, must be >1 light
+                            stopifnot(sum(cur_cell_locus_tab[-i_tab_h])>1)
+                            # keep most abundant light; disregard remaining light
+                            # wrt db
+                            idx_db_l = which(db[[col_cell]]==cur_cell & db[[col_locus]]!="IGH")
+                            # wrt idx_db_l
+                            idx_db_l_max = which.max(db[[col_umi]][idx_db_l])
+                            bool_keep_seq[idx_db_l[-idx_db_l_max]] = F
+                        }
+                    }
+                    # sanity check
+                    # there should be F's in bool_keep_seq (can't be still all T)
+                    stopifnot(!all(bool_keep_seq))
+                    
+                    bool_num_HL_db = bool_num_HL_db & bool_keep_seq
+                    
+                    # more sanity checks
+                    # dimension should still match nrow(db)
+                    stopifnot(length(bool_num_HL_db) == nrow(db))
+                    # number of cells passed should remain unchanged
+                    stopifnot( length(uniq_cells_pass) == 
+                                   length(unique(db[[col_cell]][bool_num_HL_db])) )
+                    # after filtering there should be exactly 1 H and exactly 1 L per cell
+                    stopifnot( sum(bool_num_HL_db) == length(uniq_cells_pass)*2 )
+                    stopifnot( sum(db[[col_locus]][bool_num_HL_db]=="IGH") == 
+                                   sum(db[[col_locus]][bool_num_HL_db]!="IGH") )
+                    
+                } 
+            }
+            
+        } else if (chain_type=="TR") {
+            
+            chain_count_mtx = matrix(0, nrow=length(uniq_cells), ncol=4)
+            vec_tr_loci = c("TRB","TRA","TRD","TRG")
+            colnames(chain_count_mtx) = vec_tr_loci
+            rownames(chain_count_mtx) = uniq_cells
+            
+            # row: TR[BADG]
+            # col: cell ID
+            tab_cell_chain = table(db[[col_locus]], db[[col_cell]], useNA="ifany")
+            
+            # wrt tab_cell_chain
+            idx_tab = match(uniq_cells, colnames(tab_cell_chain))
+            stopifnot(all.equal(uniq_cells, colnames(tab_cell_chain)[idx_tab]))
+            
+            for (tr_locus in vec_tr_loci) {
+                if (tr_locus %in% db[[col_locus]]) {
+                    chain_count_mtx[, tr_locus] = tab_cell_chain[tr_locus, idx_tab]
                 }
-                # sanity check
-                # there should be F's in bool_keep_seq (can't be still all T)
-                stopifnot(!all(bool_keep_seq))
+            }
+            
+            # sanity check
+            stopifnot(!any(is.na(chain_count_mtx)))
+            # number of chains per cell should match
+            stopifnot( all.equal( rowSums(chain_count_mtx), 
+                                  colSums(tab_cell_chain)[idx_tab], 
+                                  check.attributes=F ) )
+            
+            # First, any cell whose $locus is not {TRB,TRA}, {TRD, TRG}, 
+            # or a single value, is removed
+            
+            chain_count_mtx_binary = chain_count_mtx>0
+            
+            # a single value
+            vec_bool_single_locus = rowSums(chain_count_mtx_binary)==1
+            # {TRB,TRA} only
+            vec_bool_ba_only = (chain_count_mtx_binary[,"TRB"]==1 &
+                                chain_count_mtx_binary[,"TRA"]==1 &
+                                chain_count_mtx_binary[,"TRD"]==0 &
+                                chain_count_mtx_binary[,"TRG"]==0)
+            # {TRD,TRG} only
+            vec_bool_dg_only = (chain_count_mtx_binary[,"TRB"]==0 &
+                                chain_count_mtx_binary[,"TRA"]==0 &
+                                chain_count_mtx_binary[,"TRD"]==1 &
+                                chain_count_mtx_binary[,"TRG"]==1)
+            
+            vec_bool_loci_ok = (vec_bool_single_locus |
+                                vec_bool_ba_only |
+                                vec_bool_dg_only)
+            
+            cat("\nNumber of unique cells passing within-cell loci check:",
+                sum(vec_bool_loci_ok), "/", length(uniq_cells),
+                "( # failed:", sum(!vec_bool_loci_ok), ")\n")
+            
+            for (cur_tr_loci in c("ba", "dg")) {
                 
-                bool_num_HL_db = bool_num_HL_db & bool_keep_seq
+                if (cur_tr_loci=="ba") {
+                    cur_chain_vdj = "TRB"
+                    cur_chain_vj = "TRA"
+                    cur_cat = "--- Cells with {TRB, TRA} only ---"
+                    cur_loci_bool = vec_bool_ba_only
+                } else if (cur_tr_loci=="dg") {
+                    cur_chain_vdj = "TRD"
+                    cur_chain_vj = "TRG"
+                    cur_cat = "--- Cells with {TRD, TRG} only ---"
+                    cur_loci_bool = vec_bool_dg_only
+                }
                 
-                # more sanity checks
-                # dimension should still match nrow(db)
-                stopifnot(length(bool_num_HL_db) == nrow(db))
-                # number of cells passed should remain unchanged
-                stopifnot( length(uniq_cells_pass) == 
-                           length(unique(db[[col_cell]][bool_num_HL_db])) )
-                # after filtering there should be exactly 1 H and exactly 1 L per cell
-                stopifnot( sum(bool_num_HL_db) == length(uniq_cells_pass)*2 )
-                stopifnot( sum(db[[col_locus]][bool_num_HL_db]=="IGH") == 
-                               sum(db[[col_locus]][bool_num_HL_db]!="IGH") )
+                cat(cur_cat, "\n")
                 
-            } 
+                if (any(cur_loci_bool)) {
+                    
+                    cur_chain_count_mtx = chain_count_mtx[cur_loci_bool, ]
+                    
+                    cat("\nNumber of", cur_chain_vdj, "per cell:\n")
+                    print(table(cur_chain_count_mtx[, cur_chain_vdj], useNA="ifany"))
+                    cat("\n")
+                    
+                    cat("\nNumber of", cur_chain_vj, "per cell:\n")
+                    print(table(cur_chain_count_mtx[, cur_chain_vj], useNA="ifany"))
+                    cat("\n")
+                    
+                    cat("\nNumber of", cur_chain_vdj, "and", cur_chain_vj, "per cell:\n")
+                    cat("Row =", cur_chain_vdj, "; col =", cur_chain_vj, "\n")
+                    print(table(cur_chain_count_mtx[, cur_chain_vdj],
+                                cur_chain_count_mtx[, cur_chain_vj], useNA="ifany"))
+                    cat("\n")
+                    
+                    cat("\nConfig:", logic_num_HL, "\n") 
+                    
+                    if (logic_num_HL=="1H_1L") {
+                        # exactly 1 VDJ chain, exactly 1 VJ chain
+                        bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]==1
+                    } else if (logic_num_HL=="1H_min1L") {
+                        # exactly 1 VDJ chain, at least 1 VJ chain
+                        bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]>=1
+                    } else if (logic_num_HL=="1H") {
+                        # excatly 1 VDJ chain, regardless of the number of VJ chain(s)
+                        # (could be 0 VJ chain)
+                        bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1
+                    } else if (logic_num_HL=="1H_min1L_or_min1H_1L") {
+                        # exactly 1 VDJ chain, at least 1 VJ chain
+                        # OR
+                        # at least 1 VDJ chain, exactly 1 VJ chain
+                        bool_1H_min1L = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]>=1
+                        bool_min1H_1L = cur_chain_count_mtx[, cur_chain_vdj]>=1 & cur_chain_count_mtx[, cur_chain_vj]==1
+                        bool_num_HL = bool_1H_min1L | bool_min1H_1L
+                    } else {
+                        warning("Unrecognized option for `logic`. `check_num_HL` skipped.\n")
+                        bool_num_HL = rep(T, nrow(cur_chain_count_mtx))
+                    }
+                    
+                    cat("\ncheck_num_HL, number of cells:\n")
+                    cat("col:", col_cell, "\n")
+                    print(table(bool_num_HL), useNA="ifany")
+                    
+                } else {
+                    # none
+                }
+                
+                
+                
+            }
+            
         }
-
+        
     } else {
         bool_num_HL_db = rep(T, nrow(db))
     }
