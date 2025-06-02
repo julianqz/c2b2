@@ -896,6 +896,7 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
             
             cat("\ncheck_num_HL, number of cells:\n")
             cat("col:", col_cell, "\n")
+            cat(logic_num_HL, "\n")
             print(table(bool_num_HL), useNA="ifany")
             
             # map back to db
@@ -983,6 +984,9 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
             
         } else if (chain_type=="TR") {
             
+            vec_tr_vdj_chain = c("TRB", "TRD")
+            vec_tr_vj_chain = c("TRA", "TRG")
+            
             chain_count_mtx = matrix(0, nrow=length(uniq_cells), ncol=4)
             vec_tr_loci = c("TRB","TRA","TRD","TRG")
             colnames(chain_count_mtx) = vec_tr_loci
@@ -1035,76 +1039,191 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
                 sum(vec_bool_loci_ok), "/", length(uniq_cells),
                 "( # failed:", sum(!vec_bool_loci_ok), ")\n")
             
-            for (cur_tr_loci in c("ba", "dg")) {
+            
+            if (logic_num_HL=="1H") {
+                # excatly 1 VDJ chain, regardless of the number of VJ chain(s)
+                # (could be 0 VJ chain)
+                bool_num_HL = vec_bool_single_locus
                 
-                if (cur_tr_loci=="ba") {
-                    cur_chain_vdj = "TRB"
-                    cur_chain_vj = "TRA"
-                    cur_cat = "--- Cells with {TRB, TRA} only ---"
-                    cur_loci_bool = vec_bool_ba_only
-                } else if (cur_tr_loci=="dg") {
-                    cur_chain_vdj = "TRD"
-                    cur_chain_vj = "TRG"
-                    cur_cat = "--- Cells with {TRD, TRG} only ---"
-                    cur_loci_bool = vec_bool_dg_only
-                }
+            } else if (logic_num_HL %in% c("1H_1L", "1H_min1L", "1H_min1L_or_min1H_1L")) {
                 
-                cat(cur_cat, "\n")
+                lst_bool_num_HL_ba_dg = vector(mode="list", length=2)
+                names(lst_bool_num_HL_ba_dg) = c("BA", "DG")
                 
-                if (any(cur_loci_bool)) {
+                for (cur_tr_loci in c("BA", "DG")) {
                     
-                    cur_chain_count_mtx = chain_count_mtx[cur_loci_bool, ]
-                    
-                    cat("\nNumber of", cur_chain_vdj, "per cell:\n")
-                    print(table(cur_chain_count_mtx[, cur_chain_vdj], useNA="ifany"))
-                    cat("\n")
-                    
-                    cat("\nNumber of", cur_chain_vj, "per cell:\n")
-                    print(table(cur_chain_count_mtx[, cur_chain_vj], useNA="ifany"))
-                    cat("\n")
-                    
-                    cat("\nNumber of", cur_chain_vdj, "and", cur_chain_vj, "per cell:\n")
-                    cat("Row =", cur_chain_vdj, "; col =", cur_chain_vj, "\n")
-                    print(table(cur_chain_count_mtx[, cur_chain_vdj],
-                                cur_chain_count_mtx[, cur_chain_vj], useNA="ifany"))
-                    cat("\n")
-                    
-                    cat("\nConfig:", logic_num_HL, "\n") 
-                    
-                    if (logic_num_HL=="1H_1L") {
-                        # exactly 1 VDJ chain, exactly 1 VJ chain
-                        bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]==1
-                    } else if (logic_num_HL=="1H_min1L") {
-                        # exactly 1 VDJ chain, at least 1 VJ chain
-                        bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]>=1
-                    } else if (logic_num_HL=="1H") {
-                        # excatly 1 VDJ chain, regardless of the number of VJ chain(s)
-                        # (could be 0 VJ chain)
-                        bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1
-                    } else if (logic_num_HL=="1H_min1L_or_min1H_1L") {
-                        # exactly 1 VDJ chain, at least 1 VJ chain
-                        # OR
-                        # at least 1 VDJ chain, exactly 1 VJ chain
-                        bool_1H_min1L = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]>=1
-                        bool_min1H_1L = cur_chain_count_mtx[, cur_chain_vdj]>=1 & cur_chain_count_mtx[, cur_chain_vj]==1
-                        bool_num_HL = bool_1H_min1L | bool_min1H_1L
-                    } else {
-                        warning("Unrecognized option for `logic`. `check_num_HL` skipped.\n")
-                        bool_num_HL = rep(T, nrow(cur_chain_count_mtx))
+                    if (cur_tr_loci=="BA") {
+                        cur_chain_vdj = "TRB"
+                        cur_chain_vj = "TRA"
+                        cur_cat = "--- Cells with {TRB, TRA} only ---"
+                        cur_loci_bool = vec_bool_ba_only
+                        
+                    } else if (cur_tr_loci=="DG") {
+                        cur_chain_vdj = "TRD"
+                        cur_chain_vj = "TRG"
+                        cur_cat = "--- Cells with {TRD, TRG} only ---"
+                        cur_loci_bool = vec_bool_dg_only
                     }
                     
-                    cat("\ncheck_num_HL, number of cells:\n")
-                    cat("col:", col_cell, "\n")
-                    print(table(bool_num_HL), useNA="ifany")
+                    cat(cur_cat, "\n")
                     
-                } else {
-                    # none
+                    if (any(cur_loci_bool)) {
+                        
+                        cur_chain_count_mtx = chain_count_mtx[cur_loci_bool, ]
+                        
+                        cat("\nNumber of", cur_chain_vdj, "per cell:\n")
+                        print(table(cur_chain_count_mtx[, cur_chain_vdj], useNA="ifany"))
+                        cat("\n")
+                        
+                        cat("\nNumber of", cur_chain_vj, "per cell:\n")
+                        print(table(cur_chain_count_mtx[, cur_chain_vj], useNA="ifany"))
+                        cat("\n")
+                        
+                        cat("\nNumber of", cur_chain_vdj, "and", cur_chain_vj, "per cell:\n")
+                        cat("Row =", cur_chain_vdj, "; col =", cur_chain_vj, "\n")
+                        print(table(cur_chain_count_mtx[, cur_chain_vdj],
+                                    cur_chain_count_mtx[, cur_chain_vj], useNA="ifany"))
+                        cat("\n")
+                        
+                        cat("\nConfig:", logic_num_HL, "\n") 
+                        
+                        # wrt cur_chain_count_mtx
+                        if (logic_num_HL=="1H_1L") {
+                            # exactly 1 VDJ chain, exactly 1 VJ chain
+                            cur_bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]==1
+                        } else if (logic_num_HL=="1H_min1L") {
+                            # exactly 1 VDJ chain, at least 1 VJ chain
+                            cur_bool_num_HL = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]>=1
+                        } else if (logic_num_HL=="1H_min1L_or_min1H_1L") {
+                            # exactly 1 VDJ chain, at least 1 VJ chain
+                            # OR
+                            # at least 1 VDJ chain, exactly 1 VJ chain
+                            cur_bool_1H_min1L = cur_chain_count_mtx[, cur_chain_vdj]==1 & cur_chain_count_mtx[, cur_chain_vj]>=1
+                            cur_bool_min1H_1L = cur_chain_count_mtx[, cur_chain_vdj]>=1 & cur_chain_count_mtx[, cur_chain_vj]==1
+                            cur_bool_num_HL = cur_bool_1H_min1L | cur_bool_min1H_1L
+                        } 
+                        
+                        cat("\ncheck_num_HL, number of cells:\n")
+                        cat("col:", col_cell, "\n")
+                        cat(cur_chain_vdj, cur_chain_vj, logic_num_HL, "\n")
+                        print(table(cur_bool_num_HL), useNA="ifany")
+                        
+                        # wrt chain_count_mtx
+                        cur_bool_num_HL_full = cur_loci_bool
+                        cur_bool_num_HL_full[which(cur_bool_num_HL_full)] = cur_bool_num_HL
+                        
+                        lst_bool_num_HL_ba_dg[[cur_tr_loci]] = cur_bool_num_HL_full
+                            
+                    } else {
+                        # none
+                        # cur_loci_bool all F
+                        cat("\ncheck_num_HL skipped for", cur_tr_loci, "(no such cell)\n")
+                        lst_bool_num_HL_ba_dg[[cur_tr_loci]] = cur_loci_bool
+                    }
                 }
                 
+                # never both TRUE
+                bool_num_HL_df = do.call(cbind, lst_bool_num_HL_ba_dg)
+                stopifnot( all( rowSums(bool_num_HL_df)<=1 ) )
                 
+                # OR
+                bool_num_HL = rowSums(bool_num_HL_df)==1
                 
+            } else {
+                warning("Unrecognized option for `logic`. `check_num_HL` skipped.\n")
+                bool_num_HL = rep(T, nrow(chain_count_mtx))
             }
             
+            
+            # map back to db
+            uniq_cells_pass = uniq_cells[bool_num_HL]
+            
+            bool_num_HL_db = db[[col_cell]] %in% uniq_cells_pass
+            
+            
+            # filter down to exactly 1 H and exactly 1 L
+            if (logic_num_HL %in% c("1H_min1L", "1H_min1L_or_min1H_1L")) {
+                # if there are cells with more than 1 H or L
+                if ( sum(bool_num_HL_db) != length(uniq_cells_pass)*2 ) {
+                    
+                    # initialize
+                    bool_keep_seq = rep(T, nrow(db))
+                    
+                    # cells with >1 heavy, or {either >1 heavy or >1 light}
+                    
+                    chain_count_mtx_2 = chain_count_mtx[bool_num_HL, ]
+                    # sanity check: every cell in this table should have at least 1H
+                    # and/or at least 1L
+                    stopifnot(all( rowSums(chain_count_mtx_2>=1)==2 ))
+                    
+                    if (logic_num_HL=="1H_min1L") {
+                        cur_bool = chain_count_mtx_2[, "TRA"]>1 | chain_count_mtx_2[, "TRG"]>1
+                        cells_min1 = rownames(chain_count_mtx_2)[cur_bool]
+                    } else {
+                        # in each cell, how many chains have count >1?
+                        chain_count_mtx_2_rowsum = rowSums(chain_count_mtx_2>1)
+                        # expect at most 1 chain has count >1
+                        stopifnot(all(chain_count_mtx_2_rowsum<=1))
+                        # cells with chain with count >1
+                        cells_min1 = rownames(chain_count_mtx_2)[chain_count_mtx_2_rowsum==1]
+                    }
+                    
+                    # For each cell, set the boolean in bool_kep_seq for the non-majority
+                    # VDJ/VJ chain (depending on which chain has >1) to F
+                    # If tied, keep the seq that appears earlier in the db (which.max) 
+                    for (cur_cell in cells_min1) {
+                        # wrt db
+                        idx_cell = which(db[[col_cell]]==cur_cell)
+                        
+                        # which has >1? VDJ or VJ
+                        cur_cell_locus_tab = table(db[[col_locus]][idx_cell])
+                        # wrt cur_cell_locus_tab
+                        i_tab_vdj = which(names(cur_cell_locus_tab) %in% vec_tr_vdj_chain)
+                        # expect exactly 1 VDJ chain (not 2; i.e. either TRB or TRD)
+                        stopifnot(length(i_tab_vdj)==1)
+                        
+                        i_tab_h = which(names(cur_cell_locus_tab)=="IGH")
+                        
+                        if (cur_cell_locus_tab[i_tab_vdj]>1) {
+                            # if >1 VDJ, must be only 1 VJ
+                            stopifnot(sum(cur_cell_locus_tab[-i_tab_vdj])==1)
+                            # keep most abundant VDJ; disregard remaining VDJ
+                            # wrt db
+                            idx_db_vdj = which(db[[col_cell]]==cur_cell & db[[col_locus]] %in% vec_tr_vdj_chain)
+                            # wrt idx_db_vdj
+                            idx_db_vdj_max = which.max(db[[col_umi]][idx_db_vdj])
+                            bool_keep_seq[idx_db_vdj[-idx_db_vdj_max]] = F
+                        } else {
+                            # if 1 VDJ, must be >1 VJ
+                            stopifnot(sum(cur_cell_locus_tab[-i_tab_vdj])>1)
+                            # keep most abundant VJ; disregard remaining VJ
+                            # wrt db
+                            idx_db_vj = which(db[[col_cell]]==cur_cell & db[[col_locus]] %in% vec_tr_vj_chain)
+                            # wrt idx_db_vj
+                            idx_db_vj_max = which.max(db[[col_umi]][idx_db_vj])
+                            bool_keep_seq[idx_db_vj[-idx_db_vj_max]] = F
+                        }
+                    }
+                    # sanity check
+                    # there should be F's in bool_keep_seq (can't be still all T)
+                    stopifnot(!all(bool_keep_seq))
+                    
+                    bool_num_HL_db = bool_num_HL_db & bool_keep_seq
+                    
+                    # more sanity checks
+                    # dimension should still match nrow(db)
+                    stopifnot(length(bool_num_HL_db) == nrow(db))
+                    # number of cells passed should remain unchanged
+                    stopifnot( length(uniq_cells_pass) == 
+                               length(unique(db[[col_cell]][bool_num_HL_db])) )
+                    # after filtering there should be exactly 1 H and exactly 1 L per cell
+                    stopifnot( sum(bool_num_HL_db) == length(uniq_cells_pass)*2 )
+                    stopifnot( sum(db[[col_locus]][bool_num_HL_db] %in% vec_tr_vdj_chain) == 
+                               sum(db[[col_locus]][bool_num_HL_db] %in% vec_tr_vj_chain) )
+                    
+                } 
+            }
+                
         }
         
     } else {
