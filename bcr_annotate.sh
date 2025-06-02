@@ -244,9 +244,15 @@ mkdir -p "${PATH_AUX}"
 # it would be more elegant to just use data_${CHAIN_TYPE} for both bcr and tcr
 
 if [[ ${CHAIN_TYPE} == "bcr" ]]; then
+
     PATH_OUTPUT="${PATH_PROJ}/data/annotate_${RUN_TYPE}/"
+    QC_CHAIN_TYPE="IG" # perform_qc()
+
 elif [[ ${CHAIN_TYPE} == "tcr" ]]; then
+
     PATH_OUTPUT="${PATH_PROJ}/data_${CHAIN_TYPE}/annotate_${RUN_TYPE}/"
+    QC_CHAIN_TYPE="TR" # perform_qc()
+
 fi
 
 mkdir -p "${PATH_OUTPUT}"
@@ -479,6 +485,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     		--qcDb "${PATH_MK}" \
     		--qcOutname "${CUR_ID}" \
     		--qcOutdir "${PATH_OUTPUT_ID}" \
+            --qcChainType "${QC_CHAIN_TYPE}" \
     		--qcColV "${QC_COL_V}" \
     		--qcColD "${QC_COL_D}" \
     		--qcColJ "${QC_COL_J}" \
