@@ -747,12 +747,14 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 }
 
 
-#' Perform cell-level QC for BCR sequences
+#' Perform cell-level QC for B/TCR sequences
 #' 
 #' @param   db                          data.frame
 #' @param   chain_type                  One of "IG" or "TR.
 #' @param   col_locus                   Column name for locus. Expected values
 #'                                      for `chain_type="IG"` are `{IGH, IGK, IGL}`.
+#'                                      Expected values for `chain_type="TR"` are
+#'                                      `{TRB, TRA, TRD, TRG}`.
 #' @param   col_cell                    Column name for cell ID.
 #' @param   col_umi                     Column name for UMI count.                                     
 #' @param   check_locus                 Boolean. Whether to perform check on the 
@@ -760,10 +762,12 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 #' @param   col_v_call                  Column name for V call.
 #' @param   check_num_HL                Boolean. Whether to perform check on the 
 #'                                      number of heavy and light chains per cell.
-#' @param   logic_num_HL                The logic to be applied to the check on the
-#'                                      number of heavy and light chains per cell.
-#'                                      One of `1H_1L`, `1H_min1L`, 
-#'                                      `1H_min1L_or_min1H_1L`, or `1H`,
+#' @param   logic_num_HL                The logic to be applied to the check on
+#'                                      BCR for the number of heavy and light chains 
+#'                                      per cell, or on TCR for the number of 
+#'                                      VDJ (TRB and TRD) and VJ (TRA and TRG) chains
+#'                                      per cell. One of `1H_1L`, `1H_min1L`, 
+#'                                      `1H_min1L_or_min1H_1L`, or `1H`.
 #'
 #' @returns A bool vector of length `nrow(db)` indicating whether each row
 #'          passed all checks of choice.
@@ -774,6 +778,7 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 #'          during the check for that cell. The result of the check is then 
 #'          propagated to all sequences linked to that cell.    
 #'          
+#'          For BCRs:
 #'          `1H_1L`: pass if a cell has exactly 1 heavy chain and exactly 1 light chain
 #'          `1H_min1L`: pass if a cell has exactly 1 heavy chain and at least 1 light chain
 #'          `1H_min1L_or_min1H_1L`: pass if 
@@ -786,7 +791,13 @@ perform_qc_seq = function(db, chain_type=c("IG", "TR"),
 #'          sequence (in terms of UMI count) is kept while the rest discarded. 
 #'          When tied, the sequence that appears earlier in the db is kept.
 #'          In other words, exactly 1 heavy and 1 light per cell is kept ultimately.
-#'                                                                                                                                                                          
+#'          
+#'          For TCRs:
+#'          First, cells with both TRB/TRA and TRD/TRG chains are removed.
+#'          Then, the same descriptions stated above for BCRs apply, except that
+#'          "heavy chain" is replaced by VDJ (TRB and TRD) chains, and "light chain"
+#'          is replaced by VJ (TRA and TRG) chains.
+#'                                                                                            
 perform_qc_cell = function(db, chain_type=c("IG", "TR"), 
                            col_locus, col_cell, col_umi,
                            check_locus, col_v_call, 
@@ -1035,6 +1046,15 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
                                 vec_bool_ba_only |
                                 vec_bool_dg_only)
             
+            cat("\nNumber of unique cells with chain(s) from a single locus:",
+                sum(vec_bool_single_locus), "/", length(uniq_cells), "\n")
+            
+            cat("\nNumber of unique cells with chains from only TRB & TRA loci:",
+                sum(vec_bool_ba_only), "/", length(uniq_cells), "\n")
+            
+            cat("\nNumber of unique cells with chains from only TRD & TRG loci:",
+                sum(vec_bool_dg_only), "/", length(uniq_cells), "\n")
+            
             cat("\nNumber of unique cells passing within-cell loci check:",
                 sum(vec_bool_loci_ok), "/", length(uniq_cells),
                 "( # failed:", sum(!vec_bool_loci_ok), ")\n")
@@ -1043,7 +1063,8 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
             if (logic_num_HL=="1H") {
                 # excatly 1 VDJ chain, regardless of the number of VJ chain(s)
                 # (could be 0 VJ chain)
-                bool_num_HL = vec_bool_single_locus
+                bool_num_HL = vec_bool_loci_ok & 
+                              (chain_count_mtx[, "TRB"]==1 | chain_count_mtx[, "TRD"]==1)
                 
             } else if (logic_num_HL %in% c("1H_1L", "1H_min1L", "1H_min1L_or_min1H_1L")) {
                 
@@ -1055,13 +1076,13 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
                     if (cur_tr_loci=="BA") {
                         cur_chain_vdj = "TRB"
                         cur_chain_vj = "TRA"
-                        cur_cat = "--- Cells with {TRB, TRA} only ---"
+                        cur_cat = "\n--- Cells with {TRB, TRA} only ---"
                         cur_loci_bool = vec_bool_ba_only
                         
                     } else if (cur_tr_loci=="DG") {
                         cur_chain_vdj = "TRD"
                         cur_chain_vj = "TRG"
-                        cur_cat = "--- Cells with {TRD, TRG} only ---"
+                        cur_cat = "\n--- Cells with {TRD, TRG} only ---"
                         cur_loci_bool = vec_bool_dg_only
                     }
                     
