@@ -1478,6 +1478,8 @@ split_db = function(db_name, chain_type="IG", use_locus=FALSE,
         col_split = col_v_call
     }
     
+    cat("\nPrimary column for splitting:", col_split, "\n")
+    
     #bool_heavy = tolower(substr(db[[col_v_call]], 1, 3))=="igh"
     # to work with IMGT High/V-QUEST output which adds species name in front of V gene annotation
     bool_vdj = grepl(pattern=regex_vdj, x=tolower(db[[col_split]]))
