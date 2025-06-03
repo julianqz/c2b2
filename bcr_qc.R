@@ -1408,69 +1408,228 @@ perform_qc = function(db_name, seq_level=T, cell_level=F, sequential=F,
 
 #' Post-QC split
 #' 
-#' Split by heavy/light and by productive/non-productive
+#' Split by heavy/light (vdj/vj) and by productive/non-productive
 #' 
 #' @param   db_name     Name of tab-separated file with headers that contains
-#'                      input data
+#'                      input data.
+#' @param   chain_type  Either "IG" or "TR".
+#' @param   use_locus   `TRUE` or `FALSE`. If `TRUE`, use `col_locus` instead of
+#'                      `col_v_call` for splitting. Defaults to `FALSE`.                    
 #' @param   col_v_call  Column name for V gene annotation. 
+#'                      By default, this is the primary column used for splitting.
+#' @param   col_locus   Column name for loci. With `use_locus=TRUE`, this will
+#'                      be the primary column used for splitting.
 #' @param   col_prod    Column name for productive/non-productive.
 #' @param   val_prod    Value in `col_prod` indicating productive.
 #' @param   outname     Stem of output filename. Prefix to 
 #'                      `_[heavy|light]_[pr|npr].tsv`.
 #' @param   outdir      Path to output directory.
 #' 
-#' @returns Writes `[outname]_[heavy|light]_[pr|npr].tsv` to `outdir`.
+#' @returns To `outdir`, writes the following output files:
 #' 
-#' @details Currently only supports chain_type="IG" ("TR" not yet supported).
-#'          Relies on "IG[HKL]" in V gene annotation to identify the locus.
-
-split_db = function(db_name, col_v_call, col_prod, val_prod, outname, outdir) {
+#'          BCR: `[outname]_[heavy|light]_[pr|npr].tsv`.
+#'          
+#'          TCR: `[outname]_[vdj|vj]_[pr|npr].tsv` and
+#'               `[outname]_TR[BADG]_[pr|npr].tsv`.
+#' 
+#' @details With `chain_type="IG"` and `use_locus=FALSE`, the function
+#'          relies on "IG[HKL]" in V gene annotation to identify the locus.
+#'          
+#'          Because some TCR V genes could have both TRAV and TRDV designations
+#'          (e.g. `TRAV14/DV4*01`, `TRAV38-2/DV8*01`), it is recommended to 
+#'          split by the locus annotation via specifying `use_locus=TRUE` when 
+#'          working with TCRs (`chain_type="TR"`).
+#'          
+split_db = function(db_name, chain_type="IG", use_locus=FALSE,
+                    col_v_call="v_call", col_locus="locus", 
+                    col_prod, val_prod, outname, outdir) {
     
     db = read.table(db_name, header=T, sep="\t", stringsAsFactors=F)
     
+    if (chain_type=="IG") {
+        regex_vdj = "^igh"
+        regex_vj = "^ig[kl]"
+        fn_vdj_part = "heavy"
+        fn_vj_part = "light"
+        
+    } else if (chain_type=="TR") {
+        regex_vdj = "^tr[bd]"
+        regex_vj = "^tr[ag]"
+        fn_vdj_part = "vdj"
+        fn_vj_part = "vj"
+        
+        regex_vdj_trb = "^trb"
+        regex_vdj_trd = "^trd"
+        regex_vj_tra = "^tra"
+        regex_vj_trg = "^trg"
+        fn_trb_part = "TRB"
+        fn_trd_part = "TRD"
+        fn_tra_part = "TRA"
+        fn_trg_part = "TRG"
+        
+    } else {
+        stop("Unknown chain_type. Must be one of {IG, TR}.")
+    }
+    
+    if (use_locus) {
+        col_split = col_locus
+    } else {
+        col_split = col_v_call
+    }
+    
     #bool_heavy = tolower(substr(db[[col_v_call]], 1, 3))=="igh"
     # to work with IMGT High/V-QUEST output which adds species name in front of V gene annotation
-    bool_heavy = grepl(pattern="igh", x=tolower(db[[col_v_call]]))
+    bool_vdj = grepl(pattern=regex_vdj, x=tolower(db[[col_split]]))
 
     bool_pr = db[[col_prod]]==val_prod
     
-    db_heavy_pr = db[bool_heavy & bool_pr, ]
-    db_heavy_npr = db[bool_heavy & !bool_pr, ]
-    db_light_pr = db[!bool_heavy & bool_pr, ]
-    db_light_npr = db[!bool_heavy & !bool_pr, ]
+    db_vdj_pr = db[bool_vdj & bool_pr, ]
+    db_vdj_npr = db[bool_vdj & !bool_pr, ]
+    db_vj_pr = db[!bool_vdj & bool_pr, ]
+    db_vj_npr = db[!bool_vdj & !bool_pr, ]
+    
+    if (chain_type=="TR") {
+        
+        bool_trb = grepl(pattern=regex_vdj_trb, x=tolower(db[[col_split]]))
+        bool_trd = grepl(pattern=regex_vdj_trd, x=tolower(db[[col_split]]))
+        bool_tra = grepl(pattern=regex_vj_tra, x=tolower(db[[col_split]]))
+        bool_trg = grepl(pattern=regex_vj_trg, x=tolower(db[[col_split]]))
+        
+        # bool_tr[bd] should all have bool_vdj=TRUE
+        # bool_tr[ag] should all have bool_vdj=FALSE
+        # this is double checkd by the stopifnot's below
+        bool_vdj_pr_trb = bool_trb & bool_pr
+        bool_vdj_pr_trd = bool_trd & bool_pr
+        bool_vdj_npr_trb = bool_trb & !bool_pr
+        bool_vdj_npr_trd = bool_trd & !bool_pr
+        
+        bool_vj_pr_tra = bool_tra & bool_pr
+        bool_vj_pr_trg = bool_trg & bool_pr
+        bool_vj_npr_tra = bool_tra & !bool_pr
+        bool_vj_npr_trg = bool_trg & !bool_pr
+        
+        stopifnot(all.equal(bool_vdj_pr_trb, bool_vdj & bool_pr & bool_trb))
+        stopifnot(all.equal(bool_vdj_pr_trd, bool_vdj & bool_pr & bool_trd))
+        stopifnot(all.equal(bool_vdj_npr_trb, bool_vdj & !bool_pr & bool_trb))
+        stopifnot(all.equal(bool_vdj_npr_trd, bool_vdj & !bool_pr & bool_trd))
+        
+        stopifnot(all.equal(bool_vj_pr_tra, !bool_vdj & bool_pr & bool_tra))
+        stopifnot(all.equal(bool_vj_pr_trg, !bool_vdj & bool_pr & bool_trg))
+        stopifnot(all.equal(bool_vj_npr_tra, !bool_vdj & !bool_pr & bool_tra))
+        stopifnot(all.equal(bool_vj_npr_trg, !bool_vdj & !bool_pr & bool_trg))
+        
+        db_vdj_pr_trb = db[bool_vdj_pr_trb, ]
+        db_vdj_pr_trd = db[bool_vdj_pr_trd, ]
+        db_vdj_npr_trb = db[bool_vdj_npr_trb, ]
+        db_vdj_npr_trd = db[bool_vdj_npr_trd, ]
+        
+        db_vj_pr_tra = db[bool_vj_pr_tra, ]
+        db_vj_pr_trg = db[bool_vj_pr_trg, ]
+        db_vj_npr_tra = db[bool_vj_npr_tra, ]
+        db_vj_npr_trg = db[bool_vj_npr_trg, ]
+    }
     
     setwd(outdir)
     
-    if (nrow(db_heavy_pr)>0) {
-        f = paste0(outname, "_heavy_pr.tsv")
-        write.table(db_heavy_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        cat("\n# seqs for heavy & productive:", nrow(db_heavy_pr), "\n")
+    if (nrow(db_vdj_pr)>0) {
+        f = paste0(outname, "_", fn_vdj_part, "_pr.tsv")
+        write.table(db_vdj_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for", fn_vdj_part, "& productive:", nrow(db_vdj_pr), "\n")
     } else {
-        cat("\nNo data for heavy & productive.\n")
+        cat("\nNo data for", fn_vdj_part, "& productive.\n")
     }
     
-    if (nrow(db_heavy_npr)>0) {
-        f = paste0(outname, "_heavy_npr.tsv")
-        write.table(db_heavy_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        cat("\n# seqs for heavy & non-productive:", nrow(db_heavy_npr), "\n")
+    if (nrow(db_vdj_npr)>0) {
+        f = paste0(outname, "_", fn_vdj_part, "_npr.tsv")
+        write.table(db_vdj_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for", fn_vdj_part, "& non-productive:", nrow(db_vdj_npr), "\n")
     } else {
-        cat("\nNo data for heavy & non-productive.\n")
+        cat("\nNo data for", fn_vdj_part, "& non-productive.\n")
     }
     
-    if (nrow(db_light_pr)>0) {
-        f = paste0(outname, "_light_pr.tsv")
-        write.table(db_light_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        cat("\n# seqs for light & productive:", nrow(db_light_pr), "\n")
+    if (nrow(db_vj_pr)>0) {
+        f = paste0(outname, "_", fn_vj_part, "_pr.tsv")
+        write.table(db_vj_pr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for", fn_vj_part, "& productive:", nrow(db_vj_pr), "\n")
     } else {
-        cat("\nNo data for light & productive.\n")
+        cat("\nNo data for", fn_vj_part, "& productive.\n")
     }
     
-    if (nrow(db_light_npr)>0) {
-        f = paste0(outname, "_light_npr.tsv")
-        write.table(db_light_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
-        cat("\n# seqs for light & non-productive:", nrow(db_light_npr), "\n")
+    if (nrow(db_vj_npr)>0) {
+        f = paste0(outname, "_", fn_vj_part, "_npr.tsv")
+        write.table(db_vj_npr, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+        cat("\n# seqs for", fn_vj_part, "& non-productive:", nrow(db_vj_npr), "\n")
     } else {
-        cat("\nNo data for light & non-productive.\n")
+        cat("\nNo data for", fn_vj_part, "& non-productive.\n")
+    }
+    
+    
+    if (chain_type=="TR") {
+        
+        if (nrow(db_vdj_pr_trb)>0) {
+            f = paste0(outname, "_", fn_trb_part, "_pr.tsv")
+            write.table(db_vdj_pr_trb, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_trb_part, "& productive:", nrow(db_vdj_pr_trb), "\n")
+        } else {
+            cat("\nNo data for", fn_trb_part, "& productive.\n")
+        }
+        
+        if (nrow(db_vdj_pr_trd)>0) {
+            f = paste0(outname, "_", fn_trd_part, "_pr.tsv")
+            write.table(db_vdj_pr_trd, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_trd_part, "& productive:", nrow(db_vdj_pr_trd), "\n")
+        } else {
+            cat("\nNo data for", fn_trd_part, "& productive.\n")
+        }
+        
+        if (nrow(db_vdj_npr_trb)>0) {
+            f = paste0(outname, "_", fn_trb_part, "_npr.tsv")
+            write.table(db_vdj_npr_trb, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_trb_part, "& non-productive:", nrow(db_vdj_npr_trb), "\n")
+        } else {
+            cat("\nNo data for", fn_trb_part, "& non-productive.\n")
+        }
+        
+        if (nrow(db_vdj_npr_trd)>0) {
+            f = paste0(outname, "_", fn_trd_part, "_npr.tsv")
+            write.table(db_vdj_npr_trd, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_trd_part, "& non-productive:", nrow(db_vdj_npr_trd), "\n")
+        } else {
+            cat("\nNo data for", fn_trd_part, "& non-productive.\n")
+        }
+        
+        if (nrow(db_vj_pr_tra)>0) {
+            f = paste0(outname, "_", fn_tra_part, "_pr.tsv")
+            write.table(db_vj_pr_tra, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_tra_part, "& productive:", nrow(db_vj_pr_tra), "\n")
+        } else {
+            cat("\nNo data for", fn_tra_part, "& productive.\n")
+        }
+        
+        if (nrow(db_vj_pr_trg)>0) {
+            f = paste0(outname, "_", fn_trg_part, "_pr.tsv")
+            write.table(db_vj_pr_trg, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_trg_part, "& productive:", nrow(db_vj_pr_trg), "\n")
+        } else {
+            cat("\nNo data for", fn_trg_part, "& productive.\n")
+        }
+        
+        if (nrow(db_vj_npr_tra)>0) {
+            f = paste0(outname, "_", fn_tra_part, "_npr.tsv")
+            write.table(db_vj_npr_tra, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_tra_part, "& non-productive:", nrow(db_vj_npr_tra), "\n")
+        } else {
+            cat("\nNo data for", fn_tra_part, "& non-productive.\n")
+        }
+        
+        if (nrow(db_vj_npr_trg)>0) {
+            f = paste0(outname, "_", fn_trg_part, "_npr.tsv")
+            write.table(db_vj_npr_trg, file=f, quote=F, sep="\t", row.names=F, col.names=T)
+            cat("\n# seqs for", fn_trg_part, "& non-productive:", nrow(db_vj_npr_trg), "\n")
+        } else {
+            cat("\nNo data for", fn_trg_part, "& non-productive.\n")
+        }
+        
     }
     
 }
