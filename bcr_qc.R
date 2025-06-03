@@ -821,8 +821,6 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
         # based on V call
         vec_chain = substr(db[[col_v_call]], 1, 3)
         
-        #* currently only supports chain_type="IG"
-        #  expect values {IGH, IGK, IGL}
         stopifnot( all.equal(vec_chain, db[[col_locus]]) )
     }
     
@@ -998,7 +996,7 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
             vec_tr_vdj_chain = c("TRB", "TRD")
             vec_tr_vj_chain = c("TRA", "TRG")
             
-            chain_count_mtx = matrix(0, nrow=length(uniq_cells), ncol=4)
+            chain_count_mtx = data.frame(matrix(0, nrow=length(uniq_cells), ncol=4))
             vec_tr_loci = c("TRB","TRA","TRD","TRG")
             colnames(chain_count_mtx) = vec_tr_loci
             rownames(chain_count_mtx) = uniq_cells
@@ -1027,7 +1025,9 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
             # First, any cell whose $locus is not {TRB,TRA}, {TRD, TRG}, 
             # or a single value, is removed
             
-            chain_count_mtx_binary = chain_count_mtx>0
+            # w/o data.frame(), even though chain_count_mtx is a data.frame,
+            # count_count_mtx>0 will be a logical matrix
+            chain_count_mtx_binary = data.frame(chain_count_mtx>0)
             
             # a single value
             vec_bool_single_locus = rowSums(chain_count_mtx_binary)==1
@@ -1144,7 +1144,8 @@ perform_qc_cell = function(db, chain_type=c("IG", "TR"),
                 }
                 
                 # never both TRUE
-                bool_num_HL_df = do.call(cbind, lst_bool_num_HL_ba_dg)
+                # w/o data.frame, result will be a logical matrix
+                bool_num_HL_df = data.frame(do.call(cbind, lst_bool_num_HL_ba_dg))
                 stopifnot( all( rowSums(bool_num_HL_df)<=1 ) )
                 
                 # OR
