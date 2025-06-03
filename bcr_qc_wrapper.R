@@ -85,12 +85,16 @@ option_list = list(
                 help="Boolean. Whether to split db."),
     make_option("--spDb", action="store", default=NA, type="character", 
                 help="db_name for split_db."),
+    make_option("--spUseLocus", action="store", default=FALSE, type="logical", 
+                help="Boolean. Whether to split primarily by locus column."),
     make_option("--spOutname", action="store", default=NA, type="character", 
                 help="[outname]_[heavy|light]_[pr|npr].tsv."),
     make_option("--spOutdir", action="store", default=NA, type="character", 
                 help="Path to write [outname]_[heavy|light]_[pr|npr].tsv."),
     make_option("--spColV", action="store", default="v_call", type="character", 
                 help="col_v_call."),
+    make_option("--spColLocus", action="store", default="locus", type="character", 
+                help="col_locus."),
     make_option("--spColProd", action="store", default="productive", type="character", 
                 help="col_prod."),
     make_option("--spValProd", action="store", default=TRUE, type="logical", 
@@ -156,7 +160,10 @@ if (opt$qc) {
 
 if (opt$sp) {
     
-    split_db(db_name=opt$spDb, col_v_call=opt$spColV, 
+    split_db(db_name=opt$spDb, chain_type=opt$qcChainType,
+             use_locus=opt$spUseLocus,
+             col_v_call=opt$spColV, 
+             col_locus=opt$spColLocus,
              col_prod=opt$spColProd, val_prod=opt$spValProd, 
              outname=opt$spOutname, outdir=opt$spOutdir)
     
