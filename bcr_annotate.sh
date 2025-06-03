@@ -92,18 +92,19 @@ usage () {
     echo -e "  -g  [QCSP] --qcColNA. If multuple values, separate by comma.\n" \
             "             E.g. 'germline_alignment, cdr3, PRCONS' "
 	echo -e "  -i  [QCSP] --qcColLenMod3."
-    echo -e "  -j  [QCSP] --qcColLocus."
+    echo -e "  -j  [QCSP] --qcColLocus and --spColLocus."
     echo -e "  -k  [QCSP] --qcColCell."
     echo -e "  -m  [QCSP] --qcColUMI."
     echo -e "  -n  [QCSP] --qcLogicNumHL."
 	echo -e "  -o  [QCSP] --spColV."
 	echo -e "  -p  [QCSP] --spColProd."            
 	echo -e "  -q  [QCSP] --spValProd."
+    echo -e "  -u  [QCSP] --spUseLocus."
     echo -e "  -h  This message."
 }
 
 # Get commandline arguments
-while getopts "A:t:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:r:s:R:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:q:h" OPT; do
+while getopts "A:t:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:r:s:R:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:q:u:h" OPT; do
     case "$OPT" in
     A)  PROJ_ID="${OPTARG}"
         ;;
@@ -210,6 +211,9 @@ while getopts "A:t:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:r:s:R:T:U:V:W:X:Y:Z:1:2:3:4:5
 		;;
 	q)  SP_VAL_PROD="${OPTARG}"
 		;;
+    u)  SP_USE_LOCUS="${OPTARG}"
+        SP_USE_LOCUS_SET=true
+        ;;
     h)  usage
         exit
         ;;
@@ -226,6 +230,11 @@ done
 # if -t not specified via command line, default to bcr
 if ! $CHAIN_TYPE_SET; then
     CHAIN_TYPE="bcr"
+fi
+
+# if -u not specified via command line, default to FALSE
+if ! $SP_USE_LOCUS_SET; then
+    SP_USE_LOCUS="FALSE"
 fi
 
 # paths
@@ -529,11 +538,14 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
         	"${PATH_SCRIPT_QCSP_WRAPPER}" \
         		--helper "${PATH_SCRIPT_QCSP_MAIN}" \
         		--qc "FALSE" \
+                --qcChainType "${QC_CHAIN_TYPE}" \
         		--sp "TRUE" \
         		--spDb "${PATH_INPUT_SP}" \
+                --spUseLocus "${SP_USE_LOCUS}" \
         		--spOutname "${CUR_ID}_qc-pass" \
         		--spOutdir "${PATH_OUTPUT_ID}" \
         		--spColV "${SP_COL_V}" \
+                --spColLocus "${QC_COL_LOCUS}" \
         		--spColProd "${SP_COL_PROD}" \
         		--spValProd "${SP_VAL_PROD}" \
         		&>> "${PATH_LOG_ID}"
