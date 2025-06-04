@@ -18,8 +18,10 @@
 #'                           VDJ sequences, ignore VJ sequences. See details below.
 #' @param  clone_id          Column name to be created for clone ID.
 #'
-#' @returns  A `data.frame`, with an added column `clone_id`. The number of rows 
+#' @returns  A list containing `db_passed` and `db_failed`, both `data.frame`.
+#'           `db_passed` contains an added column `clone_id`, and its number of rows 
 #'           may be fewer than the input `db`. See details below.
+#'           `db_failed` contains, if any, the rows from the input `db` that were removed.
 #'
 #' @details  In essence, TCR clonal relationships are inferred by first grouping 
 #'           cells/sequences by VJL (V gene, J gene, junction length), and then, 
@@ -31,7 +33,7 @@
 #'           If `single_cell_mode=TRUE`, single-cell mode is run. 
 #'           
 #'           - First, cells which do not have both VDJ and VJ sequences are removed.
-#'           This is why the output `data.frame` could potentially have fewer rows than
+#'           This is why the output `db_passed` could potentially have fewer rows than
 #'           the input `db`. It is assumed that each of the cells who do have both VDJ 
 #'           and VJ sequences has 1 VDJ and 1 VJ sequence.
 #'           
@@ -48,7 +50,8 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
     
     vec_loci_vdj = c("TRB", "TRD")
     vec_loci_vj = c("TRA", "TRG")
-    col_vjl_group = "vj_group" # from alakazam::groupGenes
+    col_vjl_group_alakazam = "vj_group" # from alakazam::groupGenes
+    col_vjl_group = "vjl_group" # rename
     
     cat("\nColumn for junction =", junc, "\n")
     cat("\nSingle-cell mode =", single_cell_mode, "\n")
@@ -84,8 +87,15 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
                 length(vec_uniq_cell_id_rmv), "cells (",
                 length(idx_db_rmv), "seqs)\n")
             
+            db_failed = db[idx_db_rmv, ]
+            
             db = db[-idx_db_rmv, ]
+            
+        } else {
+            db_failed = NULL
         }
+    } else {
+        db_failed = NULL
     }
     
     
@@ -96,8 +106,6 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
     # the locus column must be correct. 
     # Otherwise, groupGenes will be run with bulk sequencing assumptions, using all input sequences 
     # regardless of the values in the locus column.
-    
-    # groupGenes adds a $vj_group column (note: not $vjl_group)
     
     cat("\nPerforming VJL grouping...\n")
     
@@ -130,6 +138,11 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
                             first=F)
     }
     
+    # groupGenes adds a $vj_group column (note: not $vjl_group)
+    # rename it to $vjl_group
+    idx_col_vjl = which(colnames(db_vjl)==col_vjl_group_alakazam)
+    stopifnot(length(idx_col_vjl)==1)
+    colnames(db_vjl)[idx_col_vjl] = col_vjl_group
     
     ### prep format for helper func, if necessary
     
@@ -219,6 +232,7 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
     ### propagate clone IDs, if necessary
     
     cat("\nPropagating clone IDs...\n")
+    db[[col_vjl_group]] = NA
     db[[clone_id]] = NA
     
     if (single_cell_mode) {
@@ -228,17 +242,20 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
         stopifnot(all.equal( db[[cell_id]], 
                              db_clonal[[cell_id]][idx_cell_id_db_clonal] ))
         
+        db[[col_vjl_group]] = db_clonal[[col_vjl_group]][idx_cell_id_db_clonal]
         db[[clone_id]] = db_clonal[[clone_id]][idx_cell_id_db_clonal]
         
     } else {
+        db[[col_vjl_group]] = db_clonal[[col_vjl_group]]
         db[[clone_id]] = db_clonal[[clone_id]]
     }
+    stopifnot(!any(is.na(db[[col_vjl_group]])))
     stopifnot(!any(is.na(db[[clone_id]])))
     
     cat("\nOutput db has", nrow(db), "seqs, representing",
         length(unique(db[[clone_id]])), "clones\n")
-        
-    return(db)
+    
+    return(list(db_passed=db, db_failed=db_failed))
 }
 
 
