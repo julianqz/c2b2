@@ -4,7 +4,7 @@
 
 #' Infer TCR clonal relationships
 #'
-#' @param  db                A `data.frame`.
+#' @param  db                A `data.frame`. Long format expected. See details.
 #' @param  v_call            Column name for V gene annotation.
 #' @param  j_call            Column name for J gene annotation.
 #' @param  junc_len          Column name for junction length.
@@ -42,6 +42,10 @@
 #'           `use_only_vdj`. In the case that inference is performed based on VDJ 
 #'           sequences only, the resultant clone IDs are still propagated to all 
 #'           the corresponding VJ sequences. 
+#'           
+#'           Note on input `db`: "long" format is expected. That is, if the data is
+#'           single-cell, each row corresponds to a sequence, which could be VDJ or VJ.
+#'           In other words, a single cell corresponds to more than one row. 
 #'           
 define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus, 
                             single_cell_mode, use_only_vdj, clone_id) {
@@ -262,7 +266,8 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
 #' Infer TCR clonal relationships based on VJL grouping and identical junctions
 #' 
 #' @param  db            A `data.frame` containing `col_vjl`, and at least one of
-#'                       `col_junc_1` and `col_junc_2`. See below for details.
+#'                       `col_junc_1` and `col_junc_2`. Wide format expected. 
+#'                       See below for details.
 #' @param  col_vjl       Column name for VJL grouping.
 #'                       Defaults to `"vjl_group"`.
 #' @param  col_junc_1    Column name for junction 1 (presumably those of VDJ seqs).
