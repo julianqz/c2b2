@@ -57,6 +57,8 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
     col_vjl_group_alakazam = "vj_group" # from alakazam::groupGenes
     col_vjl_group = "vjl_group" # rename
     
+    stopifnot(all(c(v_call, j_call, junc_len, junc) %in% colnames(db)))
+    
     cat("\nColumn for junction =", junc, "\n")
     cat("\nSingle-cell mode =", single_cell_mode, "\n")
     
@@ -67,6 +69,8 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
     if (single_cell_mode) {
         
         stopifnot(!is.null(cell_id))
+        
+        stopifnot(all(c(cell_id, locus) %in% colnames(db)))
         
         # check locus values
         stopifnot(all(db[[locus]] %in% c(vec_loci_vdj, vec_loci_vj)))
