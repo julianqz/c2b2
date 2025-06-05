@@ -181,7 +181,7 @@ df_select = function(df, col_vec, val_lst, rev_vec) {
 #' @details  Any file that does not exist is skipped.
 #'           Assumes files all have the same colnames (otherwise rbind won't work)
 #' 
-load_all_files(vec_path, file_type) {
+load_all_files = function(vec_path, file_type) {
     
     n_path = length(vec_path)
     lst_db = vector(mode="list", length=n_path)
