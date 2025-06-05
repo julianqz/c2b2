@@ -170,3 +170,42 @@ df_select = function(df, col_vec, val_lst, rev_vec) {
     return(bool)
 }
 
+
+#' Read in and combine a list of files 
+#' 
+#' @param  vec_path   char vector contaning paths to files
+#' @param  file_type  file type; currently supported value: "tsv"
+#' 
+#' @returns  A `data.frame`.
+#' 
+#' @details  Any file that does not exist is skipped.
+#'           Assumes files all have the same colnames (otherwise rbind won't work)
+#' 
+load_all_files(vec_path, file_type) {
+    
+    n_path = length(vec_path)
+    lst_db = vector(mode="list", length=n_path)
+    
+    for (i in 1:n_path) {
+        
+        cur_path = vec_path[i]
+        if (file.exists(cur_path)) {
+            
+            if (file_type=="tsv") {
+                cur_db = read.table(cur_path, sep="\t", header=T, stringsAsFactors=F)
+            } else {
+                warning("\nUnsupported file_type:", file_type, "\n")
+                cur_db = NULL
+            }
+            
+            lst_db[[i]] = cur_db
+            rm(cur_db)
+        } else {
+            cat("\nNot found:", cur_path, "\n")
+        }
+    }
+    
+    db_all = do.call(rbind, lst_db)
+    return(db_all)
+}
+
