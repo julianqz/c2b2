@@ -53,7 +53,7 @@ col_junc = opt$colJunc
 col_locus = opt$colLocus
 col_cell_id = opt$colCell
 col_clone_id = opt$colClone
-single_cell_moe = opt$singleCellMode
+single_cell_mode = opt$singleCellMode
 use_only_vdj = opt$useOnlyVDJ
 
 source(opt$pathHelper)
