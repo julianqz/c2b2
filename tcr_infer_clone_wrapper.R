@@ -98,7 +98,8 @@ vec_loci_vj = c("TRA", "TRG")
 for (i in 1:nrow(subj_info)) {
     
     subj = subj_info[["subj"]][i]
-    cat(subj, "\n")
+    cat("\n************************\n")
+    cat("\n", subj, "\n")
 
     # load db_vdj
     fn_in = subj_info[["path_vdj"]][i]
