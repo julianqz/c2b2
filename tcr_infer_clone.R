@@ -261,6 +261,7 @@ define_tcr_clone = function(db, v_call, j_call, junc_len, junc, cell_id, locus,
     stopifnot(!any(is.na(db[[clone_id]])))
     
     cat("\nOutput db has", nrow(db), "seqs, representing",
+        ifelse(single_cell_mode, paste0(length(unique(db[[cell_id]])), " cells / "), ""),
         length(unique(db[[clone_id]])), "clones\n")
     
     return(list(db_passed=db, db_failed=db_failed))
