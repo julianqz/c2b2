@@ -103,6 +103,9 @@ usage () {
     echo -e "  -h  This message."
 }
 
+CHAIN_TYPE_SET=false
+SP_USE_LOCUS_SET=false
+
 # Get commandline arguments
 while getopts "A:t:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:r:s:R:T:U:V:W:X:Y:Z:1:2:3:4:5:6:7:8:9:a:b:c:d:e:f:g:i:j:k:m:n:o:p:q:u:h" OPT; do
     case "$OPT" in
@@ -227,14 +230,11 @@ while getopts "A:t:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:r:s:R:T:U:V:W:X:Y:Z:1:2:3:4:5
 done
 
 
-echo "CHAIN_TYPE_SET=${CHAIN_TYPE_SET}"
-
 # if -t not specified via command line, default to bcr
 if ! $CHAIN_TYPE_SET; then
     CHAIN_TYPE="bcr"
 fi
 
-echo "CHAIN_TYPE=${CHAIN_TYPE}"
 
 # if -u not specified via command line, default to FALSE
 if ! $SP_USE_LOCUS_SET; then
