@@ -232,6 +232,8 @@ if ! $CHAIN_TYPE_SET; then
     CHAIN_TYPE="bcr"
 fi
 
+echo "CHAIN_TYPE=${CHAIN_TYPE}"
+
 # if -u not specified via command line, default to FALSE
 if ! $SP_USE_LOCUS_SET; then
     SP_USE_LOCUS="FALSE"
