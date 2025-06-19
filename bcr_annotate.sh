@@ -227,6 +227,8 @@ while getopts "A:t:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:r:s:R:T:U:V:W:X:Y:Z:1:2:3:4:5
 done
 
 
+echo "CHAIN_TYPE_SET=${CHAIN_TYPE_SET}"
+
 # if -t not specified via command line, default to bcr
 if ! $CHAIN_TYPE_SET; then
     CHAIN_TYPE="bcr"
