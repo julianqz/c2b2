@@ -30,6 +30,7 @@ usage () {
     echo -e "  -Y  Number of cores for cellranger."    
     echo -e "  -Z  Amount of memory for cellranger."
     echo -e "  -W  Delete .bam* files. Default is false."
+    echo -e "  -I  Whether to count introns. Default is true."
     echo -e "  -U  Input for --expect-cells. Optional."   
     echo -e "  -h  This message."
 }
@@ -41,9 +42,10 @@ PATH_FASTQ_SET=false
 PATH_REF_SET=false
 BOOL_DEL_BAM_SET=false
 BOOL_NUM_EXP_CELLS_SET=false
+BOOL_INCLUDE_INTRONS_SET=false
 
 # Get commandline arguments
-while getopts "J:T:L:F:R:Y:Z:W:U:h" OPT; do
+while getopts "J:T:L:F:R:Y:Z:W:I:U:h" OPT; do
     case "$OPT" in
     J)  PROJ_ID=$OPTARG
         PROJ_ID_SET=true
@@ -66,6 +68,9 @@ while getopts "J:T:L:F:R:Y:Z:W:U:h" OPT; do
         ;;
     W)  BOOL_DEL_BAM=$OPTARG
         BOOL_DEL_BAM_SET=true
+        ;;
+    I)  BOOL_INCLUDE_INTRONS=$OPTARG
+        BOOL_INCLUDE_INTRONS_SET=true
         ;;
     U)  NUM_EXP_CELLS=$OPTARG
         BOOL_NUM_EXP_CELLS_SET=true
@@ -125,6 +130,11 @@ else
     BOOL_CREATE_BAM=true
 fi
 
+# Set BOOL_INCLUDE_INTRONS to true if no -I specified
+if ! $BOOL_INCLUDE_INTRONS_SET; then
+    BOOL_INCLUDE_INTRONS=true
+fi
+
 # paths
 
 PATH_PROJ="${PATH_ROOT}/${PROJ_ID}"
@@ -155,6 +165,7 @@ N_LINES=$(wc -l < "${PATH_LIST}")
 echo "N_LINES: ${N_LINES}" &>> "${PATH_LOG}"
 
 echo "--create-bam: ${BOOL_CREATE_BAM}" &>> "${PATH_LOG}"
+echo "--include-introns: ${BOOL_INCLUDE_INTRONS}" &>> "${PATH_LOG}"
 
 if $BOOL_NUM_EXP_CELLS_SET; then
     echo "--expect-cells: ${NUM_EXP_CELLS}" &>> "${PATH_LOG}"
@@ -208,6 +219,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             --fastqs "${CUR_PATH_FASTQ}" \
             --sample "${CUR_FASTQ_IDS}" \
             --transcriptome "${PATH_REF}" \
+            --include-introns "${BOOL_INCLUDE_INTRONS}" \
             --nosecondary \
             --localcores "${CR_N}" \
             --localmem "${CR_M}" \
@@ -222,6 +234,7 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
             --fastqs "${CUR_PATH_FASTQ}" \
             --sample "${CUR_FASTQ_IDS}" \
             --transcriptome "${PATH_REF}" \
+            --include-introns "${BOOL_INCLUDE_INTRONS}" \
             --nosecondary \
             --localcores "${CR_N}" \
             --localmem "${CR_M}" \
