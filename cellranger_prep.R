@@ -70,6 +70,8 @@ generate_aux = function(fn_csv, library_type_csv, library_type_remark) {
     stopifnot(!any(duplicated(df_csv_uniq[["ESP.ID"]])))
     stopifnot(!any(duplicated(df_csv_uniq[["Index.Sequence"]])))
     
+    df_csv_uniq = df_csv_uniq[order(df_csv_uniq[["Library.Name"]]), ]
+    
     # check FASTQ file names
     # expected file name format: [ESP.ID]_[Flowcell.ID]_S*_L*_R[12]_001.fastq.gz
     .parse_fastq_fn = function(s) {
@@ -88,7 +90,7 @@ generate_aux = function(fn_csv, library_type_csv, library_type_remark) {
     stopifnot(all.equal( df_fastq_fn_parsed[, 2], df_csv[["Flowcell.ID"]] ))
     
     # unique library names
-    vec_library_name_uniq = sort(df_csv_uniq[["Library.Name"]])
+    vec_library_name_uniq = df_csv_uniq[["Library.Name"]]
     # placeholder
     df_csv_uniq[["aux_column"]] = NA
     df_csv_uniq[["remark"]] = NA
