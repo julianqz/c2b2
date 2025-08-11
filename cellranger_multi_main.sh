@@ -122,9 +122,9 @@ for ((IDX=1; IDX<=${N_LINES}; IDX++)); do
     # outs/multi/vdj_[bt]/*.bed, *.bam, *.bambai, *.fasta.fai
     # outs/per_sample_outs/${CUR_ID}/vdj_[bt]/*.bam, *.bambai, *.fasta.fai
     # still there despite specifying --no-bam in config csv
-    rm "${PATH_OUTPUT}${CUR_ID}/outs/multi/vdj_[bt]/*.bed"
-    rm "${PATH_OUTPUT}${CUR_ID}/outs/multi/vdj_[bt]/*.[bf]a[im]"
-    rm "${PATH_OUTPUT}${CUR_ID}/outs/per_sample_outs/${CUR_ID}/vdj_[bt]/*.[bf]a[im]"
+    #rm "${PATH_OUTPUT}${CUR_ID}/outs/multi/vdj_[bt]/*.bed"
+    #rm "${PATH_OUTPUT}${CUR_ID}/outs/multi/vdj_[bt]/*.[bf]a[im]"
+    #rm "${PATH_OUTPUT}${CUR_ID}/outs/per_sample_outs/${CUR_ID}/vdj_[bt]/*.[bf]a[im]"
 
 done
 
