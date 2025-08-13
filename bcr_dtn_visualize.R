@@ -142,11 +142,18 @@ if (plot_within | plot_btw) {
                     "thresh_density", out_suffix, "_", subj, ".RData")
         load(fn)
         
-        dist_lst[[subj]] = thresh_obj@x
-        xden_lst[[subj]] = thresh_obj@xdens
-        yden_lst[[subj]] = thresh_obj@ydens
-        thresh_auto_vec[subj] = thresh_obj@threshold
-        
+        if (!is.null(thresh_obj)) {
+            dist_lst[[subj]] = thresh_obj@x
+            xden_lst[[subj]] = thresh_obj@xdens
+            yden_lst[[subj]] = thresh_obj@ydens
+            thresh_auto_vec[subj] = thresh_obj@threshold
+            
+        } else {
+            # this should set `all(is.na(cur_dist))` to be FALSE,
+            # triggering a blank plot being produced
+            dist_lst[[subj]] = NA
+        }
+
         rm(thresh_obj)
     }
 }

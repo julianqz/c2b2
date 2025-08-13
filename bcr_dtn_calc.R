@@ -208,11 +208,18 @@ if (opt$calcWithin) {
         
         if (opt$calcThreshold) {
             
-            # density estimate for threshold
-            # if already subsampled in previous step, that will carry over 
-            # (no need to re-subsample)
-            thresh_obj = findThreshold(distances=db[["dist_nearest"]],
-                                       method="density", progress=T)
+            # The `smoothValley` funcion used by the density method requires 
+            # at least 3 unique distance values.
+            
+            if (length(unique(db[["dist_nearest"]]))>=3) {
+                # density estimate for threshold
+                # if already subsampled in previous step, that will carry over 
+                # (no need to re-subsample)
+                thresh_obj = findThreshold(distances=db[["dist_nearest"]],
+                                           method="density", progress=T)
+            } else {
+                thresh_obj = NULL
+            }
             
             fn = paste0("thresh_density", out_suffix, "_", subj, ".RData")
             save(thresh_obj, file=fn)
@@ -222,13 +229,22 @@ if (opt$calcWithin) {
                 # initiate
                 sink(file=sink_name, append=F)
                 cat(subj, sep="", "\n")
-                cat(thresh_obj@threshold, sep="", "\n")
+                if (!is.null(thresh_obj)) {
+                    cat(thresh_obj@threshold, sep="", "\n")    
+                } else {
+                    cat(NA, sep="", "\n")
+                }
+                
                 sink()
             } else {
                 # append
                 sink(file=sink_name, append=T)
                 cat(subj, sep="", "\n")
-                cat(thresh_obj@threshold, sep="", "\n")
+                if (!is.null(thresh_obj)) {
+                    cat(thresh_obj@threshold, sep="", "\n")    
+                } else {
+                    cat(NA, sep="", "\n")
+                }
                 sink()
             }
             
